@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 숫자 맞추기 게임 + 최고기록</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    background:#0c0c1e;
+    font-family:'Nanum Gothic', sans-serif;
+  }
+  .card {
+    background:rgba(255,255,255,0.07);
+    backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:24px;
+    padding:40px 36px;
+    width:min(460px,92vw);
+    text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  }
+  h1 { font-size:32px; color:#fff; margin-bottom:6px; }
+  .subtitle { font-size:14px; color:rgba(255,255,255,0.5); margin-bottom:16px; }
+  .best-badge {
+    display:inline-block;
+    background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,152,0,0.2));
+    border:1px solid rgba(255,215,0,0.5);
+    border-radius:999px;
+    padding:6px 20px;
+    color:#ffd700;
+    font-size:14px;
+    margin-bottom:20px;
+    min-width:180px;
+  }
+  .new-record-flash {
+    animation:recordFlash 0.5s ease-in-out 3;
+  }
+  @keyframes recordFlash {
+    0%,100%{ background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,152,0,0.2)); }
+    50%    { background:linear-gradient(135deg,rgba(255,215,0,0.6),rgba(255,152,0,0.6)); }
+  }
+  .tries-row {
+    display:flex; gap:10px; margin-bottom:16px;
+  }
+  .stat-box {
+    flex:1; background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px; padding:10px;
+  }
+  .stat-label { font-size:11px; color:rgba(255,255,255,0.5); margin-bottom:4px; }
+  .stat-value { font-size:26px; color:#ffd700; font-weight:700; }
+  .range-box {
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:12px; padding:10px 14px; margin-bottom:16px;
+  }
+  .range-label { font-size:11px; color:rgba(255,255,255,0.45); margin-bottom:6px; }
+  .range-bar { height:8px; background:rgba(255,255,255,0.1); border-radius:99px; overflow:hidden; }
+  .range-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#4fc3f7,#e040fb); transition:left .4s,right .4s; position:relative; }
+  .range-nums { display:flex; justify-content:space-between; font-size:12px; margin-top:5px; }
+  .range-lo { color:#4fc3f7; } .range-hi { color:#ff6b6b; }
+  .input-row { display:flex; gap:10px; margin-bottom:14px; }
+  input[type=number] {
+    flex:1; background:rgba(255,255,255,0.09);
+    border:2px solid rgba(255,255,255,0.18);
+    border-radius:12px; padding:12px 16px;
+    font-size:22px; color:#fff; text-align:center; outline:none;
+    transition:border-color .25s, box-shadow .25s;
+    -moz-appearance:textfield;
+  }
+  input[type=number]::-webkit-inner-spin-button { display:none; }
+  input[type=number]:focus { border-color:#4fc3f7; box-shadow:0 0 0 3px rgba(79,195,247,.2); }
+  input.wrong { animation:shake .3s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  .btn {
+    padding:12px 20px; border:none; border-radius:12px;
+    font-size:16px; cursor:pointer; font-weight:700;
+    transition:transform .15s, box-shadow .15s;
+  }
+  .btn:active { transform:scale(0.93); }
+  .btn-check { background:linear-gradient(135deg,#4fc3f7,#0288d1); color:#fff; box-shadow:0 4px 16px rgba(79,195,247,.35); }
+  .btn-check:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(79,195,247,.5); }
+  .btn-check:disabled { opacity:.4; cursor:not-allowed; }
+  .btn-retry {
+    width:100%; margin-top:10px; display:none;
+    background:linear-gradient(135deg,#ffd700,#ff9800);
+    color:#0c0c1e; box-shadow:0 4px 16px rgba(255,215,0,.35);
+    font-size:17px;
+  }
+  .btn-retry.show { display:block; animation:popIn .5s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes popIn { from{transform:scale(.6);opacity:0;} to{transform:scale(1);opacity:1;} }
+  .hint {
+    min-height:58px; display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:700; border-radius:12px;
+    padding:12px 16px; margin-bottom:12px; opacity:0;
+    transition:opacity .2s;
+  }
+  .hint.show { opacity:1; animation:hintPop .4s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes hintPop { from{transform:scale(.8) translateY(10px);opacity:0;} to{transform:none;opacity:1;} }
+  .hint.bigger  { background:rgba(255,107,107,.15); color:#ff6b6b; border:1.5px solid rgba(255,107,107,.3); }
+  .hint.smaller { background:rgba(79,195,247,.12);  color:#4fc3f7; border:1.5px solid rgba(79,195,247,.3); }
+  .hint.correct { background:rgba(100,221,23,.14);  color:#64dd17; border:1.5px solid rgba(100,221,23,.35); }
+  .hint.error   { background:rgba(255,152,0,.12);   color:#ff9800; border:1.5px solid rgba(255,152,0,.3); }
+  .history { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-bottom:10px; min-height:0; }
+  .chip { font-size:12px; padding:2px 10px; border-radius:999px; }
+  .chip.bigger  { background:rgba(255,107,107,.2); color:#ff6b6b; border:1px solid rgba(255,107,107,.3); }
+  .chip.smaller { background:rgba(79,195,247,.15); color:#4fc3f7; border:1px solid rgba(79,195,247,.3); }
+  .chip.correct { background:rgba(100,221,23,.2);  color:#64dd17; border:1px solid rgba(100,221,23,.4); }
+  .stars { font-size:22px; letter-spacing:3px; margin-top:6px; }
+  .star-label { font-size:12px; color:rgba(255,255,255,.5); margin-top:3px; }
+
+  /* 신기록 팝업 */
+  .record-popup {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.6); z-index:1000;
+    align-items:center; justify-content:center;
+  }
+  .record-popup.show { display:flex; }
+  .record-box {
+    background:#0c0c1e; border:2px solid #ffd700;
+    border-radius:20px; padding:32px 40px; text-align:center;
+    box-shadow:0 0 40px rgba(255,215,0,.3);
+    animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .record-box h2 { font-size:28px; color:#ffd700; margin-bottom:8px; }
+  .record-box .big { font-size:56px; color:#ffd700; font-weight:900; line-height:1; }
+  .record-box p { color:rgba(255,255,255,.6); font-size:14px; margin-top:8px; }
+  .btn-close {
+    margin-top:20px; padding:10px 28px; border:none; border-radius:999px;
+    background:linear-gradient(135deg,#ffd700,#ff9800);
+    color:#0c0c1e; font-size:16px; font-weight:800; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- 신기록 팝업 -->
+<div class="record-popup" id="recordPopup">
+  <div class="record-box">
+    <h2>🏆 신기록!!</h2>
+    <div class="big" id="recordNum">-</div>
+    <p>역대 최고 기록이에요! 🎉</p>
+    <button class="btn-close" onclick="closeRecord()">최고예요!!</button>
+  </div>
+</div>
+
+<div class="card">
+  <h1>🎯 숫자 맞추기</h1>
+  <div class="subtitle">1 ~ 100 사이의 숫자를 맞춰봐요!</div>
+
+  <!-- ✅ 최고기록 배지 (localStorage에서 불러와 표시) -->
+  <div class="best-badge" id="bestBadge">🏆 최고기록: -</div>
+
+  <!-- 시도 횟수 -->
+  <div class="tries-row">
+    <div class="stat-box">
+      <div class="stat-label">🔢 시도 횟수</div>
+      <div class="stat-value" id="tries">0</div>
+    </div>
+  </div>
+
+  <!-- 범위 추적기 -->
+  <div class="range-box">
+    <div class="range-label">🔍 좁혀진 범위</div>
+    <div class="range-bar">
+      <div class="range-fill" id="rangeFill" style="left:0%;right:0%;position:absolute;top:0;bottom:0;"></div>
+    </div>
+    <div class="range-nums">
+      <span class="range-lo" id="rangeLo">1</span>
+      <span class="range-hi" id="rangeHi">100</span>
+    </div>
+  </div>
+
+  <!-- 입력 -->
+  <div class="input-row">
+    <input type="number" id="guess" min="1" max="100" placeholder="숫자 입력..." />
+    <button class="btn btn-check" id="checkBtn" onclick="check()">확인 ✅</button>
+  </div>
+
+  <!-- 힌트 -->
+  <div class="hint" id="hint"></div>
+
+  <!-- 히스토리 칩 -->
+  <div class="history" id="history"></div>
+
+  <!-- 별점 -->
+  <div class="stars" id="stars" style="display:none"></div>
+  <div class="star-label" id="starLabel" style="display:none"></div>
+
+  <!-- 다시 하기 -->
+  <button class="btn btn-retry" id="retryBtn" onclick="init()">🔄 다시 하기!</button>
+</div>
+
+<script>
+  /* ── 최고기록 localStorage 키 ── */
+  const BEST_KEY = 'numGame_best';
+
+  /* ── 최고기록 읽기 / 저장 ── */
+  function getBest() {
+    return parseInt(localStorage.getItem(BEST_KEY) || '9999', 10);
+  }
+
+  function saveBest(tries) {
+    localStorage.setItem(BEST_KEY, String(tries));
+  }
+
+  /* ── 최고기록 배지 업데이트 ── */
+  function updateBestBadge() {
+    const b   = getBest();
+    const el  = document.getElementById('bestBadge');
+    el.textContent = b === 9999 ? '🏆 최고기록: -' : `🏆 최고기록: ${b}번`;
+  }
+
+  /* ── 신기록 확인 및 저장 ── */
+  function checkAndSaveBest(tries) {
+    const prev = getBest();
+    if (tries < prev) {
+      saveBest(tries);
+      updateBestBadge();
+
+      /* 배지 반짝임 */
+      const badge = document.getElementById('bestBadge');
+      badge.classList.remove('new-record-flash');
+      void badge.offsetWidth;
+      badge.classList.add('new-record-flash');
+
+      /* 신기록 팝업 표시 */
+      document.getElementById('recordNum').textContent = tries + '번';
+      document.getElementById('recordPopup').classList.add('show');
+      return true;
+    }
+    return false;
+  }
+
+  function closeRecord() {
+    document.getElementById('recordPopup').classList.remove('show');
+  }
+
+  /* ── 게임 상태 ── */
+  let answer, tries, lo, hi;
+
+  /* ── 초기화 ── */
+  function init() {
+    answer = Math.floor(Math.random() * 100) + 1;
+    tries  = 0;
+    lo     = 1;
+    hi     = 100;
+
+    document.getElementById('tries').textContent   = '0';
+    document.getElementById('rangeLo').textContent  = '1';
+    document.getElementById('rangeHi').textContent  = '100';
+    document.getElementById('rangeFill').style.left  = '0%';
+    document.getElementById('rangeFill').style.right = '0%';
+    document.getElementById('hint').className        = 'hint';
+    document.getElementById('hint').textContent      = '';
+    document.getElementById('history').innerHTML     = '';
+    document.getElementById('guess').value           = '';
+    document.getElementById('guess').disabled        = false;
+    document.getElementById('checkBtn').disabled     = false;
+    document.getElementById('stars').style.display   = 'none';
+    document.getElementById('starLabel').style.display = 'none';
+    document.getElementById('retryBtn').classList.remove('show');
+
+    document.getElementById('guess').focus();
+    updateBestBadge();
+  }
+
+  /* ── 범위 슬라이더 업데이트 ── */
+  function updateRange(val, dir) {
+    if (dir === 'bigger'  && val >= lo) lo = val + 1;
+    if (dir === 'smaller' && val <= hi) hi = val - 1;
+    document.getElementById('rangeLo').textContent  = lo;
+    document.getElementById('rangeHi').textContent  = hi;
+    document.getElementById('rangeFill').style.left  = `${((lo-1)/99)*100}%`;
+    document.getElementById('rangeFill').style.right = `${((100-hi)/99)*100}%`;
+  }
+
+  /* ── 히스토리 칩 추가 ── */
+  function addChip(val, type) {
+    const c = document.createElement('div');
+    c.className = `chip ${type}`;
+    c.textContent = `${type==='bigger'?'↑':type==='smaller'?'↓':'✓'} ${val}`;
+    document.getElementById('history').appendChild(c);
+  }
+
+  /* ── 별점 계산 ── */
+  function calcStars(t) {
+    if (t === 1) return { s:'⭐⭐⭐⭐⭐', l:'🌈 단 1번에?! 전설이에요!!' };
+    if (t <= 3)  return { s:'⭐⭐⭐⭐⭐', l:'🎊 퍼펙트!! 천재예요!!' };
+    if (t <= 5)  return { s:'⭐⭐⭐⭐',   l:'🌟 훌륭해요!' };
+    if (t <= 8)  return { s:'⭐⭐⭐',     l:'😊 잘 했어요!' };
+    if (t <= 12) return { s:'⭐⭐',       l:'👍 좋아요!' };
+    return               { s:'⭐',         l:'💪 포기 안 한 게 최고예요!' };
+  }
+
+  /* ── 정답 확인 ── */
+  function check() {
+    const input = document.getElementById('guess');
+    const hint  = document.getElementById('hint');
+    const val   = parseInt(input.value, 10);
+
+    /* 유효성 검사 */
+    if (isNaN(val) || val < 1 || val > 100) {
+      input.classList.remove('wrong');
+      void input.offsetWidth;
+      input.classList.add('wrong');
+      hint.className   = 'hint error show';
+      hint.textContent = '⚠️ 1~100 사이 숫자를 입력해줘요!';
+      return;
+    }
+
+    tries++;
+    document.getElementById('tries').textContent = tries;
+
+    /* ── 정답! ── */
+    if (val === answer) {
+      hint.className   = 'hint correct show';
+      hint.textContent = `🎉 정답! ${tries}번 만에 맞췄어요! 🏆`;
+      addChip(val, 'correct');
+      input.disabled = true;
+      document.getElementById('checkBtn').disabled = true;
+      document.getElementById('retryBtn').classList.add('show');
+
+      /* 별점 표시 */
+      const { s, l } = calcStars(tries);
+      const stEl = document.getElementById('stars');
+      const lbEl = document.getElementById('starLabel');
+      stEl.textContent = s; stEl.style.display = 'block';
+      lbEl.textContent = l; lbEl.style.display = 'block';
+
+      /* ✅ 최고기록 확인 및 저장 */
+      checkAndSaveBest(tries);
+
+    /* ── 더 큰 수 ── */
+    } else if (val < answer) {
+      hint.className   = 'hint bigger show';
+      hint.textContent = '📈 더 큰 수예요!';
+      updateRange(val, 'bigger');
+      addChip(val, 'bigger');
+
+    /* ── 더 작은 수 ── */
+    } else {
+      hint.className   = 'hint smaller show';
+      hint.textContent = '📉 더 작은 수예요!';
+      updateRange(val, 'smaller');
+      addChip(val, 'smaller');
+    }
+
+    input.value = '';
+    input.focus();
+  }
+
+  /* ── 이벤트 리스너 ── */
+  document.getElementById('guess').addEventListener('keydown', e => {
+    if (e.key === 'Enter') check();
+  });
+
+  /* ── 게임 시작 ── */
+  init();
+</script>
+</body>
+</html>
