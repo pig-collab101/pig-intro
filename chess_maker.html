@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>체스메이커 ♟️</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Jua', 'Malgun Gothic', sans-serif; }
+  body { background:linear-gradient(160deg,#1a1a2e,#16213e 60%,#0f3460); min-height:100vh; color:#fff;
+         display:flex; justify-content:center; padding:16px; }
+  #app { width:100%; max-width:560px; }
+  .screen { display:none; animation:fadein .3s; }
+  .screen.on { display:block; }
+  @keyframes fadein { from{opacity:0; transform:translateY(8px);} to{opacity:1;} }
+
+  h1 { font-size:44px; text-align:center; margin:30px 0 6px;
+       background:linear-gradient(90deg,#ffd93d,#ff6b6b,#4ecdc4); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { text-align:center; color:#aab; margin-bottom:24px; font-size:15px; }
+  h2 { font-size:22px; margin:18px 0 10px; color:#ffd93d; }
+  h3 { font-size:16px; margin:14px 0 6px; color:#8fd3ff; }
+
+  .btn { display:inline-block; border:none; cursor:pointer; border-radius:12px; font-family:inherit;
+         font-size:17px; padding:12px 22px; color:#fff; background:linear-gradient(135deg,#ff6b6b,#ee5253);
+         box-shadow:0 4px 0 #b33939; transition:transform .1s; }
+  .btn:active { transform:translateY(3px); box-shadow:0 1px 0 #b33939; }
+  .btn.blue { background:linear-gradient(135deg,#54a0ff,#2e86de); box-shadow:0 4px 0 #1b4f9c; }
+  .btn.green{ background:linear-gradient(135deg,#1dd1a1,#10ac84); box-shadow:0 4px 0 #0b7a5e; }
+  .btn.gray { background:#57606f; box-shadow:0 4px 0 #2f3542; font-size:14px; padding:8px 14px; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .center { text-align:center; }
+
+  /* ===== 카드 선택 ===== */
+  .cardrow { display:flex; flex-wrap:wrap; gap:10px; }
+  .optcard { flex:1 1 90px; min-width:90px; background:#ffffff14; border:2px solid #ffffff22; border-radius:14px;
+             padding:12px 6px; text-align:center; cursor:pointer; transition:.15s; }
+  .optcard:hover { background:#ffffff22; }
+  .optcard.sel { border-color:#ffd93d; background:#ffd93d22; box-shadow:0 0 12px #ffd93d55; }
+  .optcard .big { font-size:30px; display:block; margin-bottom:4px; }
+  .optcard .nm { font-size:14px; }
+
+  /* ===== 체스판 ===== */
+  .boardwrap { display:flex; justify-content:center; margin:14px 0; }
+  .board { display:grid; grid-template-columns:repeat(8, var(--cs)); gap:2px; padding:10px; border-radius:14px; }
+  .board { --cs:min(10.5vw, 56px); }
+  .cell { width:var(--cs); height:var(--cs); position:relative; display:flex; align-items:center; justify-content:center;
+          font-size:calc(var(--cs)*.62); cursor:pointer; border-radius:6px; user-select:none; }
+  .cell.off { visibility:hidden; pointer-events:none; }
+
+  /* 판 모양 */
+  .shape-honey .cell { clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); border-radius:0; }
+  .shape-circle .board { border-radius:50%; }
+
+  /* 판 재질 */
+  .theme-wood  .board{background:#5b3a1e;} .theme-wood .cell.a{background:#d9b07c;} .theme-wood .cell.b{background:#96602c;}
+  .theme-metal .board{background:#3a4149;} .theme-metal .cell.a{background:linear-gradient(135deg,#e2e8ee,#b7c0c9);} .theme-metal .cell.b{background:linear-gradient(135deg,#8d99a5,#6a7682);}
+  .theme-neon  .board{background:#05060f; box-shadow:0 0 24px #00e5ff55;}
+  .theme-neon  .cell.a{background:#0d1330; box-shadow:inset 0 0 0 1px #00e5ff88;} .theme-neon .cell.b{background:#1b0f35; box-shadow:inset 0 0 0 1px #ff00e588;}
+  .theme-lego  .board{background:#2f3542;}
+  .theme-lego  .cell.a, .theme-lego .cell.b { background-image:radial-gradient(circle at 50% 28%, #ffffff59 13%, transparent 15%); }
+  .theme-lego  .cell.a{background-color:#eb3b5a;} .theme-lego .cell.b{background-color:#fed330;}
+  .theme-ice   .board{background:#7fb6d9;}
+  .theme-ice   .cell.a{background:linear-gradient(135deg,#eaf7ff,#c9e9f7);} .theme-ice .cell.b{background:linear-gradient(135deg,#b0dcf0,#8cc3e0);}
+  .theme-grass .board{background:#4a6b2a;}
+  .theme-grass .cell.a{background:linear-gradient(135deg,#b8e06a,#a3cf55);} .theme-grass .cell.b{background:linear-gradient(135deg,#78b93e,#619e30);}
+
+  /* 하이라이트 */
+  .cell.hl-move::after { content:''; position:absolute; width:30%; height:30%; border-radius:50%; background:#2ecc71dd; }
+  .cell.hl-cap { box-shadow:inset 0 0 0 4px #e74c3c !important; }
+  .cell.hl-target { box-shadow:inset 0 0 0 4px #f39c12 !important; }
+  .cell.selcell { box-shadow:inset 0 0 0 4px #ffd93d !important; }
+
+  /* 기물 */
+  .pc { width:88%; height:88%; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .pc.p0 { background:#54a0ff44; box-shadow:0 0 0 3px #54a0ff; }
+  .pc.p1 { background:#ff6b6b44; box-shadow:0 0 0 3px #ff6b6b; }
+  .pc img { width:78%; height:78%; image-rendering:pixelated; }
+  .ball { font-size:calc(var(--cs)*.45); filter:drop-shadow(0 0 4px #000); }
+
+  /* ===== 기물 선택 화면 ===== */
+  .pcard { display:flex; align-items:center; gap:12px; background:#ffffff12; border:2px solid #ffffff22;
+           border-radius:14px; padding:10px 14px; margin-bottom:8px; cursor:pointer; }
+  .pcard:hover { background:#ffffff20; }
+  .pcard .ico { font-size:34px; width:46px; text-align:center; }
+  .pcard .ico img { width:40px; height:40px; image-rendering:pixelated; }
+  .pcard .info { flex:1; }
+  .pcard .info .nm { font-size:17px; }
+  .pcard .info .ds { font-size:12.5px; color:#aab; line-height:1.5; }
+  .pcard .cnt { font-size:12px; color:#ffd93d; }
+  .slots { display:flex; gap:8px; margin:10px 0 16px; }
+  .slot { width:58px; height:58px; border-radius:12px; background:#ffffff10; border:2px dashed #ffffff33;
+          display:flex; align-items:center; justify-content:center; font-size:28px; cursor:pointer; position:relative; }
+  .slot.full { border-style:solid; border-color:#ffd93d; background:#ffd93d18; }
+  .slot img { width:40px; height:40px; image-rendering:pixelated; }
+  .pickbadge { display:inline-block; padding:4px 14px; border-radius:20px; font-size:15px; margin-bottom:8px; }
+  .pickbadge.t0 { background:#54a0ff33; color:#8fc3ff; box-shadow:0 0 0 2px #54a0ff; }
+  .pickbadge.t1 { background:#ff6b6b33; color:#ffb0b0; box-shadow:0 0 0 2px #ff6b6b; }
+
+  /* ===== 기물 만들기 ===== */
+  input[type=text] { width:100%; padding:10px 12px; border-radius:10px; border:2px solid #ffffff33;
+                     background:#ffffff10; color:#fff; font-family:inherit; font-size:16px; }
+  .blockgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .block { background:#ffffff10; border:2px solid #ffffff22; border-radius:10px; padding:8px 10px; cursor:pointer; }
+  .block.sel { border-color:#1dd1a1; background:#1dd1a122; }
+  .block .bn { font-size:14px; }
+  .block .bd { font-size:11.5px; color:#99a; line-height:1.4; }
+  .pixwrap { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+  #pixgrid { display:grid; grid-template-columns:repeat(8,26px); gap:1px; background:#000; padding:2px; border-radius:6px; touch-action:none; }
+  .px { width:26px; height:26px; background:#2a2a3a; cursor:crosshair; }
+  .palette { display:grid; grid-template-columns:repeat(5,30px); gap:6px; }
+  .pal { width:30px; height:30px; border-radius:6px; cursor:pointer; border:2px solid #ffffff33; }
+  .pal.sel { border-color:#ffd93d; box-shadow:0 0 8px #ffd93d; }
+
+  /* ===== 대결 화면 ===== */
+  #turnbar { text-align:center; font-size:19px; padding:8px; border-radius:12px; margin-bottom:8px; }
+  #turnbar.t0 { background:#54a0ff28; box-shadow:0 0 0 2px #54a0ff; }
+  #turnbar.t1 { background:#ff6b6b28; box-shadow:0 0 0 2px #ff6b6b; }
+  #skillbar { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; min-height:44px; margin:6px 0; }
+  #battlelog { font-size:13px; color:#aab; text-align:center; min-height:40px; line-height:1.6; }
+  .endbig { font-size:60px; text-align:center; margin:40px 0 10px; }
+  .endmsg { font-size:28px; text-align:center; margin-bottom:30px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ① 게임 입장 -->
+  <div class="screen on" id="scr-title">
+    <h1>♟️ 체스메이커</h1>
+    <p class="sub">내가 만드는 새로운 체스! 판도, 기물도, 규칙도 내 마음대로!</p>
+    <div class="boardwrap"><div id="titleboard" class="theme-neon"><div class="board" style="--cs:34px;"></div></div></div>
+    <div class="center" style="margin-top:20px;">
+      <button class="btn" style="font-size:22px; padding:14px 40px;" onclick="go('scr-board')">게임 입장 🎮</button>
+    </div>
+    <p class="sub" style="margin-top:18px;">만든 사람: 창의적이고 도전적인 체스 유저</p>
+  </div>
+
+  <!-- ② 체스판 설정 -->
+  <div class="screen" id="scr-board">
+    <h2>1단계 · 체스판 꾸미기 🎨</h2>
+    <h3>대결 상대</h3>
+    <div class="cardrow" id="oppRow"></div>
+    <h3>판 모양</h3>
+    <div class="cardrow" id="shapeRow"></div>
+    <h3>판 재질</h3>
+    <div class="cardrow" id="matRow"></div>
+    <h3>미리보기</h3>
+    <div class="boardwrap"><div id="prevwrap"><div class="board" id="prevboard" style="--cs:30px;"></div></div></div>
+    <div class="center">
+      <button class="btn green" onclick="go('scr-pieces'); initPickScreen();">다음 → 기물 고르기</button>
+    </div>
+  </div>
+
+  <!-- ③④ 기물 설정 -->
+  <div class="screen" id="scr-pieces">
+    <h2>2단계 · 기물 고르기 ⚔️</h2>
+    <p class="sub" id="onlineBadge" style="margin-bottom:8px;">💾 지금은 내 컴퓨터에만 저장돼요</p>
+    <div class="center"><span class="pickbadge" id="pickWho"></span></div>
+    <p class="sub" style="margin-bottom:6px;">기물을 눌러서 담아요 (최대 4개, 같은 기물 여러 번 OK)</p>
+    <div class="slots center" id="pickSlots" style="justify-content:center;"></div>
+    <div id="pieceList"></div>
+    <div class="center" style="margin:14px 0;">
+      <button class="btn gray" onclick="openMaker()">✏️ 나만의 기물 만들기</button>
+      <button class="btn blue" id="pickDone" onclick="pickDone()">선택 완료 ✔</button>
+    </div>
+  </div>
+
+  <!-- 기물 만들기 -->
+  <div class="screen" id="scr-maker">
+    <h2>나만의 기물 만들기 🛠️</h2>
+    <h3>1. 이름 짓기</h3>
+    <input type="text" id="mkName" maxlength="8" placeholder="예: 번개용, 폭탄이...">
+    <h3>2. 블록 조립 (능력 고르기 · 최대 10개)</h3>
+    <p class="sub" style="text-align:left; margin-bottom:8px;">이동 블록을 1개 이상 꼭 넣어야 해요!</p>
+    <div id="blockArea"></div>
+    <h3>3. 기물 그리기 🖌️</h3>
+    <div class="pixwrap">
+      <div id="pixgrid"></div>
+      <div>
+        <div class="palette" id="palette"></div>
+        <button class="btn gray" style="margin-top:10px;" onclick="clearPix()">지우기 🧽</button>
+      </div>
+    </div>
+    <div class="center" style="margin:18px 0;">
+      <button class="btn gray" onclick="go('scr-pieces')">취소</button>
+      <button class="btn green" onclick="saveCustom()">저장하고 공유! 📤</button>
+    </div>
+  </div>
+
+  <!-- ⑤ 대결 -->
+  <div class="screen" id="scr-battle">
+    <div id="turnbar"></div>
+    <div class="boardwrap"><div id="gamewrap"><div class="board" id="gameboard"></div></div></div>
+    <div id="skillbar"></div>
+    <div id="battlelog"></div>
+    <div class="center" style="margin-top:6px;">
+      <button class="btn gray" onclick="passTurn()">턴 넘기기 ⏭</button>
+    </div>
+  </div>
+
+  <!-- 승리 -->
+  <div class="screen" id="scr-end">
+    <div class="endbig" id="endEmoji">🏆</div>
+    <div class="endmsg" id="endMsg"></div>
+    <div class="center">
+      <button class="btn green" onclick="startBattle()">한 판 더! 🔁</button>
+      <button class="btn blue" onclick="go('scr-board')">새로 설정하기 ⚙️</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const SIZE = 8;
+
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $(id).classList.add('on');
+}
+
+/* ================= 설정 상태 ================= */
+const config = { shape:'square', material:'wood', opp:'human' };
+
+const OPPS = [
+  {id:'human', nm:'친구랑 2인', ico:'👥'},
+  {id:'ai',    nm:'컴퓨터',     ico:'🤖'},
+];
+const SHAPES = [
+  {id:'square', nm:'사각', ico:'⬛'},
+  {id:'circle', nm:'원형', ico:'⚪'},
+  {id:'honey',  nm:'벌집', ico:'🐝'},
+];
+const MATS = [
+  {id:'wood',  nm:'나무', ico:'🪵'},
+  {id:'metal', nm:'금속', ico:'⚙️'},
+  {id:'neon',  nm:'네온', ico:'💡'},
+  {id:'lego',  nm:'레고', ico:'🧱'},
+  {id:'ice',   nm:'빙판', ico:'🧊'},
+  {id:'grass', nm:'잔디', ico:'🌱'},
+];
+
+function validCell(r,c){
+  if(config.shape==='circle'){
+    const d=(r-3.5)**2+(c-3.5)**2;
+    return d<=17;
+  }
+  return true;
+}
+
+function buildOptRow(rowId, items, key){
+  const row=$(rowId); row.innerHTML='';
+  items.forEach(it=>{
+    const d=document.createElement('div');
+    d.className='optcard'+(config[key]===it.id?' sel':'');
+    d.innerHTML=`<span class="big">${it.ico}</span><span class="nm">${it.nm}</span>`;
+    d.onclick=()=>{ config[key]=it.id; buildOptRow(rowId,items,key); renderPreview(); };
+    row.appendChild(d);
+  });
+}
+
+function renderPreview(){
+  $('prevwrap').className = `theme-${config.material} shape-${config.shape}`;
+  const b=$('prevboard'); b.innerHTML='';
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const d=document.createElement('div');
+    d.className=`cell ${(r+c)%2?'b':'a'}${validCell(r,c)?'':' off'}`;
+    b.appendChild(d);
+  }
+}
+
+/* 타이틀 장식판 */
+(function(){
+  const b=document.querySelector('#titleboard .board');
+  const deco=['🥁','','💣','','🐓','','⭐',''];
+  for(let r=0;r<2;r++)for(let c=0;c<8;c++){
+    const d=document.createElement('div');
+    d.className=`cell ${(r+c)%2?'b':'a'}`;
+    if(r===0) d.textContent=deco[c];
+    b.appendChild(d);
+  }
+})();
+
+/* ================= 블록 (기물 능력) ================= */
+const BLOCKS = {
+  king1:   {cat:'이동', nm:'아장아장 (1칸)',  ds:'주변 1칸 어디로든 이동'},
+  king2:   {cat:'이동', nm:'성큼성큼 (2칸)',  ds:'주변 2칸 안 어디로든 이동'},
+  rook:    {cat:'이동', nm:'직진 레일',       ds:'가로세로 직선으로 끝까지 이동'},
+  bishop:  {cat:'이동', nm:'대각선 미끄럼',   ds:'대각선으로 끝까지 이동'},
+  knight:  {cat:'이동', nm:'말 점프',         ds:'나이트처럼 L자 점프 (뛰어넘기 가능)'},
+  jump2:   {cat:'이동', nm:'개구리 점프',     ds:'정확히 2칸 떨어진 곳으로 점프 (뛰어넘기 가능)'},
+  pawnjump:{cat:'이동', nm:'폰 발사대',       ds:'직선에 있는 내 폰을 터치하고 그 너머로 날아가 착지! 착지한 곳의 적은 제거'},
+  boom33:  {cat:'특수', nm:'쿵쾅 폭발 💥',    ds:'내 주변 3×3의 적 기물을 모두 제거 (3턴에 1번)'},
+  cannonball:{cat:'특수', nm:'대포알 발사 🔴', ds:'이동할 때마다 대포알 생성 (2번까지). 대포알은 매턴 2칸 전진하며 적을 제거'},
+  spawnPawn:{cat:'특수', nm:'폰 낳기 🐣',     ds:'원하는 빈칸에 폰을 생성 (내 폰 최대 3마리)'},
+  push:    {cat:'특수', nm:'밀치기 👐',       ds:'붙어있는 적을 1칸 밀어냄. 판 밖으로 밀면 제거! (2턴에 1번)'},
+  swap:    {cat:'특수', nm:'순간 교대 🔄',    ds:'내 기물 아무나와 자리 바꾸기 (2턴에 1번)'},
+  laststand:{cat:'조건', nm:'최후의 전사 🔥', ds:'조건: 내 기물이 2개 이하로 남으면 → 2칸 이동 능력이 생김'},
+  early:   {cat:'조건', nm:'빠른 출발 🚀',    ds:'조건: 나의 첫 3턴 동안만 → 대각선 끝까지 이동 가능'},
+};
+
+/* ================= 기본 기물 3종 + 폰 ================= */
+const BASE_PIECES = [
+  {id:'drum',   nm:'드럼',     emoji:'🥁', moves:['king1','king2'], specials:['boom33'],
+   ds:'킹처럼 주변 2칸까지 이동. 특수기술: 3×3 범위의 적을 한 번에 쿵쾅 제거!'},
+  {id:'cannon', nm:'대포',     emoji:'💣', moves:['king1'], specials:['cannonball'],
+   ds:'킹처럼 1칸 이동. 이동하면 대포알 생성(2번까지)! 대포알은 매턴 2칸 전진하며 적을 제거.'},
+  {id:'ududuk', nm:'우두두둑', emoji:'🐓', moves:['king1','pawnjump'], specials:['spawnPawn'],
+   ds:'원하는 곳에 폰(🐣)을 낳는다. 직선에 있는 내 폰을 터치하면 그 너머로 날아가 착지! 착지 지점의 적 제거.'},
+  {id:'lightning', nm:'번개', emoji:'⚡', moves:['rook'], specials:['push'],
+   ds:'가로세로 직선으로 끝까지 슝! 붙어있는 적을 밀쳐낼 수 있다. 판 밖으로 밀면 제거!'},
+  {id:'spider', nm:'거미', emoji:'🕷️', moves:['knight','jump2'], specials:[],
+   ds:'L자 점프와 개구리 점프의 달인. 다른 기물을 훌쩍 뛰어넘어 다닌다!'},
+  {id:'wizard', nm:'마법사', emoji:'🧙', moves:['king1','bishop'], specials:['swap'],
+   ds:'대각선으로 끝까지 미끄러지듯 이동. 위험하면 내 기물과 순간 교대!'},
+];
+const PAWN_DEF = {id:'pawn', nm:'폰', emoji:'🐣', moves:['king1'], specials:[], ds:'주변 1칸 이동'};
+
+/* 커스텀 기물 (자동 공유 = 저장소에 저장, 선택 횟수 1등부터 정렬) */
+let customs = [];
+try { customs = JSON.parse(localStorage.getItem('cm_customs')||'[]'); } catch(e){ customs=[]; }
+function saveCustoms(){ localStorage.setItem('cm_customs', JSON.stringify(customs)); }
+
+/* ===== 온라인 공유 (버셀에 올리면 자동으로 켜져요!) ===== */
+let online = false;
+
+function apiPost(data){
+  return fetch('/api/pieces', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}).catch(()=>{});
+}
+
+function updateOnlineBadge(){
+  const b=$('onlineBadge'); if(!b) return;
+  b.textContent = online
+    ? '🌐 온라인 공유 켜짐! 전 세계 친구들과 기물을 나눠요'
+    : '💾 지금은 내 컴퓨터에만 저장돼요';
+  b.style.color = online ? '#1dd1a1' : '';
+}
+
+async function syncPieces(){
+  try {
+    const res = await fetch('/api/pieces');
+    if(!res.ok) throw 0;
+    const server = await res.json();
+    online = true;
+    // 서버에 아직 없는 내 기물은 올려주기
+    customs.forEach(c=>{ if(!server.find(s=>s.id===c.id)) apiPost({action:'add', piece:c}); });
+    // 서버 기물을 내 목록에 합치기
+    server.forEach(s=>{
+      const mine = customs.find(x=>x.id===s.id);
+      if(mine) mine.cnt = Math.max(mine.cnt||0, s.cnt||0);
+      else customs.push(s);
+    });
+    saveCustoms();
+    if($('scr-pieces').classList.contains('on')) renderPickScreen();
+  } catch(e){ online = false; }
+  updateOnlineBadge();
+}
+syncPieces();
+
+// 대결에서 선택된 커스텀 기물의 랭킹 점수 올리기
+function reportPicks(){
+  const ids = picks.flat().filter(t=>customs.find(x=>x.id===t));
+  if(online && ids.length) apiPost({action:'pick', ids});
+}
+
+function defOf(typeId){
+  if(typeId==='pawn') return PAWN_DEF;
+  return BASE_PIECES.find(p=>p.id===typeId) || customs.find(p=>p.id===typeId);
+}
+function iconHTML(def, size){
+  if(def.img) return `<img src="${def.img}" alt="${def.nm}">`;
+  return def.emoji;
+}
+
+/* ================= 기물 선택 ================= */
+const picks = [[],[]];   // 플레이어별 typeId 배열
+let picking = 0;
+
+function initPickScreen(){
+  picking = 0; picks[0]=[]; picks[1]=[];
+  renderPickScreen();
+}
+function renderPickScreen(){
+  const who=$('pickWho');
+  who.className='pickbadge t'+picking;
+  who.textContent = picking===0 ? '🔵 파랑 플레이어 차례' : '🔴 빨강 플레이어 차례';
+
+  const slots=$('pickSlots'); slots.innerHTML='';
+  for(let i=0;i<4;i++){
+    const s=document.createElement('div');
+    const t=picks[picking][i];
+    s.className='slot'+(t?' full':'');
+    if(t){ s.innerHTML=iconHTML(defOf(t)); s.title='빼기'; s.onclick=()=>{ picks[picking].splice(i,1); renderPickScreen(); }; }
+    slots.appendChild(s);
+  }
+
+  // 커스텀은 선택 횟수 많은 순으로 (공유 랭킹!)
+  const sorted=[...customs].sort((a,b)=>(b.cnt||0)-(a.cnt||0));
+  const list=$('pieceList'); list.innerHTML='';
+  [...BASE_PIECES, ...sorted].forEach(def=>{
+    const d=document.createElement('div');
+    d.className='pcard';
+    d.innerHTML=`<div class="ico">${iconHTML(def)}</div>
+      <div class="info"><div class="nm">${def.nm}${def.cnt!==undefined?` <span class="cnt">🔥 ${def.cnt||0}번 선택됨</span>`:''}</div>
+      <div class="ds">${def.ds}</div></div>`;
+    d.onclick=()=>{
+      if(picks[picking].length>=4){ alert('기물은 4개까지만 담을 수 있어요!'); return; }
+      picks[picking].push(def.id); renderPickScreen();
+    };
+    list.appendChild(d);
+  });
+}
+function pickDone(){
+  if(picks[picking].length===0){ alert('기물을 1개 이상 골라주세요!'); return; }
+  if(picking===0 && config.opp==='ai'){
+    // 컴퓨터가 무작위로 4개 고르기 (커스텀 기물도 포함!)
+    const pool=[...BASE_PIECES, ...customs].map(d=>d.id);
+    picks[1]=Array.from({length:4},()=>pool[Math.floor(Math.random()*pool.length)]);
+    picks.flat().forEach(t=>{ const c=customs.find(x=>x.id===t); if(c) c.cnt=(c.cnt||0)+1; });
+    saveCustoms(); reportPicks();
+    startBattle();
+    return;
+  }
+  if(picking===0){ picking=1; renderPickScreen(); }
+  else {
+    // 커스텀 선택 횟수 기록 (랭킹용)
+    picks.flat().forEach(t=>{ const c=customs.find(x=>x.id===t); if(c) c.cnt=(c.cnt||0)+1; });
+    saveCustoms(); reportPicks();
+    startBattle();
+  }
+}
+
+/* ================= 기물 만들기 ================= */
+const PAL=['#000000','#ffffff','#e74c3c','#f39c12','#ffd93d','#2ecc71','#3498db','#9b59b6','#8d5524',''];
+let palSel='#e74c3c';
+let pix=new Array(64).fill('');
+let painting=false;
+
+function initMaker(){
+  $('mkName').value='';
+  pix=new Array(64).fill('');
+  // 블록 목록
+  const area=$('blockArea'); area.innerHTML='';
+  ['이동','특수','조건'].forEach(cat=>{
+    const h=document.createElement('h3'); h.textContent=cat+' 블록'; area.appendChild(h);
+    const g=document.createElement('div'); g.className='blockgrid';
+    Object.entries(BLOCKS).filter(([,b])=>b.cat===cat).forEach(([bid,b])=>{
+      const d=document.createElement('div'); d.className='block'; d.dataset.bid=bid;
+      d.innerHTML=`<div class="bn">${b.nm}</div><div class="bd">${b.ds}</div>`;
+      d.onclick=()=>{
+        if(!d.classList.contains('sel') && document.querySelectorAll('.block.sel').length>=10){
+          alert('블록은 10개까지만 고를 수 있어요!'); return;
+        }
+        d.classList.toggle('sel');
+      };
+      g.appendChild(d);
+    });
+    area.appendChild(g);
+  });
+  // 픽셀 그리드
+  const pg=$('pixgrid'); pg.innerHTML='';
+  for(let i=0;i<64;i++){
+    const d=document.createElement('div'); d.className='px'; d.dataset.i=i;
+    pg.appendChild(d);
+  }
+  pg.onpointerdown=e=>{ painting=true; paint(e); };
+  pg.onpointermove=e=>{ if(painting) paint(e); };
+  window.addEventListener('pointerup',()=>painting=false);
+  // 팔레트
+  const pl=$('palette'); pl.innerHTML='';
+  PAL.forEach(col=>{
+    const d=document.createElement('div'); d.className='pal'+(col===palSel?' sel':'');
+    if(col){ d.style.background=col; } else { d.textContent='🧽'; d.style.textAlign='center'; d.style.lineHeight='26px'; d.style.fontSize='16px'; }
+    d.onclick=()=>{ palSel=col; document.querySelectorAll('.pal').forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); };
+    pl.appendChild(d);
+  });
+}
+function paint(e){
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  if(el && el.classList.contains('px')){
+    const i=+el.dataset.i;
+    pix[i]=palSel;
+    el.style.background=palSel||'#2a2a3a';
+  }
+}
+function clearPix(){
+  pix=new Array(64).fill('');
+  document.querySelectorAll('.px').forEach(d=>d.style.background='#2a2a3a');
+}
+function openMaker(){ initMaker(); go('scr-maker'); }
+
+function saveCustom(){
+  const name=$('mkName').value.trim();
+  if(!name){ alert('기물 이름을 지어주세요!'); return; }
+  const sel=[...document.querySelectorAll('.block.sel')].map(d=>d.dataset.bid);
+  const moves=sel.filter(b=>BLOCKS[b].cat==='이동');
+  if(moves.length===0){ alert('이동 블록을 1개 이상 골라주세요! (안 그러면 못 움직여요)'); return; }
+  const specials=sel.filter(b=>BLOCKS[b].cat!=='이동');
+
+  // 그림 → 이미지로 저장
+  let img=null;
+  if(pix.some(p=>p)){
+    const cv=document.createElement('canvas'); cv.width=64; cv.height=64;
+    const cx=cv.getContext('2d');
+    pix.forEach((col,i)=>{ if(col){ cx.fillStyle=col; cx.fillRect((i%8)*8, Math.floor(i/8)*8, 8, 8); } });
+    img=cv.toDataURL();
+  }
+  const ds='능력: '+sel.map(b=>BLOCKS[b].nm).join(', ');
+  const newPiece={id:'c'+Date.now(), nm:name, emoji:'⭐', img, moves, specials, ds, cnt:0};
+  customs.push(newPiece);
+  saveCustoms();
+  if(online) apiPost({action:'add', piece:newPiece});
+  alert(online
+    ? `"${name}" 기물이 전 세계에 공유되었어요! 🌐🎉\n많이 선택될수록 랭킹이 올라가요!`
+    : `"${name}" 기물이 저장되었어요! 🎉\n많이 선택될수록 랭킹이 올라가요!`);
+  go('scr-pieces'); renderPickScreen();
+}
+
+/* ================= 대결 ================= */
+let G=null; // {turn, pieces:[{uid,type,owner,r,c,cds,ballUses}], balls:[{owner,r,c,dir}], myTurns:[n,n], sel, mode, targets}
+let uidSeq=1;
+
+function pieceAt(r,c){ return G.pieces.find(p=>p.r===r&&p.c===c); }
+function ballAt(r,c){ return G.balls.find(b=>b.r===r&&b.c===c); }
+function inBoard(r,c){ return r>=0&&r<SIZE&&c>=0&&c<SIZE&&validCell(r,c); }
+function myPieces(owner){ return G.pieces.filter(p=>p.owner===owner); }
+
+function startBattle(){
+  G={turn:0, pieces:[], balls:[], myTurns:[1,0], sel:null, mode:null, targets:[], log:[], vsAI:config.opp==='ai'};
+  // 배치: 각 플레이어 뒷줄부터 가운데 순서로
+  [0,1].forEach(owner=>{
+    const rows = owner===0 ? [7,6,5] : [0,1,2];
+    const order=[3,4,2,5,1,6,0,7];
+    const spots=[];
+    rows.forEach(r=>order.forEach(c=>{ if(validCell(r,c)) spots.push([r,c]); }));
+    picks[owner].forEach((t,i)=>{
+      const [r,c]=spots[i];
+      G.pieces.push({uid:uidSeq++, type:t, owner, r, c, cds:{}, ballUses:2});
+    });
+  });
+  buildBoardDOM();
+  addLog('⚔️ 대결 시작! 상대 기물을 모두 없애면 승리!');
+  go('scr-battle');
+  render();
+}
+
+function buildBoardDOM(){
+  $('gamewrap').className=`theme-${config.material} shape-${config.shape}`;
+  const b=$('gameboard'); b.innerHTML='';
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+    const d=document.createElement('div');
+    d.className=`cell ${(r+c)%2?'b':'a'}${validCell(r,c)?'':' off'}`;
+    d.dataset.r=r; d.dataset.c=c;
+    d.onclick=()=>cellClick(r,c);
+    b.appendChild(d);
+  }
+}
+
+function addLog(msg){
+  G.log.unshift(msg);
+  $('battlelog').innerHTML=G.log.slice(0,2).join('<br>');
+}
+
+/* ---- 이동 계산 ---- */
+const DIRS8=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const DIRS_ROOK=[[-1,0],[1,0],[0,-1],[0,1]];
+const DIRS_BISH=[[-1,-1],[-1,1],[1,-1],[1,1]];
+
+function legalMoves(p){
+  const def=defOf(p.type);
+  const out=new Map(); // key -> {r,c,cap}
+  const add=(r,c)=>{
+    if(!inBoard(r,c)) return false;
+    const occ=pieceAt(r,c), ball=ballAt(r,c);
+    if(occ && occ.owner===p.owner) return false;
+    if(ball && ball.owner===p.owner) return false;
+    out.set(r+','+c, {r,c,cap:!!(occ||ball)});
+    return !occ; // 계속 진행 가능하면 true
+  };
+  let moves=[...def.moves];
+  // 조건 블록
+  const sp=def.specials||[];
+  if(sp.includes('laststand') && myPieces(p.owner).length<=2 && !moves.includes('king2')) moves.push('king2');
+  if(sp.includes('early') && G.myTurns[p.owner]<=3 && !moves.includes('bishop')) moves.push('bishop');
+
+  moves.forEach(m=>{
+    if(m==='king1') DIRS8.forEach(([dr,dc])=>add(p.r+dr,p.c+dc));
+    if(m==='king2') for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){ if(dr||dc) add(p.r+dr,p.c+dc); }
+    if(m==='rook') DIRS_ROOK.forEach(([dr,dc])=>{ let r=p.r+dr,c=p.c+dc; while(add(r,c)){ r+=dr;c+=dc; } });
+    if(m==='bishop') DIRS_BISH.forEach(([dr,dc])=>{ let r=p.r+dr,c=p.c+dc; while(add(r,c)){ r+=dr;c+=dc; } });
+    if(m==='knight') [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>add(p.r+dr,p.c+dc));
+    if(m==='jump2') for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){ if(Math.max(Math.abs(dr),Math.abs(dc))===2) add(p.r+dr,p.c+dc); }
+    if(m==='pawnjump') DIRS8.forEach(([dr,dc])=>{
+      let r=p.r+dr,c=p.c+dc;
+      while(inBoard(r,c) && !pieceAt(r,c)){ r+=dr;c+=dc; }  // 첫 기물 찾기
+      const hit=inBoard(r,c)?pieceAt(r,c):null;
+      if(hit && hit.owner===p.owner && hit.type==='pawn'){  // 내 폰 터치!
+        r+=dr;c+=dc;
+        while(inBoard(r,c)){
+          const occ=pieceAt(r,c);
+          if(occ){ if(occ.owner!==p.owner) out.set(r+','+c,{r,c,cap:true}); break; }
+          out.set(r+','+c,{r,c,cap:false});
+          r+=dr;c+=dc;
+        }
+      }
+    });
+  });
+  return [...out.values()];
+}
+
+/* ---- 특수 기술 ---- */
+function specialInfo(p){
+  const def=defOf(p.type);
+  return (def.specials||[]).filter(s=>!['laststand','early'].includes(s));
+}
+
+function renderSkillbar(){
+  const bar=$('skillbar'); bar.innerHTML='';
+  if(!G.sel){ bar.innerHTML='<span style="color:#889; font-size:14px; align-self:center;">내 기물을 눌러보세요!</span>'; return; }
+  const p=G.sel, def=defOf(p.type);
+  const label=document.createElement('span');
+  label.style.cssText='align-self:center;font-size:15px;color:#ffd93d;';
+  label.textContent=`${def.nm} 선택됨`;
+  bar.appendChild(label);
+  specialInfo(p).forEach(s=>{
+    const btn=document.createElement('button');
+    btn.className='btn gray';
+    const cd=p.cds[s]||0;
+    if(s==='boom33'){
+      btn.textContent = cd>0?`💥 쿵쾅 (${cd}턴 후)`:'💥 쿵쾅 폭발!';
+      btn.disabled = cd>0;
+      btn.onclick=()=>doBoom(p);
+    }
+    if(s==='cannonball'){
+      btn.textContent=`🔴 대포알 ${p.ballUses}개 남음 (이동 시 자동발사)`;
+      btn.disabled=true;
+    }
+    if(s==='spawnPawn'){
+      const cnt=myPieces(p.owner).filter(x=>x.type==='pawn').length;
+      btn.textContent = cnt>=3?'🐣 폰 낳기 (3마리 꽉참)':'🐣 폰 낳기';
+      btn.disabled = cnt>=3;
+      btn.onclick=()=>enterTarget(p,'spawn');
+    }
+    if(s==='push'){
+      btn.textContent = cd>0?`👐 밀치기 (${cd}턴 후)`:'👐 밀치기';
+      btn.disabled = cd>0 || pushTargets(p).length===0;
+      btn.onclick=()=>enterTarget(p,'push');
+    }
+    if(s==='swap'){
+      btn.textContent = cd>0?`🔄 교대 (${cd}턴 후)`:'🔄 순간 교대';
+      btn.disabled = cd>0 || myPieces(p.owner).length<2;
+      btn.onclick=()=>enterTarget(p,'swap');
+    }
+    bar.appendChild(btn);
+  });
+}
+
+function pushTargets(p){
+  return DIRS8.map(([dr,dc])=>({r:p.r+dr,c:p.c+dc,dr,dc}))
+    .filter(t=>{
+      const occ=inBoard(t.r,t.c)&&pieceAt(t.r,t.c);
+      if(!occ||occ.owner===p.owner) return false;
+      const br=t.r+t.dr, bc=t.c+t.dc;
+      return !inBoard(br,bc) || !pieceAt(br,bc); // 밖으로 밀거나 빈칸으로 밀기
+    });
+}
+
+function enterTarget(p,mode){
+  G.mode=mode;
+  if(mode==='spawn'){
+    G.targets=[];
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)
+      if(inBoard(r,c)&&!pieceAt(r,c)&&!ballAt(r,c)) G.targets.push({r,c});
+    addLog('🐣 폰을 낳을 빈칸을 눌러주세요!');
+  }
+  if(mode==='push'){ G.targets=pushTargets(p); addLog('👐 밀어낼 적을 눌러주세요!'); }
+  if(mode==='swap'){
+    G.targets=myPieces(p.owner).filter(x=>x!==p).map(x=>({r:x.r,c:x.c}));
+    addLog('🔄 자리를 바꿀 내 기물을 눌러주세요!');
+  }
+  render();
+}
+
+function doBoom(p){
+  let killed=0;
+  G.pieces=G.pieces.filter(x=>{
+    if(x.owner!==p.owner && Math.abs(x.r-p.r)<=1 && Math.abs(x.c-p.c)<=1){ killed++; return false; }
+    return true;
+  });
+  G.balls=G.balls.filter(b=>!(b.owner!==p.owner && Math.abs(b.r-p.r)<=1 && Math.abs(b.c-p.c)<=1));
+  p.cds.boom33=3;
+  addLog(`💥 쿵쾅!! 적 기물 ${killed}개 제거!`);
+  endTurn();
+}
+
+/* ---- 이동 실행 (사람 클릭 + 컴퓨터 공용) ---- */
+function performMove(mover, r, c){
+  const def=defOf(mover.type);
+  const or_=mover.r, oc=mover.c;
+  const victim=pieceAt(r,c), vball=ballAt(r,c);
+  if(victim){ G.pieces=G.pieces.filter(x=>x!==victim); addLog(`⚔️ ${def.nm}이(가) ${defOf(victim.type).nm}을(를) 잡았다!`); }
+  if(vball){ G.balls=G.balls.filter(b=>b!==vball); addLog('🔴 대포알을 부쉈다!'); }
+  mover.r=r; mover.c=c;
+  // 대포 패시브: 이동하면 대포알 생성
+  if((def.specials||[]).includes('cannonball') && mover.ballUses>0){
+    if(!pieceAt(or_,oc) && !ballAt(or_,oc)){
+      G.balls.push({owner:mover.owner, r:or_, c:oc, dir:mover.owner===0?-1:1});
+      mover.ballUses--;
+      addLog('🔴 대포알 장전! 매턴 2칸씩 굴러가요!');
+    }
+  }
+  endTurn();
+}
+
+/* ---- 클릭 처리 ---- */
+function cellClick(r,c){
+  if(!G || $('scr-battle').classList.contains('on')===false) return;
+  if(G.vsAI && G.turn===1) return; // 컴퓨터가 생각하는 중엔 클릭 금지
+
+  // 타겟팅 모드
+  if(G.mode){
+    const t=G.targets.find(t=>t.r===r&&t.c===c);
+    if(t){
+      const p=G.sel;
+      if(G.mode==='spawn'){
+        G.pieces.push({uid:uidSeq++, type:'pawn', owner:p.owner, r, c, cds:{}, ballUses:0});
+        addLog('🐣 삐약! 폰이 태어났어요!');
+      }
+      if(G.mode==='push'){
+        const victim=pieceAt(r,c);
+        const br=r+t.dr, bc=c+t.dc;
+        if(!inBoard(br,bc)){ G.pieces=G.pieces.filter(x=>x!==victim); addLog('👐 판 밖으로 밀어냈다! 제거!'); }
+        else { victim.r=br; victim.c=bc; addLog('👐 밀치기!'); }
+        p.cds.push=2;
+      }
+      if(G.mode==='swap'){
+        const mate=pieceAt(r,c);
+        [p.r,mate.r]=[mate.r,p.r]; [p.c,mate.c]=[mate.c,p.c];
+        p.cds.swap=2;
+        addLog('🔄 슝! 자리 바꾸기!');
+      }
+      G.mode=null; G.targets=[];
+      endTurn();
+    } else {
+      G.mode=null; G.targets=[]; addLog('취소했어요.');
+      render();
+    }
+    return;
+  }
+
+  const p=pieceAt(r,c);
+  // 내 기물 선택
+  if(p && p.owner===G.turn){
+    G.sel = (G.sel===p)? null : p;
+    render();
+    return;
+  }
+  // 이동
+  if(G.sel){
+    const mv=legalMoves(G.sel).find(m=>m.r===r&&m.c===c);
+    if(mv){ performMove(G.sel, r, c); return; }
+  }
+  G.sel=null; render();
+}
+
+/* ---- 턴 진행 ---- */
+// 내 턴이 시작될 때 내 대포알이 2칸 전진 (아군은 통과, 적만 명중)
+function moveBalls(owner){
+  const dead=new Set();
+  G.balls.forEach(b=>{
+    if(b.owner!==owner || dead.has(b)) return;
+    for(let step=0; step<2; step++){
+      const nr=b.r+b.dir;
+      if(!inBoard(nr,b.c)){ dead.add(b); break; }
+      const occ=pieceAt(nr,b.c);
+      if(occ && occ.owner!==owner){
+        G.pieces=G.pieces.filter(x=>x!==occ);
+        addLog(`🔴 대포알 명중! ${defOf(occ.type).nm} 제거!`);
+        dead.add(b); break;
+      }
+      const ob=G.balls.find(x=>x!==b && !dead.has(x) && x.r===nr && x.c===b.c);
+      if(ob && ob.owner!==owner){ dead.add(ob); dead.add(b); break; }
+      b.r=nr; // 아군 기물/아군 대포알은 통과
+    }
+  });
+  G.balls=G.balls.filter(b=>!dead.has(b));
+}
+
+function checkWin(){
+  const loser=[0,1].find(o=>myPieces(o).length===0);
+  if(loser===undefined) return false;
+  render();
+  const winner=1-loser;
+  if(G.vsAI){
+    $('endEmoji').textContent = winner===0 ? '🏆' : '🤖';
+    $('endMsg').innerHTML = winner===0 ? '🎉 컴퓨터를 이겼어요!!' : '컴퓨터 승리... 다시 도전! 💪';
+  } else {
+    $('endEmoji').textContent='🏆';
+    $('endMsg').innerHTML = winner===0 ? '🔵 파랑 플레이어 승리!!' : '🔴 빨강 플레이어 승리!!';
+  }
+  setTimeout(()=>go('scr-end'), 600);
+  return true;
+}
+
+function endTurn(){
+  G.sel=null; G.mode=null; G.targets=[];
+  if(checkWin()) return;
+  // 턴 교대
+  G.turn=1-G.turn;
+  G.myTurns[G.turn]++;
+  myPieces(G.turn).forEach(p=>{ for(const k in p.cds) if(p.cds[k]>0) p.cds[k]--; });
+  moveBalls(G.turn);          // 새 턴 주인의 대포알 전진
+  if(checkWin()) return;
+  render();
+  if(G.vsAI && G.turn===1) setTimeout(aiMove, 900); // 컴퓨터 차례!
+}
+
+function passTurn(){
+  if(!G || (G.vsAI && G.turn===1)) return;
+  addLog('⏭ 턴을 넘겼어요.'); endTurn();
+}
+
+/* ---- 컴퓨터(AI) ---- */
+function aiMove(){
+  if(!G || !G.vsAI || G.turn!==1 || !$('scr-battle').classList.contains('on')) return;
+  const enemies=myPieces(0);
+  if(enemies.length===0) return;
+  const nearestD=(r,c)=>Math.min(...enemies.map(e=>Math.max(Math.abs(e.r-r),Math.abs(e.c-c))));
+  const cands=[];
+
+  myPieces(1).forEach(p=>{
+    // 이동/잡기: 잡는 게 최고, 아니면 적에게 다가가기
+    legalMoves(p).forEach(m=>{
+      let s=Math.random();
+      const victim=pieceAt(m.r,m.c);
+      if(victim) s += victim.type==='pawn' ? 8 : 12;
+      else s += (nearestD(p.r,p.c)-nearestD(m.r,m.c))*1.5;
+      cands.push({s, run:()=>performMove(p, m.r, m.c)});
+    });
+    const sp=(defOf(p.type).specials||[]);
+    // 쿵쾅 폭발: 맞출 적이 있을 때만
+    if(sp.includes('boom33') && !(p.cds.boom33>0)){
+      const kills=enemies.filter(e=>Math.abs(e.r-p.r)<=1&&Math.abs(e.c-p.c)<=1).length;
+      if(kills>0) cands.push({s:11*kills+Math.random(), run:()=>doBoom(p)});
+    }
+    // 폰 낳기: 적 근처 빈칸에
+    if(sp.includes('spawnPawn') && myPieces(1).filter(x=>x.type==='pawn').length<3){
+      const spots=[];
+      for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)
+        if(inBoard(r,c)&&!pieceAt(r,c)&&!ballAt(r,c)) spots.push({r,c});
+      if(spots.length){
+        spots.sort((a,b)=>nearestD(a.r,a.c)-nearestD(b.r,b.c));
+        const t=spots[Math.floor(Math.random()*Math.min(5,spots.length))];
+        cands.push({s:3+Math.random()*2, run:()=>{
+          G.pieces.push({uid:uidSeq++, type:'pawn', owner:1, r:t.r, c:t.c, cds:{}, ballUses:0});
+          addLog('🤖🐣 컴퓨터가 폰을 낳았어요!');
+          endTurn();
+        }});
+      }
+    }
+    // 밀치기: 판 밖으로 밀 수 있으면 아주 좋음
+    if(sp.includes('push') && !(p.cds.push>0)){
+      pushTargets(p).forEach(t=>{
+        const br=t.r+t.dr, bc=t.c+t.dc;
+        const off=!inBoard(br,bc);
+        cands.push({s:(off?12:2)+Math.random(), run:()=>{
+          const victim=pieceAt(t.r,t.c);
+          if(off){ G.pieces=G.pieces.filter(x=>x!==victim); addLog('🤖👐 컴퓨터가 판 밖으로 밀어냈다!'); }
+          else { victim.r=br; victim.c=bc; addLog('🤖👐 컴퓨터의 밀치기!'); }
+          p.cds.push=2;
+          endTurn();
+        }});
+      });
+    }
+  });
+
+  if(cands.length===0){ addLog('🤖 컴퓨터가 턴을 넘겼어요.'); endTurn(); return; }
+  cands.sort((a,b)=>b.s-a.s)[0].run();
+}
+
+/* ---- 렌더링 ---- */
+function render(){
+  const tb=$('turnbar');
+  tb.className='t'+G.turn;
+  tb.textContent = G.turn===0 ? '🔵 파랑 차례예요!'
+                 : (G.vsAI ? '🤖 컴퓨터가 생각 중...' : '🔴 빨강 차례예요!');
+
+  const moves = G.sel? legalMoves(G.sel) : [];
+  document.querySelectorAll('#gameboard .cell').forEach(cell=>{
+    const r=+cell.dataset.r, c=+cell.dataset.c;
+    cell.classList.remove('hl-move','hl-cap','hl-target','selcell');
+    cell.innerHTML='';
+    const p=pieceAt(r,c);
+    if(p){
+      const def=defOf(p.type);
+      cell.innerHTML=`<div class="pc p${p.owner}">${iconHTML(def)}</div>`;
+    } else {
+      const b=ballAt(r,c);
+      if(b) cell.innerHTML=`<span class="ball">${b.owner===0?'🔵':'🔴'}</span>`;
+    }
+    if(G.sel && G.sel.r===r && G.sel.c===c) cell.classList.add('selcell');
+    if(G.mode){
+      if(G.targets.some(t=>t.r===r&&t.c===c)) cell.classList.add('hl-target');
+    } else {
+      const mv=moves.find(m=>m.r===r&&m.c===c);
+      if(mv) cell.classList.add(mv.cap?'hl-cap':'hl-move');
+    }
+  });
+  renderSkillbar();
+}
+
+/* ---- 초기화 ---- */
+buildOptRow('oppRow', OPPS, 'opp');
+buildOptRow('shapeRow', SHAPES, 'shape');
+buildOptRow('matRow', MATS, 'material');
+renderPreview();
+</script>
+</body>
+</html>
