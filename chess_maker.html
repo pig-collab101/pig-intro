@@ -131,18 +131,40 @@
     <p class="sub">내가 만드는 새로운 체스! 판도, 기물도, 규칙도 내 마음대로!</p>
     <div class="boardwrap"><div id="titleboard" class="theme-neon"><div class="board" style="--cs:34px;"></div></div></div>
     <div class="center" style="margin-top:20px;">
-      <button class="btn" style="font-size:22px; padding:14px 40px;" onclick="go('scr-board')">게임 입장 🎮</button>
+      <button class="btn" style="font-size:22px; padding:14px 40px;" onclick="enterGame()">게임 입장 🎮</button>
     </div>
     <div class="center" style="margin-top:12px;">
-      <button class="btn blue" onclick="openRank()">🏆 기물 랭킹</button>
+      <button class="btn blue" onclick="openRank()">🏆 랭킹</button>
     </div>
+    <div class="center" style="margin-top:14px; font-size:15px;" id="loginInfo"></div>
     <p class="sub" style="margin-top:18px;">만든 사람: 창의적이고 도전적인 체스 유저</p>
   </div>
 
-  <!-- 기물 랭킹 -->
+  <!-- 로그인 -->
+  <div class="screen" id="scr-login">
+    <h2>🔑 로그인</h2>
+    <p class="sub" id="loginMsg">로그인하면 승리 기록이 랭킹에 올라가요!</p>
+    <h3>닉네임</h3>
+    <input type="text" id="loginName" maxlength="12" placeholder="2~12글자">
+    <h3>비밀번호</h3>
+    <input type="password" id="loginPw" maxlength="30" placeholder="4글자 이상 (잊어버리면 안 돼요!)">
+    <div class="center" style="margin:18px 0;">
+      <button class="btn green" onclick="doLogin(false)">로그인 ✔</button>
+      <button class="btn blue" onclick="doLogin(true)">처음이에요! 회원가입 ✨</button>
+    </div>
+    <div class="center">
+      <button class="btn gray" onclick="go('scr-title')">← 돌아가기</button>
+    </div>
+  </div>
+
+  <!-- 랭킹 -->
   <div class="screen" id="scr-rank">
-    <h2>🏆 기물 랭킹</h2>
-    <p class="sub">친구들이 만든 기물, 많이 선택된 순서예요!</p>
+    <h2>🏆 랭킹</h2>
+    <div class="center" style="margin-bottom:12px;">
+      <button class="btn blue" id="tabWin" onclick="showRank('win')">🏆 승리 랭킹</button>
+      <button class="btn gray" id="tabPiece" onclick="showRank('piece')">🎨 기물 랭킹</button>
+    </div>
+    <p class="sub" id="rankDesc"></p>
     <div id="rankList"></div>
     <div class="center" style="margin:16px 0;">
       <button class="btn gray" onclick="go('scr-title')">← 돌아가기</button>
@@ -216,6 +238,7 @@
   <div class="screen" id="scr-end">
     <div class="endbig" id="endEmoji">🏆</div>
     <div class="endmsg" id="endMsg"></div>
+    <p class="sub" id="endRecord" style="font-size:16px;"></p>
     <div class="center">
       <button class="btn green" onclick="startBattle()">한 판 더! 🔁</button>
       <button class="btn blue" onclick="go('scr-board')">새로 설정하기 ⚙️</button>
@@ -534,6 +557,7 @@ async function syncPieces(){
     if($('scr-pieces').classList.contains('on')) renderPickScreen();
   } catch(e){ online = false; }
   updateOnlineBadge();
+  if(typeof updateLoginUI==='function') updateLoginUI();
 }
 syncPieces();
 
@@ -543,25 +567,119 @@ function reportPicks(){
   if(online && ids.length) apiPost({action:'pick', ids});
 }
 
-/* ===== 랭킹 화면 ===== */
-async function openRank(){
-  go('scr-rank');
-  $('rankList').innerHTML='<p class="sub">불러오는 중... ⏳</p>';
-  await syncPieces(); // 최신 랭킹 가져오기
-  renderRank();
+/* ===== 로그인 (승리 랭킹용) ===== */
+let me=null;
+try { me=JSON.parse(localStorage.getItem('cm_user')||'null'); } catch(e){ me=null; }
+let loginNext=null;
+
+function apiUsers(data){
+  return fetch('/api/users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})
+    .then(r=>r.json().then(j=>Object.assign({ok:r.ok}, j)));
 }
-function renderRank(){
+function saveMe(){ if(me) localStorage.setItem('cm_user', JSON.stringify(me)); else localStorage.removeItem('cm_user'); }
+
+function updateLoginUI(){
+  const el=$('loginInfo'); if(!el) return;
+  if(me){
+    el.innerHTML=`👤 <b>${esc(me.name)}</b> · ${me.wins||0}승 ${me.losses||0}패
+      <button class="btn gray" style="margin-left:8px;" onclick="logout()">로그아웃</button>`;
+  } else if(online){
+    el.innerHTML=`<button class="btn gray" onclick="openLogin('scr-title')">🔑 로그인 / 회원가입</button>`;
+  } else {
+    el.innerHTML=`<span style="color:#889;">💾 오프라인 모드 (로그인 없이 플레이)</span>`;
+  }
+}
+function logout(){ me=null; saveMe(); updateLoginUI(); }
+
+function openLogin(next){
+  loginNext=next||'scr-title';
+  $('loginMsg').textContent = next==='scr-board'
+    ? '게임을 하려면 로그인이 필요해요! 승리하면 랭킹에 올라가요 🏆'
+    : '로그인하면 승리 기록이 랭킹에 올라가요!';
+  go('scr-login');
+}
+
+async function doLogin(signup){
+  const name=$('loginName').value.trim(), pw=$('loginPw').value;
+  if(name.length<2){ alert('닉네임은 2글자 이상으로 지어주세요!'); return; }
+  if(pw.length<4){ alert('비밀번호는 4글자 이상이어야 해요!'); return; }
+  let res=null;
+  try { res=await apiUsers({action: signup?'signup':'login', name, pw}); } catch(e){}
+  if(!res){ alert('서버에 연결할 수 없어요 😢 잠시 후 다시 해보세요!'); return; }
+  if(!res.ok){
+    alert(res.error==='exists' ? '이미 있는 닉네임이에요! 로그인을 눌러보세요.'
+        : res.error==='wrong'  ? '닉네임이나 비밀번호가 틀렸어요!'
+        : '실패했어요: '+(res.error||'알 수 없는 오류'));
+    return;
+  }
+  me={name, pw, wins:res.wins||0, losses:res.losses||0};
+  saveMe(); updateLoginUI();
+  alert(signup ? `환영해요, ${name}! 🎉 이제 승리 랭킹에 도전할 수 있어요!` : `어서 와요, ${name}! (${me.wins}승 ${me.losses}패)`);
+  const next=loginNext||'scr-title'; loginNext=null;
+  go(next);
+}
+
+// 게임 입장: 온라인이면 로그인 필요!
+function enterGame(){
+  if(online && !me){ openLogin('scr-board'); return; }
+  go('scr-board');
+}
+
+// 대결이 끝나면 내 전적 기록 (로그인한 사람 = 🔵 파랑)
+function reportResult(winner){
+  if(!online || !me) return;
+  apiUsers({action:'win', name:me.name, pw:me.pw, result: winner===0?'win':'lose'}).then(res=>{
+    if(res && res.ok){
+      me.wins=res.wins; me.losses=res.losses; saveMe(); updateLoginUI();
+      const el=$('endRecord');
+      if(el) el.textContent=`👤 ${me.name}: ${res.wins}승 ${res.losses}패`;
+    }
+  }).catch(()=>{});
+}
+
+/* ===== 랭킹 화면 (승리 / 기물) ===== */
+function openRank(){ go('scr-rank'); showRank(online?'win':'piece'); }
+
+async function showRank(tab){
+  $('tabWin').className   = 'btn '+(tab==='win'  ?'blue':'gray');
+  $('tabPiece').className = 'btn '+(tab==='piece'?'blue':'gray');
+  const list=$('rankList');
+  const medals=['🥇','🥈','🥉'];
+
+  if(tab==='win'){
+    $('rankDesc').textContent='많이 이긴 순서예요! 로그인하고 대결에서 이겨보세요!';
+    list.innerHTML='<p class="sub">불러오는 중... ⏳</p>';
+    let board=null;
+    try { const r=await fetch('/api/users'); if(r.ok) board=await r.json(); } catch(e){}
+    if(!board){ list.innerHTML='<p class="sub" style="margin:30px 0;">지금은 오프라인이라 승리 랭킹을 볼 수 없어요 😢</p>'; return; }
+    if(board.length===0){ list.innerHTML='<p class="sub" style="margin:30px 0;">아직 아무도 없어요!<br>첫 번째 챔피언이 되어보세요! 🥇</p>'; return; }
+    list.innerHTML='';
+    board.forEach((u,i)=>{
+      const total=u.wins+u.losses;
+      const rate=total? Math.round(u.wins/total*100) : 0;
+      const d=document.createElement('div');
+      d.className='pcard'; d.style.cursor='default';
+      d.innerHTML=`<div style="font-size:${i<3?'26px':'15px'};width:40px;text-align:center;flex-shrink:0;">${medals[i]||(i+1)+'위'}</div>
+        <div class="info"><div class="nm">${esc(u.name)}${me&&me.name===u.name?' <span class="cnt">← 나!</span>':''}</div>
+        <div class="ds">🏆 ${u.wins}승 ${u.losses}패 (승률 ${rate}%)</div></div>`;
+      list.appendChild(d);
+    });
+    return;
+  }
+
+  // 기물 랭킹
+  $('rankDesc').textContent='친구들이 만든 기물, 많이 선택된 순서예요!';
+  list.innerHTML='<p class="sub">불러오는 중... ⏳</p>';
+  await syncPieces();
   const sorted=[...customs].sort((a,b)=>(b.cnt||0)-(a.cnt||0));
-  const list=$('rankList'); list.innerHTML='';
   if(sorted.length===0){
     list.innerHTML='<p class="sub" style="margin:30px 0;">아직 만들어진 기물이 없어요!<br>기물 고르기 화면에서 <b>✏️ 나만의 기물 만들기</b>로<br>첫 번째 랭킹 기물의 주인공이 되어보세요! 🥇</p>';
     return;
   }
-  const medals=['🥇','🥈','🥉'];
+  list.innerHTML='';
   sorted.forEach((def,i)=>{
     const d=document.createElement('div');
-    d.className='pcard';
-    d.style.cursor='default';
+    d.className='pcard'; d.style.cursor='default';
     d.innerHTML=`<div style="font-size:${i<3?'26px':'15px'};width:40px;text-align:center;flex-shrink:0;">${medals[i]||(i+1)+'위'}</div>
       <div class="ico">${iconHTML(def)}</div>
       <div class="info"><div class="nm">${esc(def.nm)} <span class="cnt">🔥 ${def.cnt||0}번 선택됨</span></div>
@@ -594,7 +712,7 @@ function initPickScreen(){
 function renderPickScreen(){
   const who=$('pickWho');
   who.className='pickbadge t'+picking;
-  who.textContent = picking===0 ? '🔵 파랑 플레이어 차례' : '🔴 빨강 플레이어 차례';
+  who.textContent = picking===0 ? `🔵 ${me?me.name:'파랑 플레이어'} 차례` : '🔴 빨강 플레이어 차례';
 
   const slots=$('pickSlots'); slots.innerHTML='';
   for(let i=0;i<4;i++){
@@ -1077,13 +1195,16 @@ function checkWin(){
   if(loser===undefined) return false;
   render();
   const winner=1-loser;
+  const blueName = me ? esc(me.name) : '파랑 플레이어';
   if(G.vsAI){
     $('endEmoji').textContent = winner===0 ? '🏆' : '🤖';
     $('endMsg').innerHTML = winner===0 ? '🎉 컴퓨터를 이겼어요!!' : '컴퓨터 승리... 다시 도전! 💪';
   } else {
     $('endEmoji').textContent='🏆';
-    $('endMsg').innerHTML = winner===0 ? '🔵 파랑 플레이어 승리!!' : '🔴 빨강 플레이어 승리!!';
+    $('endMsg').innerHTML = winner===0 ? `🔵 ${blueName} 승리!!` : '🔴 빨강 플레이어 승리!!';
   }
+  $('endRecord').textContent='';
+  reportResult(winner);   // 🏆 승리 랭킹에 기록!
   setTimeout(()=>go('scr-end'), 600);
   return true;
 }
@@ -1170,7 +1291,7 @@ function aiMove(){
 function render(){
   const tb=$('turnbar');
   tb.className='t'+G.turn;
-  tb.textContent = G.turn===0 ? '🔵 파랑 차례예요!'
+  tb.textContent = G.turn===0 ? `🔵 ${me?me.name:'파랑'} 차례예요!`
                  : (G.vsAI ? '🤖 컴퓨터가 생각 중...' : '🔴 빨강 차례예요!');
 
   const moves = G.sel? legalMoves(G.sel) : [];
@@ -1202,6 +1323,7 @@ buildOptRow('oppRow', OPPS, 'opp');
 buildOptRow('shapeRow', SHAPES, 'shape');
 buildOptRow('matRow', MATS, 'material');
 renderPreview();
+updateLoginUI();
 </script>
 </body>
 </html>
