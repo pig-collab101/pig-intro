@@ -1,38 +1,38 @@
-// 체스메이커 온라인 기물 공유 API (Vercel 서버리스 함수)
-// 저장소: Vercel 대시보드 → Storage → Upstash Redis 를 연결하면 자동으로 작동해요.
-// DB가 없으면 503을 돌려주고, 게임은 알아서 오프라인 모드(localStorage)로 동작합니다.
+// 체스메이커 온라인 기물 공유 API (Vercel 서버리스 함수 + Vercel Blob 저장소)
+// 프로젝트에 Blob 저장소가 연결되어 있으면(BLOB_READ_WRITE_TOKEN) 자동으로 작동해요.
+// 없으면 503을 돌려주고, 게임은 알아서 오프라인 모드(localStorage)로 동작합니다.
 
-const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const { put, list } = require('@vercel/blob');
 
-async function redis(cmds) {
-  const r = await fetch(URL_ + '/pipeline', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
-    body: JSON.stringify(cmds),
+const PATH = 'chessmaker/pieces.json';
+
+async function load() {
+  const { blobs } = await list({ prefix: PATH });
+  const b = blobs.find(x => x.pathname === PATH);
+  if (!b) return {};
+  // 캐시를 피하려고 매번 다른 주소로 읽어요
+  const r = await fetch(b.url + '?v=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) return {};
+  try { return await r.json(); } catch (e) { return {}; }
+}
+
+function save(db) {
+  return put(PATH, JSON.stringify(db), {
+    access: 'public',
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: 'application/json',
   });
-  if (!r.ok) throw new Error('redis ' + r.status);
-  return r.json(); // [{result:...}, ...]
 }
 
 module.exports = async (req, res) => {
-  if (!URL_ || !TOKEN) { res.status(503).json({ error: 'no-db' }); return; }
+  if (!process.env.BLOB_READ_WRITE_TOKEN) { res.status(503).json({ error: 'no-db' }); return; }
   try {
     if (req.method === 'GET') {
       // 모든 공유 기물을 선택 횟수 많은 순으로
-      const [h, z] = await redis([
-        ['HGETALL', 'cm:pieces'],
-        ['ZRANGE', 'cm:picks', 0, -1, 'REV', 'WITHSCORES'],
-      ]);
-      const map = {};
-      const arr = h.result || [];
-      for (let i = 0; i < arr.length; i += 2) { try { map[arr[i]] = JSON.parse(arr[i + 1]); } catch (e) {} }
-      const out = [];
-      const zr = z.result || [];
-      for (let i = 0; i < zr.length; i += 2) {
-        const p = map[zr[i]];
-        if (p) { p.cnt = +zr[i + 1]; out.push(p); }
-      }
+      const db = await load();
+      const out = Object.values(db).sort((a, b) => (b.cnt || 0) - (a.cnt || 0));
+      res.setHeader('Cache-Control', 'no-store');
       res.status(200).json(out);
 
     } else if (req.method === 'POST') {
@@ -50,15 +50,21 @@ module.exports = async (req, res) => {
           ds: String(p.ds || '').slice(0, 300),
         };
         if (clean.moves.length === 0) { res.status(400).json({ error: 'no-moves' }); return; }
-        await redis([
-          ['HSET', 'cm:pieces', clean.id, JSON.stringify(clean)],
-          ['ZADD', 'cm:picks', 'NX', 0, clean.id],
-        ]);
+        const db = await load();
+        if (!db[clean.id] && Object.keys(db).length >= 500) { res.status(507).json({ error: 'full' }); return; }
+        clean.cnt = db[clean.id] ? (db[clean.id].cnt || 0) : 0; // 선택 횟수는 서버 기록을 믿어요
+        db[clean.id] = clean;
+        await save(db);
         res.status(200).json({ ok: true });
 
       } else if (body.action === 'pick' && Array.isArray(body.ids)) {
-        const ids = body.ids.slice(0, 8).map(String);
-        if (ids.length) await redis(ids.map(id => ['ZINCRBY', 'cm:picks', 1, id]));
+        const db = await load();
+        let changed = false;
+        body.ids.slice(0, 8).forEach(id => {
+          const p = db[String(id)];
+          if (p) { p.cnt = (p.cnt || 0) + 1; changed = true; }
+        });
+        if (changed) await save(db);
         res.status(200).json({ ok: true });
 
       } else res.status(400).json({ error: 'bad-request' });
