@@ -132,7 +132,20 @@
     <div class="center" style="margin-top:20px;">
       <button class="btn" style="font-size:22px; padding:14px 40px;" onclick="go('scr-board')">게임 입장 🎮</button>
     </div>
+    <div class="center" style="margin-top:12px;">
+      <button class="btn blue" onclick="openRank()">🏆 기물 랭킹</button>
+    </div>
     <p class="sub" style="margin-top:18px;">만든 사람: 창의적이고 도전적인 체스 유저</p>
+  </div>
+
+  <!-- 기물 랭킹 -->
+  <div class="screen" id="scr-rank">
+    <h2>🏆 기물 랭킹</h2>
+    <p class="sub">친구들이 만든 기물, 많이 선택된 순서예요!</p>
+    <div id="rankList"></div>
+    <div class="center" style="margin:16px 0;">
+      <button class="btn gray" onclick="go('scr-title')">← 돌아가기</button>
+    </div>
   </div>
 
   <!-- ② 체스판 설정 -->
@@ -364,13 +377,42 @@ function reportPicks(){
   if(online && ids.length) apiPost({action:'pick', ids});
 }
 
+/* ===== 랭킹 화면 ===== */
+async function openRank(){
+  go('scr-rank');
+  $('rankList').innerHTML='<p class="sub">불러오는 중... ⏳</p>';
+  await syncPieces(); // 최신 랭킹 가져오기
+  renderRank();
+}
+function renderRank(){
+  const sorted=[...customs].sort((a,b)=>(b.cnt||0)-(a.cnt||0));
+  const list=$('rankList'); list.innerHTML='';
+  if(sorted.length===0){
+    list.innerHTML='<p class="sub" style="margin:30px 0;">아직 만들어진 기물이 없어요!<br>기물 고르기 화면에서 <b>✏️ 나만의 기물 만들기</b>로<br>첫 번째 랭킹 기물의 주인공이 되어보세요! 🥇</p>';
+    return;
+  }
+  const medals=['🥇','🥈','🥉'];
+  sorted.forEach((def,i)=>{
+    const d=document.createElement('div');
+    d.className='pcard';
+    d.style.cursor='default';
+    d.innerHTML=`<div style="font-size:${i<3?'26px':'15px'};width:40px;text-align:center;flex-shrink:0;">${medals[i]||(i+1)+'위'}</div>
+      <div class="ico">${iconHTML(def)}</div>
+      <div class="info"><div class="nm">${esc(def.nm)} <span class="cnt">🔥 ${def.cnt||0}번 선택됨</span></div>
+      <div class="ds">${esc(def.ds)}</div></div>`;
+    list.appendChild(d);
+  });
+}
+
 function defOf(typeId){
   if(typeId==='pawn') return PAWN_DEF;
   return BASE_PIECES.find(p=>p.id===typeId) || customs.find(p=>p.id===typeId);
 }
+/* 인터넷에서 온 글자를 화면에 안전하게 보여주기 */
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function iconHTML(def, size){
-  if(def.img) return `<img src="${def.img}" alt="${def.nm}">`;
-  return def.emoji;
+  if(def.img && /^data:image\/[a-z+]+;base64,[A-Za-z0-9+/=]+$/.test(def.img)) return `<img src="${def.img}" alt="">`;
+  return esc(def.emoji || '⭐');
 }
 
 /* ================= 기물 선택 ================= */
@@ -402,8 +444,8 @@ function renderPickScreen(){
     const d=document.createElement('div');
     d.className='pcard';
     d.innerHTML=`<div class="ico">${iconHTML(def)}</div>
-      <div class="info"><div class="nm">${def.nm}${def.cnt!==undefined?` <span class="cnt">🔥 ${def.cnt||0}번 선택됨</span>`:''}</div>
-      <div class="ds">${def.ds}</div></div>`;
+      <div class="info"><div class="nm">${esc(def.nm)}${def.cnt!==undefined?` <span class="cnt">🔥 ${def.cnt||0}번 선택됨</span>`:''}</div>
+      <div class="ds">${esc(def.ds)}</div></div>`;
     d.onclick=()=>{
       if(picks[picking].length>=4){ alert('기물은 4개까지만 담을 수 있어요!'); return; }
       picks[picking].push(def.id); renderPickScreen();
