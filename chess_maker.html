@@ -71,7 +71,8 @@
   .cell.selcell { box-shadow:inset 0 0 0 4px #ffd93d !important; }
 
   /* 기물 */
-  .pc { width:88%; height:88%; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .pc { width:88%; height:88%; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative; }
+  .frz { position:absolute; top:-7px; right:-7px; font-size:calc(var(--cs)*.3); filter:drop-shadow(0 0 3px #000); }
   .pc.p0 { background:#54a0ff44; box-shadow:0 0 0 3px #54a0ff; }
   .pc.p1 { background:#ff6b6b44; box-shadow:0 0 0 3px #ff6b6b; }
   .pc img { width:78%; height:78%; image-rendering:pixelated; }
@@ -183,8 +184,8 @@
     <h2>나만의 기물 만들기 🛠️</h2>
     <h3>1. 이름 짓기</h3>
     <input type="text" id="mkName" maxlength="8" placeholder="예: 번개용, 폭탄이...">
-    <h3>2. 블록 조립 (능력 고르기 · 최대 10개)</h3>
-    <p class="sub" style="text-align:left; margin-bottom:8px;">이동 블록을 1개 이상 꼭 넣어야 해요!</p>
+    <h3>2. 블록 조립 · 100가지 블록! <span id="mkCount" style="color:#1dd1a1;">0 / 10</span></h3>
+    <p class="sub" style="text-align:left; margin-bottom:8px;">100가지 블록 중 최대 10개를 골라 조립해요. 이동 블록은 1개 이상 꼭!</p>
     <div id="blockArea"></div>
     <h3>3. 기물 그리기 🖌️</h3>
     <div class="pixwrap">
@@ -295,23 +296,188 @@ function renderPreview(){
   }
 })();
 
-/* ================= 블록 (기물 능력) ================= */
-const BLOCKS = {
-  king1:   {cat:'이동', nm:'아장아장 (1칸)',  ds:'주변 1칸 어디로든 이동'},
-  king2:   {cat:'이동', nm:'성큼성큼 (2칸)',  ds:'주변 2칸 안 어디로든 이동'},
-  rook:    {cat:'이동', nm:'직진 레일',       ds:'가로세로 직선으로 끝까지 이동'},
-  bishop:  {cat:'이동', nm:'대각선 미끄럼',   ds:'대각선으로 끝까지 이동'},
-  knight:  {cat:'이동', nm:'말 점프',         ds:'나이트처럼 L자 점프 (뛰어넘기 가능)'},
-  jump2:   {cat:'이동', nm:'개구리 점프',     ds:'정확히 2칸 떨어진 곳으로 점프 (뛰어넘기 가능)'},
-  pawnjump:{cat:'이동', nm:'폰 발사대',       ds:'직선에 있는 내 폰을 터치하고 그 너머로 날아가 착지! 착지한 곳의 적은 제거'},
-  boom33:  {cat:'특수', nm:'쿵쾅 폭발 💥',    ds:'내 주변 3×3의 적 기물을 모두 제거 (3턴에 1번)'},
-  cannonball:{cat:'특수', nm:'대포알 발사 🔴', ds:'이동할 때마다 대포알 생성 (2번까지). 대포알은 매턴 2칸 전진하며 적을 제거'},
-  spawnPawn:{cat:'특수', nm:'폰 낳기 🐣',     ds:'원하는 빈칸에 폰을 생성 (내 폰 최대 3마리)'},
-  push:    {cat:'특수', nm:'밀치기 👐',       ds:'붙어있는 적을 1칸 밀어냄. 판 밖으로 밀면 제거! (2턴에 1번)'},
-  swap:    {cat:'특수', nm:'순간 교대 🔄',    ds:'내 기물 아무나와 자리 바꾸기 (2턴에 1번)'},
-  laststand:{cat:'조건', nm:'최후의 전사 🔥', ds:'조건: 내 기물이 2개 이하로 남으면 → 2칸 이동 능력이 생김'},
-  early:   {cat:'조건', nm:'빠른 출발 🚀',    ds:'조건: 나의 첫 3턴 동안만 → 대각선 끝까지 이동 가능'},
-};
+/* ================= 블록 100가지 (기물 능력) ================= */
+const DIRS8=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const DIRS_ROOK=[[-1,0],[1,0],[0,-1],[0,1]];
+const DIRS_BISH=[[-1,-1],[-1,1],[1,-1],[1,1]];
+// 방향 그룹 (앞 = 상대 진영 쪽. 빨강은 자동으로 뒤집혀요)
+const REL={ F:[[-1,0]], B:[[1,0]], SIDE:[[0,-1],[0,1]], FD:[[-1,-1],[-1,1]], BD:[[1,-1],[1,1]],
+            ALL:DIRS8, ORTHO:DIRS_ROOK, DIAG:DIRS_BISH };
+const RING2=[], RING3=[];
+for(let a=-3;a<=3;a++)for(let b=-3;b<=3;b++){ const d=Math.max(Math.abs(a),Math.abs(b)); if(d===2)RING2.push([a,b]); if(d===3)RING3.push([a,b]); }
+function perms(a,b){ const s=new Set(),o=[]; [[a,b],[b,a]].forEach(([x,y])=>[1,-1].forEach(sx=>[1,-1].forEach(sy=>{ const k=x*sx+','+y*sy; if(!s.has(k)){s.add(k);o.push([x*sx,y*sy]);} }))); return o; }
+// 폭발 범위
+const A33=DIRS8, A55=[], ACROSS=[], ADIAG=[];
+for(let a=-2;a<=2;a++)for(let b=-2;b<=2;b++){ if(a||b) A55.push([a,b]); }
+[1,2].forEach(n=>{ DIRS_ROOK.forEach(([a,b])=>ACROSS.push([a*n,b*n])); DIRS_BISH.forEach(([a,b])=>ADIAG.push([a*n,b*n])); });
+
+const BLOCKS={};
+const defMove=(id,nm,ds,data)=>BLOCKS[id]=Object.assign({cat:'이동',nm,ds},data);
+const defAct =(id,nm,ds,act)=>BLOCKS[id]={cat:'특수',nm,ds,act};
+const defFx  =(id,nm,ds)=>BLOCKS[id]={cat:'효과',nm,ds};
+const defCond=(id,nm,ds,when,grant)=>BLOCKS[id]={cat:'조건',nm,ds,cond:{when,grant}};
+
+/* ---- 이동 블록 43개 ---- */
+defMove('king1','아장아장','주변 1칸 어디로든 이동',{walk:{d:'ALL',max:1}});
+defMove('king2','성큼성큼','주변 2칸 안 어디로든 이동 (뛰어넘기 가능)',{leap:[...DIRS8,...RING2]});
+defMove('f1','앞걸음','앞으로 1칸',{walk:{d:'F',max:1}});
+defMove('b1','뒷걸음','뒤로 1칸',{walk:{d:'B',max:1}});
+defMove('side1','게걸음','옆으로 1칸',{walk:{d:'SIDE',max:1}});
+defMove('fd1','앞대각 콕','앞쪽 대각선으로 1칸',{walk:{d:'FD',max:1}});
+defMove('bd1','뒤대각 콕','뒤쪽 대각선으로 1칸',{walk:{d:'BD',max:1}});
+defMove('ortho1','십자 걸음','상하좌우로 1칸',{walk:{d:'ORTHO',max:1}});
+defMove('diag1','대각 걸음','대각선으로 1칸',{walk:{d:'DIAG',max:1}});
+defMove('f2','돌격','앞으로 2칸까지',{walk:{d:'F',max:2}});
+defMove('side2','게걸음 대장','옆으로 2칸까지',{walk:{d:'SIDE',max:2}});
+defMove('ortho2','십자 두 칸','상하좌우로 2칸까지',{walk:{d:'ORTHO',max:2}});
+defMove('diag2','대각 두 칸','대각선으로 2칸까지',{walk:{d:'DIAG',max:2}});
+defMove('ortho3','십자 세 칸','상하좌우로 3칸까지',{walk:{d:'ORTHO',max:3}});
+defMove('diag3','대각 세 칸','대각선으로 3칸까지',{walk:{d:'DIAG',max:3}});
+defMove('rook','직진 레일','가로세로 직선으로 끝까지',{walk:{d:'ORTHO',max:99}});
+defMove('bishop','대각선 미끄럼','대각선으로 끝까지',{walk:{d:'DIAG',max:99}});
+defMove('queen','퀸의 길','8방향 끝까지! 최강의 이동',{walk:{d:'ALL',max:99}});
+defMove('finf','전진 무한','앞으로 끝까지 돌진',{walk:{d:'F',max:99}});
+defMove('rowinf','가로 무한','좌우로 끝까지',{walk:{d:'SIDE',max:99}});
+defMove('colinf','세로 무한','앞뒤로 끝까지',{walk:{d:'F',max:99,plus:'B'}});
+defMove('fdinf','앞대각 무한','앞쪽 대각선으로 끝까지',{walk:{d:'FD',max:99}});
+defMove('bdinf','뒤대각 무한','뒤쪽 대각선으로 끝까지',{walk:{d:'BD',max:99}});
+defMove('knight','말 점프','나이트처럼 L자 점프 (뛰어넘기 가능)',{leap:perms(1,2)});
+defMove('camel','낙타 점프','(1,3) 모양으로 껑충 점프',{leap:perms(1,3)});
+defMove('zebra','얼룩말 점프','(2,3) 모양으로 껑충 점프',{leap:perms(2,3)});
+defMove('supercamel','슈퍼 낙타','(1,4) 모양으로 멀리 점프',{leap:perms(1,4)});
+defMove('jump2','개구리 점프','정확히 2칸 떨어진 곳으로 점프',{leap:RING2});
+defMove('jump3','캥거루 점프','정확히 3칸 떨어진 곳으로 점프',{leap:RING3});
+defMove('diagjump2','대각 2점프','대각선 2칸 지점으로 점프',{leap:[[2,2],[2,-2],[-2,2],[-2,-2]]});
+defMove('orthojump2','십자 2점프','상하좌우 2칸 지점으로 점프',{leap:[[2,0],[-2,0],[0,2],[0,-2]]});
+defMove('diagjump3','대각 3점프','대각선 3칸 지점으로 점프',{leap:[[3,3],[3,-3],[-3,3],[-3,-3]]});
+defMove('orthojump3','십자 3점프','상하좌우 3칸 지점으로 점프',{leap:[[3,0],[-3,0],[0,3],[0,-3]]});
+defMove('backjump2','백스텝 점프','뒤로 정확히 2칸 점프',{leap:[[2,0]]});
+defMove('ghostrook','유령 직진','직선 끝까지, 내 기물은 통과!',{walk:{d:'ORTHO',max:99,thru:true}});
+defMove('ghostbishop','그림자 대각','대각선 끝까지, 내 기물은 통과!',{walk:{d:'DIAG',max:99,thru:true}});
+defMove('pawnjump','폰 발사대','직선의 내 폰을 터치하고 그 너머로 날아가 착지! 착지한 곳의 적 제거',{pj:true});
+defMove('stepover','징검다리','붙어있는 내 기물을 뛰어넘어 바로 뒤 빈칸에 착지',{warp:'step'});
+defMove('warpally','아군 곁 순간이동','내 기물 옆 빈칸으로 순간이동',{warp:'ally'});
+defMove('warpedge','가장자리 순간이동','판 테두리의 빈칸으로 순간이동',{warp:'edge'});
+defMove('warpcorner','구석 순간이동','판의 네 구석으로 순간이동',{warp:'corner'});
+defMove('warphome','뒷줄 귀환','내 뒷줄 빈칸으로 돌아가기',{warp:'home'});
+defMove('warpback','등 뒤 습격','적 기물의 바로 등 뒤 빈칸으로 순간이동',{warp:'behind'});
+
+/* ---- 특수 블록 25개 ---- */
+defAct('boom33','쿵쾅 폭발 💥','내 주변 3×3의 적을 모두 제거 (3턴에 1번)',
+ {btn:'💥 쿵쾅 폭발',cd:3,exec:p=>doAreaBoom(p,A33,'💥 쿵쾅!!')});
+defAct('boomcross','십자 폭풍 ➕','십자 방향 2칸의 적을 모두 제거 (3턴에 1번)',
+ {btn:'➕ 십자 폭풍',cd:3,exec:p=>doAreaBoom(p,ACROSS,'➕ 십자 폭풍!')});
+defAct('boomdiag','대각 폭풍 ✖️','대각선 방향 2칸의 적을 모두 제거 (3턴에 1번)',
+ {btn:'✖️ 대각 폭풍',cd:3,exec:p=>doAreaBoom(p,ADIAG,'✖️ 대각 폭풍!')});
+defAct('boom55','메가 폭발 🌋','내 주변 5×5의 적을 모두 제거 (6턴에 1번)',
+ {btn:'🌋 메가 폭발',cd:6,exec:p=>doAreaBoom(p,A55,'🌋 메가 폭발!!')});
+defAct('selfboom','자폭 💀','자신을 희생하며 주변 3×3의 적을 모두 제거',
+ {btn:'💀 자폭!',cd:0,exec:p=>{ doAreaBoom(p,A33,'💀 자폭!!'); killPiece(p,'self'); }});
+defAct('snipe','저격 🎯','3칸 안의 적 하나를 제거 (4턴에 1번)',
+ {btn:'🎯 저격',cd:4,hint:'🎯 저격할 적을 누르세요!',
+  targets:p=>enemiesNear(p,3,x=>!hasBlock(x,'stealth')),
+  exec:(p,t)=>{ const v=pieceAt(t.r,t.c); if(v&&killPiece(v,'snipe',p)) addLog('🎯 저격 성공!'); }});
+defAct('snipeline','장거리 저격 🔭','일직선으로 보이는 적을 거리 상관없이 제거 (5턴에 1번)',
+ {btn:'🔭 장거리 저격',cd:5,hint:'🔭 저격할 적을 누르세요!',
+  targets:p=>{ const o=[]; DIRS8.forEach(([dr,dc])=>{ let r=p.r+dr,c=p.c+dc; while(inBoard(r,c)&&!pieceAt(r,c)){r+=dr;c+=dc;} const v=inBoard(r,c)?pieceAt(r,c):null; if(v&&v.owner!==p.owner&&!hasBlock(v,'stealth')) o.push({r,c}); }); return o; },
+  exec:(p,t)=>{ const v=pieceAt(t.r,t.c); if(v&&killPiece(v,'snipe',p)) addLog('🔭 명중!'); }});
+defAct('spawnPawn','폰 낳기 🐣','원하는 빈칸에 폰 생성 (내 폰 최대 3마리)',
+ {btn:'🐣 폰 낳기',cd:0,hint:'🐣 폰을 낳을 빈칸을 누르세요!',can:p=>pawnCnt(p.owner)<3,targets:p=>allEmpty(),
+  exec:(p,t)=>{ G.pieces.push(newPawn(p.owner,t.r,t.c)); addLog('🐣 삐약! 폰이 태어났어요!'); }});
+defAct('twinpawn','쌍둥이 폰 👯','빈칸에 폰을 낳으면 그 옆에 한 마리 더! (4턴에 1번)',
+ {btn:'👯 쌍둥이 폰',cd:4,hint:'👯 폰을 낳을 빈칸을 누르세요!',can:p=>pawnCnt(p.owner)<3,targets:p=>allEmpty(),
+  exec:(p,t)=>{ G.pieces.push(newPawn(p.owner,t.r,t.c)); addLog('🐣 삐약!');
+    if(pawnCnt(p.owner)<3){ const s=DIRS8.map(([a,b])=>[t.r+a,t.c+b]).filter(([r,c])=>emptyAt(r,c)); if(s.length){ const [r,c]=s[Math.floor(Math.random()*s.length)]; G.pieces.push(newPawn(p.owner,r,c)); addLog('🐣 삐약삐약! 쌍둥이다!'); } } }});
+defAct('push','밀치기 👐','붙어있는 적을 1칸 밀어냄. 판 밖으로 밀면 제거! (2턴에 1번)',
+ {btn:'👐 밀치기',cd:2,hint:'👐 밀어낼 적을 누르세요!',targets:p=>pushTargets(p),
+  exec:(p,t)=>doPush(p,t,1)});
+defAct('push2','강력 밀치기 🙌','붙어있는 적을 2칸이나 밀어냄! (3턴에 1번)',
+ {btn:'🙌 강력 밀치기',cd:3,hint:'🙌 밀어낼 적을 누르세요!',targets:p=>pushTargets(p),
+  exec:(p,t)=>doPush(p,t,2)});
+defAct('pull','끌어당기기 🪝','일직선의 적을 내 앞까지 끌어옴 (3턴에 1번)',
+ {btn:'🪝 끌어당기기',cd:3,hint:'🪝 끌어올 적을 누르세요!',
+  targets:p=>{ const o=[]; DIRS8.forEach(([dr,dc])=>{ if(!emptyAt(p.r+dr,p.c+dc)) return; let r=p.r+2*dr,c=p.c+2*dc; while(inBoard(r,c)&&!pieceAt(r,c)){r+=dr;c+=dc;} const v=inBoard(r,c)?pieceAt(r,c):null; if(v&&v.owner!==p.owner&&v.type!=='wall'&&!hasBlock(v,'anchor')) o.push({r,c,tr:p.r+dr,tc:p.c+dc}); }); return o; },
+  exec:(p,t)=>{ const v=pieceAt(t.r,t.c); if(v){ v.r=t.tr; v.c=t.tc; addLog('🪝 슉! 끌어당겼다!'); } }});
+defAct('swap','순간 교대 🔄','내 기물 아무나와 자리 바꾸기 (2턴에 1번)',
+ {btn:'🔄 순간 교대',cd:2,hint:'🔄 자리를 바꿀 내 기물을 누르세요!',
+  targets:p=>myPieces(p.owner).filter(x=>x!==p&&x.type!=='wall').map(x=>({r:x.r,c:x.c})),
+  exec:(p,t)=>{ const m=pieceAt(t.r,t.c); [p.r,m.r]=[m.r,p.r]; [p.c,m.c]=[m.c,p.c]; addLog('🔄 슝! 자리 바꾸기!'); }});
+defAct('swapenemy','적과 교대 😈','3칸 안의 적과 자리 바꾸기! (4턴에 1번)',
+ {btn:'😈 적과 교대',cd:4,hint:'😈 자리를 바꿀 적을 누르세요!',
+  targets:p=>enemiesNear(p,3,x=>x.type!=='wall'),
+  exec:(p,t)=>{ const m=pieceAt(t.r,t.c); [p.r,m.r]=[m.r,p.r]; [p.c,m.c]=[m.c,p.c]; addLog('😈 헤헤, 자리 바꿔치기!'); }});
+defAct('freeze','얼리기 ❄️','붙어있는 적 하나를 1턴 동안 꽁꽁 얼림 (3턴에 1번)',
+ {btn:'❄️ 얼리기',cd:3,hint:'❄️ 얼릴 적을 누르세요!',
+  targets:p=>enemiesNear(p,1,x=>!hasBlock(x,'coldproof')&&x.type!=='wall'),
+  exec:(p,t)=>{ const v=pieceAt(t.r,t.c); if(v){ v.frozen=2; addLog('❄️ 꽁꽁! 얼어붙었다!'); } }});
+defAct('freezeall','눈보라 🌨️','내 주변 3×3의 적을 모두 1턴 얼림 (5턴에 1번)',
+ {btn:'🌨️ 눈보라',cd:5,exec:p=>{ let n=0; G.pieces.forEach(x=>{ if(x.owner!==p.owner&&x.type!=='wall'&&!hasBlock(x,'coldproof')&&Math.abs(x.r-p.r)<=1&&Math.abs(x.c-p.c)<=1){ x.frozen=2; n++; } }); addLog(`🌨️ 눈보라! 적 ${n}개를 얼렸다!`); }});
+defAct('hypno','최면 🌀','2칸 안의 적 폰을 내 편으로 만들기 (5턴에 1번)',
+ {btn:'🌀 최면',cd:5,hint:'🌀 내 편으로 만들 적 폰을 누르세요!',
+  targets:p=>enemiesNear(p,2,x=>x.type==='pawn'),
+  exec:(p,t)=>{ const v=pieceAt(t.r,t.c); if(v){ v.owner=p.owner; addLog('🌀 뿅! 폰이 내 편이 됐다!'); } }});
+defAct('wall','벽 세우기 🧱','옆 빈칸에 벽을 세움. 벽은 길을 막아요 (4턴에 1번)',
+ {btn:'🧱 벽 세우기',cd:4,hint:'🧱 벽을 세울 빈칸을 누르세요!',
+  targets:p=>DIRS8.map(([a,b])=>({r:p.r+a,c:p.c+b})).filter(t=>emptyAt(t.r,t.c)),
+  exec:(p,t)=>{ G.pieces.push({uid:uidSeq++,type:'wall',owner:p.owner,r:t.r,c:t.c,cds:{},ballUses:0}); addLog('🧱 벽 완성!'); }});
+defAct('scare','겁주기 🌪️','붙어있는 적을 아무 데로 날려버림 (4턴에 1번)',
+ {btn:'🌪️ 겁주기',cd:4,hint:'🌪️ 날려버릴 적을 누르세요!',
+  targets:p=>enemiesNear(p,1,x=>!hasBlock(x,'anchor')&&x.type!=='wall'),
+  exec:(p,t)=>{ const v=pieceAt(t.r,t.c), s=randEmpty(); if(v&&s){ v.r=s.r; v.c=s.c; addLog('🌪️ 으악! 날아갔다!'); } }});
+defAct('promote','폰 승급 🎖️','내 폰 하나를 드럼으로 승급! (6턴에 1번)',
+ {btn:'🎖️ 폰 승급',cd:6,hint:'🎖️ 승급시킬 내 폰을 누르세요!',
+  targets:p=>G.pieces.filter(x=>x.owner===p.owner&&x.type==='pawn').map(x=>({r:x.r,c:x.c})),
+  exec:(p,t)=>{ const v=pieceAt(t.r,t.c); if(v){ v.type='drum'; v.cds={}; addLog('🎖️ 빰빠밤! 폰이 드럼으로 승급!'); } }});
+defAct('execute','처형 🗡️','붙어있는 적 폰을 즉시 제거 (2턴에 1번)',
+ {btn:'🗡️ 처형',cd:2,hint:'🗡️ 제거할 적 폰을 누르세요!',
+  targets:p=>enemiesNear(p,1,x=>x.type==='pawn'),
+  exec:(p,t)=>{ const v=pieceAt(t.r,t.c); if(v&&killPiece(v,'exec',p)) addLog('🗡️ 처형 완료!'); }});
+defAct('randomwarp','랜덤 워프 🎲','아무 빈칸으로 순간이동! 어디로 갈지 아무도 몰라요 (3턴에 1번)',
+ {btn:'🎲 랜덤 워프',cd:3,exec:p=>{ const s=randEmpty(); if(s){ p.r=s.r; p.c=s.c; addLog('🎲 뿅! 어디지 여기?!'); } }});
+defAct('reload','재장전 🔋','대포알 횟수 +2 (5턴에 1번, 대포알 발사와 함께 쓰세요)',
+ {btn:'🔋 재장전',cd:5,exec:p=>{ p.ballUses+=2; addLog(`🔋 재장전! 대포알 ${p.ballUses}개!`); }});
+BLOCKS.cannonball={cat:'특수',nm:'대포알 발사 🔴',ds:'이동할 때마다 대포알 생성(2번까지). 대포알은 매턴 2칸 전진하며 적을 제거',passive:'ball'};
+BLOCKS.cannonball2={cat:'특수',nm:'대포알 가방 🎒',ds:'대포알 발사와 같지만 4번까지 만들 수 있어요!',passive:'ball'};
+
+/* ---- 효과 블록 13개 (자동 발동) ---- */
+defFx('thorns','가시 갑옷 🌵','나를 잡은 적도 같이 제거된다');
+defFx('shield','방패 🛡️','처음 한 번은 절대 잡히지 않는다');
+defFx('anchor','닻 ⚓','밀치기·당기기·날리기에 안 끌려간다');
+defFx('heavy','무거움 🪨','대포알에 맞아도 안 죽는다');
+defFx('fireproof','방화복 🧯','폭발에 휘말려도 안 죽는다');
+defFx('stealth','은신 🥷','저격당하지 않는다');
+defFx('coldproof','털옷 🧥','얼리기에 안 얼어붙는다');
+defFx('dieboom','유언 폭발 🎆','내가 죽을 때 주변 3×3의 적을 데려간다');
+defFx('diepawn','유언 폰 🥚','내가 죽으면 그 옆에 내 폰이 태어난다');
+defFx('combo','연속 공격 ⚡','적을 잡으면 그 턴에 한 번 더 행동!');
+defFx('crown','왕관 👑','이 기물을 잃으면 바로 패배! 대신 아주 멋있다');
+defFx('scout','정찰 대장 🔭','이 기물이 살아있으면 내 폰들이 2칸씩 움직인다');
+defFx('hunter','사냥꾼 🏹','적을 잡으면 내 모든 특수기술 쿨타임이 초기화!');
+
+/* ---- 조건 블록 19개 ---- */
+defCond('laststand','최후의 전사 🔥','내 기물이 2개 이하로 남으면 → 성큼성큼(2칸)',p=>alive(p.owner)<=2,['king2']);
+defCond('early','빠른 출발 🚀','나의 첫 3턴 동안 → 대각선 미끄럼',p=>G.myTurns[p.owner]<=3,['bishop']);
+defCond('lateblitz','슬로 스타터 🐢','나의 10번째 턴부터 → 퀸의 길!',p=>G.myTurns[p.owner]>=10,['queen']);
+defCond('invade','적진 돌격 ⚔️','상대 진영(3줄)에 들어가면 → 성큼성큼(2칸)',p=>(p.owner===0? p.r<=2 : p.r>=SIZE-3),['king2']);
+defCond('homeguard','홈 그라운드 🏠','내 진영(3줄)에 있으면 → 직진 레일',p=>(p.owner===0? p.r>=SIZE-3 : p.r<=2),['rook']);
+defCond('edgerun','가장자리 러너 🏃','판 테두리 칸에 있으면 → 가로·세로 무한',p=>p.r===0||p.r===SIZE-1||p.c===0||p.c===SIZE-1,['rowinf','colinf']);
+defCond('centerking','중앙 지배 🎯','판 가운데 4칸에 있으면 → 퀸의 길!',p=>p.r>=3&&p.r<=4&&p.c>=3&&p.c<=4,['queen']);
+defCond('loner','외톨이 파워 🐺','주변 1칸에 아군이 없으면 → 말 점프',p=>!myPieces(p.owner).some(x=>x!==p&&Math.abs(x.r-p.r)<=1&&Math.abs(x.c-p.c)<=1),['knight']);
+defCond('friendly','우정 파워 🤝','주변 1칸에 아군이 있으면 → 성큼성큼(2칸)',p=>myPieces(p.owner).some(x=>x!==p&&Math.abs(x.r-p.r)<=1&&Math.abs(x.c-p.c)<=1),['king2']);
+defCond('pawnlord','폰 대장 👑🐣','내 폰이 2마리 이상이면 → 폰 발사대',p=>pawnCnt(p.owner)>=2,['pawnjump']);
+defCond('revenge','복수심 😤','방금 아군을 잃었으면 → 퀸의 길!',p=>G.lostRecently[p.owner]>0,['queen']);
+defCond('hungry','헝그리 정신 🍖','아직 아무도 못 잡았으면 → 돌격(앞 2칸)',p=>!(p.kills>0),['f2']);
+defCond('veteran','베테랑 🎖️','적을 2개 이상 잡았으면 → 퀸의 길!',p=>(p.kills||0)>=2,['queen']);
+defCond('surrounded','위기 탈출 🆘','주변에 적이 2개 이상이면 → 아무 빈칸으로 순간이동',p=>G.pieces.filter(x=>x.owner!==p.owner&&Math.abs(x.r-p.r)<=1&&Math.abs(x.c-p.c)<=1).length>=2,['warpany']);
+defCond('duel','정면 승부 🤠','같은 세로줄에 적이 있으면 → 전진 무한',p=>G.pieces.some(x=>x.owner!==p.owner&&x.c===p.c),['finf']);
+defCond('icemaster','빙판 마스터 ⛸️','빙판 체스판이면 미끄러져서 → 퀸의 길!',p=>config.material==='ice',['queen']);
+defCond('grasspower','잔디 파워 🌿','잔디 체스판이면 신나서 → 성큼성큼(2칸)',p=>config.material==='grass',['king2']);
+defCond('neonpower','네온 감전 ⚡','네온 체스판이면 찌릿! → 말 점프',p=>config.material==='neon',['knight']);
+defCond('circlepro','원형 전문가 ⭕','원형 체스판이면 → 대각선 미끄럼',p=>config.shape==='circle',['bishop']);
+
+/* 숨은 블록 (조건 발동 전용, 고르기 목록에는 안 나와요) */
+defMove('warpany','자유 순간이동','아무 빈칸으로 순간이동',{warp:'any'});
+BLOCKS.warpany.hidden=true;
 
 /* ================= 기본 기물 3종 + 폰 ================= */
 const BASE_PIECES = [
@@ -404,8 +570,10 @@ function renderRank(){
   });
 }
 
+const WALL_DEF = {id:'wall', nm:'벽', emoji:'🧱', moves:[], specials:[], ds:'움직이지 못하는 벽. 잡아서 부술 수 있어요'};
 function defOf(typeId){
   if(typeId==='pawn') return PAWN_DEF;
+  if(typeId==='wall') return WALL_DEF;
   return BASE_PIECES.find(p=>p.id===typeId) || customs.find(p=>p.id===typeId);
 }
 /* 인터넷에서 온 글자를 화면에 안전하게 보여주기 */
@@ -482,12 +650,15 @@ let painting=false;
 function initMaker(){
   $('mkName').value='';
   pix=new Array(64).fill('');
-  // 블록 목록
+  // 블록 목록 (100가지!)
   const area=$('blockArea'); area.innerHTML='';
-  ['이동','특수','조건'].forEach(cat=>{
-    const h=document.createElement('h3'); h.textContent=cat+' 블록'; area.appendChild(h);
+  $('mkCount').textContent='0 / 10';
+  const catIco={'이동':'🚶','특수':'✨','효과':'🍀','조건':'❓'};
+  ['이동','특수','효과','조건'].forEach(cat=>{
+    const items=Object.entries(BLOCKS).filter(([,b])=>b.cat===cat && !b.hidden);
+    const h=document.createElement('h3'); h.textContent=`${catIco[cat]} ${cat} 블록 (${items.length}개)`; area.appendChild(h);
     const g=document.createElement('div'); g.className='blockgrid';
-    Object.entries(BLOCKS).filter(([,b])=>b.cat===cat).forEach(([bid,b])=>{
+    items.forEach(([bid,b])=>{
       const d=document.createElement('div'); d.className='block'; d.dataset.bid=bid;
       d.innerHTML=`<div class="bn">${b.nm}</div><div class="bd">${b.ds}</div>`;
       d.onclick=()=>{
@@ -495,6 +666,7 @@ function initMaker(){
           alert('블록은 10개까지만 고를 수 있어요!'); return;
         }
         d.classList.toggle('sel');
+        $('mkCount').textContent=`${document.querySelectorAll('.block.sel').length} / 10`;
       };
       g.appendChild(d);
     });
@@ -569,7 +741,8 @@ function inBoard(r,c){ return r>=0&&r<SIZE&&c>=0&&c<SIZE&&validCell(r,c); }
 function myPieces(owner){ return G.pieces.filter(p=>p.owner===owner); }
 
 function startBattle(){
-  G={turn:0, pieces:[], balls:[], myTurns:[1,0], sel:null, mode:null, targets:[], log:[], vsAI:config.opp==='ai'};
+  G={turn:0, pieces:[], balls:[], myTurns:[1,0], sel:null, mode:null, targets:[], log:[],
+     vsAI:config.opp==='ai', lostRecently:[0,0], comboUsed:false, crownLoser:undefined};
   // 배치: 각 플레이어 뒷줄부터 가운데 순서로
   [0,1].forEach(owner=>{
     const rows = owner===0 ? [7,6,5] : [0,1,2];
@@ -578,7 +751,8 @@ function startBattle(){
     rows.forEach(r=>order.forEach(c=>{ if(validCell(r,c)) spots.push([r,c]); }));
     picks[owner].forEach((t,i)=>{
       const [r,c]=spots[i];
-      G.pieces.push({uid:uidSeq++, type:t, owner, r, c, cds:{}, ballUses:2});
+      const sp=(defOf(t)||{}).specials||[];
+      G.pieces.push({uid:uidSeq++, type:t, owner, r, c, cds:{}, ballUses:sp.includes('cannonball2')?4:2});
     });
   });
   buildBoardDOM();
@@ -604,46 +778,90 @@ function addLog(msg){
   $('battlelog').innerHTML=G.log.slice(0,2).join('<br>');
 }
 
-/* ---- 이동 계산 ---- */
-const DIRS8=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
-const DIRS_ROOK=[[-1,0],[1,0],[0,-1],[0,1]];
-const DIRS_BISH=[[-1,-1],[-1,1],[1,-1],[1,1]];
+/* ---- 이동 계산 (블록 엔진) ---- */
+function hasBlock(piece, bid){
+  const d=defOf(piece.type);
+  return !!d && (d.moves.includes(bid) || (d.specials||[]).includes(bid));
+}
+function alive(o){ return G.pieces.filter(x=>x.owner===o && x.type!=='wall').length; }
+function pawnCnt(o){ return G.pieces.filter(x=>x.owner===o && x.type==='pawn').length; }
+function emptyAt(r,c){ return inBoard(r,c) && !pieceAt(r,c) && !ballAt(r,c); }
+function allEmpty(){ const o=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++) if(emptyAt(r,c)) o.push({r,c}); return o; }
+function randEmpty(){ const e=allEmpty(); return e.length? e[Math.floor(Math.random()*e.length)] : null; }
+function enemiesNear(p,d,filt){
+  return G.pieces.filter(x=>x.owner!==p.owner && Math.max(Math.abs(x.r-p.r),Math.abs(x.c-p.c))<=d && (!filt||filt(x))).map(x=>({r:x.r,c:x.c}));
+}
+function newPawn(owner,r,c){ return {uid:uidSeq++, type:'pawn', owner, r, c, cds:{}, ballUses:0}; }
+
+// 순간이동 도착지 후보
+function warpCells(p,kind){
+  const out=[];
+  if(kind==='ally') myPieces(p.owner).forEach(a=>{ if(a!==p) DIRS8.forEach(([a1,b1])=>{ if(emptyAt(a.r+a1,a.c+b1)) out.push([a.r+a1,a.c+b1]); }); });
+  if(kind==='edge') for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){ if((r===0||r===SIZE-1||c===0||c===SIZE-1)&&emptyAt(r,c)) out.push([r,c]); }
+  if(kind==='corner') [[0,0],[0,SIZE-1],[SIZE-1,0],[SIZE-1,SIZE-1]].forEach(([r,c])=>{ if(emptyAt(r,c)) out.push([r,c]); });
+  if(kind==='home'){ const hr=p.owner===0?SIZE-1:0; for(let c=0;c<SIZE;c++) if(emptyAt(hr,c)) out.push([hr,c]); }
+  if(kind==='behind') G.pieces.forEach(e=>{ if(e.owner!==p.owner&&e.type!=='wall'){ const br=e.owner===0?e.r+1:e.r-1; if(emptyAt(br,e.c)) out.push([br,e.c]); } });
+  if(kind==='step') DIRS8.forEach(([a,b])=>{ const m=pieceAt(p.r+a,p.c+b); if(m&&m.owner===p.owner&&emptyAt(p.r+2*a,p.c+2*b)) out.push([p.r+2*a,p.c+2*b]); });
+  if(kind==='any') allEmpty().forEach(t=>out.push([t.r,t.c]));
+  return out;
+}
+
+// 이 기물이 지금 쓸 수 있는 이동 블록 (조건 블록이 주는 보너스 포함)
+function movesetOf(p){
+  const def=defOf(p.type); if(!def) return [];
+  const set=new Set(def.moves);
+  if(p.type==='pawn' && myPieces(p.owner).some(x=>x!==p && hasBlock(x,'scout'))) set.add('king2');
+  [...def.moves, ...(def.specials||[])].forEach(bid=>{
+    const b=BLOCKS[bid];
+    if(b && b.cond && b.cond.when(p)) b.cond.grant.forEach(g=>set.add(g));
+  });
+  return [...set];
+}
 
 function legalMoves(p){
-  const def=defOf(p.type);
-  const out=new Map(); // key -> {r,c,cap}
-  const add=(r,c)=>{
-    if(!inBoard(r,c)) return false;
+  if(p.frozen>0 || p.type==='wall') return [];
+  const out=new Map();
+  const mul = p.owner===0 ? 1 : -1; // 빨강은 앞뒤 뒤집기
+  const setCell=(r,c,cap)=>out.set(r+','+c,{r,c,cap});
+  const tryLand=(r,c)=>{ // 점프 착지
+    if(!inBoard(r,c)) return;
     const occ=pieceAt(r,c), ball=ballAt(r,c);
-    if(occ && occ.owner===p.owner) return false;
-    if(ball && ball.owner===p.owner) return false;
-    out.set(r+','+c, {r,c,cap:!!(occ||ball)});
-    return !occ; // 계속 진행 가능하면 true
+    if(occ && occ.owner===p.owner) return;
+    if(ball && ball.owner===p.owner) return;
+    setCell(r,c,!!(occ||ball));
   };
-  let moves=[...def.moves];
-  // 조건 블록
-  const sp=def.specials||[];
-  if(sp.includes('laststand') && myPieces(p.owner).length<=2 && !moves.includes('king2')) moves.push('king2');
-  if(sp.includes('early') && G.myTurns[p.owner]<=3 && !moves.includes('bishop')) moves.push('bishop');
+  const walk=(dirs,max,thru)=>dirs.forEach(([dr0,dc])=>{
+    const dr=dr0*mul;
+    let r=p.r+dr, c=p.c+dc, n=0;
+    while(n<max && inBoard(r,c)){
+      const occ=pieceAt(r,c), ball=ballAt(r,c);
+      if(occ){
+        if(occ.owner!==p.owner){ setCell(r,c,true); break; }
+        if(thru){ r+=dr; c+=dc; n++; continue; } // 유령: 아군 통과
+        break;
+      }
+      if(ball){ if(ball.owner!==p.owner) setCell(r,c,true); break; }
+      setCell(r,c,false);
+      r+=dr; c+=dc; n++;
+    }
+  });
 
-  moves.forEach(m=>{
-    if(m==='king1') DIRS8.forEach(([dr,dc])=>add(p.r+dr,p.c+dc));
-    if(m==='king2') for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){ if(dr||dc) add(p.r+dr,p.c+dc); }
-    if(m==='rook') DIRS_ROOK.forEach(([dr,dc])=>{ let r=p.r+dr,c=p.c+dc; while(add(r,c)){ r+=dr;c+=dc; } });
-    if(m==='bishop') DIRS_BISH.forEach(([dr,dc])=>{ let r=p.r+dr,c=p.c+dc; while(add(r,c)){ r+=dr;c+=dc; } });
-    if(m==='knight') [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>add(p.r+dr,p.c+dc));
-    if(m==='jump2') for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){ if(Math.max(Math.abs(dr),Math.abs(dc))===2) add(p.r+dr,p.c+dc); }
-    if(m==='pawnjump') DIRS8.forEach(([dr,dc])=>{
-      let r=p.r+dr,c=p.c+dc;
-      while(inBoard(r,c) && !pieceAt(r,c)){ r+=dr;c+=dc; }  // 첫 기물 찾기
+  movesetOf(p).forEach(mid=>{
+    const b=BLOCKS[mid]; if(!b) return;
+    if(b.walk){ walk(REL[b.walk.d], b.walk.max||99, b.walk.thru); if(b.walk.plus) walk(REL[b.walk.plus], b.walk.max||99, b.walk.thru); }
+    if(b.leap) b.leap.forEach(([dr,dc])=>tryLand(p.r+dr*mul, p.c+dc));
+    if(b.warp) warpCells(p,b.warp).forEach(([r,c])=>setCell(r,c,false));
+    if(b.pj) DIRS8.forEach(([dr,dc])=>{ // 폰 발사대
+      let r=p.r+dr, c=p.c+dc;
+      while(inBoard(r,c) && !pieceAt(r,c)){ r+=dr; c+=dc; }
       const hit=inBoard(r,c)?pieceAt(r,c):null;
-      if(hit && hit.owner===p.owner && hit.type==='pawn'){  // 내 폰 터치!
-        r+=dr;c+=dc;
+      if(hit && hit.owner===p.owner && hit.type==='pawn'){
+        r+=dr; c+=dc;
         while(inBoard(r,c)){
           const occ=pieceAt(r,c);
-          if(occ){ if(occ.owner!==p.owner) out.set(r+','+c,{r,c,cap:true}); break; }
-          out.set(r+','+c,{r,c,cap:false});
-          r+=dr;c+=dc;
+          if(occ){ if(occ.owner!==p.owner) setCell(r,c,true); break; }
+          setCell(r,c,false);
+          r+=dr; c+=dc;
         }
       }
     });
@@ -651,10 +869,77 @@ function legalMoves(p){
   return [...out.values()];
 }
 
-/* ---- 특수 기술 ---- */
+/* ---- 기물 제거 (효과 블록이 여기서 발동돼요) ---- */
+function killPiece(victim, cause, attacker){
+  if(!G.pieces.includes(victim)) return false;
+  if(cause!=='self'){
+    if(cause==='ball' && hasBlock(victim,'heavy')){ addLog('🪨 무거워서 대포알을 튕겨냈다!'); return false; }
+    if(cause==='boom' && hasBlock(victim,'fireproof')){ addLog('🧯 방화복으로 폭발을 버텼다!'); return false; }
+    if(cause==='snipe' && hasBlock(victim,'stealth')){ addLog('🥷 은신으로 저격을 피했다!'); return false; }
+    if(hasBlock(victim,'shield') && !victim.shieldUsed){
+      victim.shieldUsed=true;
+      addLog(`🛡️ ${defOf(victim.type).nm}이(가) 방패로 막았다!`);
+      return false;
+    }
+  }
+  G.pieces=G.pieces.filter(x=>x!==victim);
+  G.lostRecently[victim.owner]=2;
+  if(hasBlock(victim,'crown')){ G.crownLoser=victim.owner; addLog('👑 왕관 기물을 잃었다!!'); }
+  if(hasBlock(victim,'dieboom')){
+    addLog('🎆 유언 폭발!!');
+    G.pieces.filter(x=>x.owner!==victim.owner && Math.abs(x.r-victim.r)<=1 && Math.abs(x.c-victim.c)<=1)
+      .forEach(f=>killPiece(f,'boom',victim));
+  }
+  if(hasBlock(victim,'diepawn')){
+    const spot=DIRS8.map(([a,b])=>[victim.r+a,victim.c+b]).find(([r,c])=>emptyAt(r,c));
+    if(spot){ G.pieces.push(newPawn(victim.owner,spot[0],spot[1])); addLog('🥚 유언 폰이 태어났다!'); }
+  }
+  if(attacker && G.pieces.includes(attacker)){
+    if(cause==='capture' && hasBlock(victim,'thorns')){ addLog('🌵 가시 갑옷! 잡은 기물도 같이 제거!'); killPiece(attacker,'thorns'); }
+    if(G.pieces.includes(attacker)){
+      attacker.kills=(attacker.kills||0)+1;
+      if(hasBlock(attacker,'hunter')){ attacker.cds={}; addLog('🏹 사냥꾼! 쿨타임 초기화!'); }
+    }
+  }
+  return true;
+}
+
+function doAreaBoom(p, cells, label){
+  let killed=0;
+  const abs=cells.map(([a,b])=>[p.r+a,p.c+b]);
+  G.pieces.filter(x=>x.owner!==p.owner && abs.some(([r,c])=>x.r===r&&x.c===c))
+    .forEach(v=>{ if(killPiece(v,'boom',p)) killed++; });
+  G.balls=G.balls.filter(b=>!(b.owner!==p.owner && abs.some(([r,c])=>b.r===r&&b.c===c)));
+  addLog(`${label} 적 ${killed}개 제거!`);
+}
+
+function pushTargets(p){
+  return DIRS8.map(([dr,dc])=>({r:p.r+dr,c:p.c+dc,dr,dc}))
+    .filter(t=>{
+      const occ=inBoard(t.r,t.c)?pieceAt(t.r,t.c):null;
+      if(!occ || occ.owner===p.owner || occ.type==='wall' || hasBlock(occ,'anchor')) return false;
+      const br=t.r+t.dr, bc=t.c+t.dc;
+      return !inBoard(br,bc) || !pieceAt(br,bc); // 밖으로 밀거나 빈칸으로 밀기
+    });
+}
+
+function doPush(p,t,dist){
+  const v=pieceAt(t.r,t.c); if(!v) return;
+  let r=v.r, c=v.c;
+  for(let i=0;i<dist;i++){
+    const nr=r+t.dr, nc=c+t.dc;
+    if(!inBoard(nr,nc)){ if(killPiece(v,'push',p)) addLog('👐 판 밖으로 밀어냈다! 제거!'); return; }
+    if(pieceAt(nr,nc)||ballAt(nr,nc)) break;
+    r=nr; c=nc;
+  }
+  v.r=r; v.c=c;
+  addLog(dist>1?'🙌 강력 밀치기!':'👐 밀치기!');
+}
+
+/* ---- 특수 기술 (블록 엔진) ---- */
 function specialInfo(p){
   const def=defOf(p.type);
-  return (def.specials||[]).filter(s=>!['laststand','early'].includes(s));
+  return (def.specials||[]).filter(s=>BLOCKS[s] && (BLOCKS[s].act || BLOCKS[s].passive));
 }
 
 function renderSkillbar(){
@@ -665,92 +950,64 @@ function renderSkillbar(){
   label.style.cssText='align-self:center;font-size:15px;color:#ffd93d;';
   label.textContent=`${def.nm} 선택됨`;
   bar.appendChild(label);
+  if(p.frozen>0){
+    const f=document.createElement('span');
+    f.style.cssText='align-self:center;font-size:14px;color:#8fd3ff;';
+    f.textContent='❄️ 얼어서 이번 턴은 쉬어요';
+    bar.appendChild(f);
+  }
   specialInfo(p).forEach(s=>{
+    const b=BLOCKS[s];
     const btn=document.createElement('button');
     btn.className='btn gray';
-    const cd=p.cds[s]||0;
-    if(s==='boom33'){
-      btn.textContent = cd>0?`💥 쿵쾅 (${cd}턴 후)`:'💥 쿵쾅 폭발!';
-      btn.disabled = cd>0;
-      btn.onclick=()=>doBoom(p);
-    }
-    if(s==='cannonball'){
+    if(b.passive==='ball'){
       btn.textContent=`🔴 대포알 ${p.ballUses}개 남음 (이동 시 자동발사)`;
       btn.disabled=true;
+      bar.appendChild(btn);
+      return;
     }
-    if(s==='spawnPawn'){
-      const cnt=myPieces(p.owner).filter(x=>x.type==='pawn').length;
-      btn.textContent = cnt>=3?'🐣 폰 낳기 (3마리 꽉참)':'🐣 폰 낳기';
-      btn.disabled = cnt>=3;
-      btn.onclick=()=>enterTarget(p,'spawn');
-    }
-    if(s==='push'){
-      btn.textContent = cd>0?`👐 밀치기 (${cd}턴 후)`:'👐 밀치기';
-      btn.disabled = cd>0 || pushTargets(p).length===0;
-      btn.onclick=()=>enterTarget(p,'push');
-    }
-    if(s==='swap'){
-      btn.textContent = cd>0?`🔄 교대 (${cd}턴 후)`:'🔄 순간 교대';
-      btn.disabled = cd>0 || myPieces(p.owner).length<2;
-      btn.onclick=()=>enterTarget(p,'swap');
-    }
+    const a=b.act, cd=p.cds[s]||0;
+    const tg = a.targets ? a.targets(p) : null;
+    btn.textContent = cd>0 ? `${a.btn} (${cd}턴 후)` : a.btn;
+    btn.disabled = p.frozen>0 || cd>0 || (a.can && !a.can(p)) || (tg && tg.length===0);
+    btn.onclick = a.targets
+      ? ()=>{ G.mode={bid:s}; G.targets=a.targets(p); addLog(a.hint||'대상을 눌러주세요!'); render(); }
+      : ()=>{ a.exec(p); if(a.cd) p.cds[s]=a.cd; endTurn(); };
     bar.appendChild(btn);
   });
 }
 
-function pushTargets(p){
-  return DIRS8.map(([dr,dc])=>({r:p.r+dr,c:p.c+dc,dr,dc}))
-    .filter(t=>{
-      const occ=inBoard(t.r,t.c)&&pieceAt(t.r,t.c);
-      if(!occ||occ.owner===p.owner) return false;
-      const br=t.r+t.dr, bc=t.c+t.dc;
-      return !inBoard(br,bc) || !pieceAt(br,bc); // 밖으로 밀거나 빈칸으로 밀기
-    });
-}
-
-function enterTarget(p,mode){
-  G.mode=mode;
-  if(mode==='spawn'){
-    G.targets=[];
-    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)
-      if(inBoard(r,c)&&!pieceAt(r,c)&&!ballAt(r,c)) G.targets.push({r,c});
-    addLog('🐣 폰을 낳을 빈칸을 눌러주세요!');
-  }
-  if(mode==='push'){ G.targets=pushTargets(p); addLog('👐 밀어낼 적을 눌러주세요!'); }
-  if(mode==='swap'){
-    G.targets=myPieces(p.owner).filter(x=>x!==p).map(x=>({r:x.r,c:x.c}));
-    addLog('🔄 자리를 바꿀 내 기물을 눌러주세요!');
-  }
-  render();
-}
-
-function doBoom(p){
-  let killed=0;
-  G.pieces=G.pieces.filter(x=>{
-    if(x.owner!==p.owner && Math.abs(x.r-p.r)<=1 && Math.abs(x.c-p.c)<=1){ killed++; return false; }
-    return true;
-  });
-  G.balls=G.balls.filter(b=>!(b.owner!==p.owner && Math.abs(b.r-p.r)<=1 && Math.abs(b.c-p.c)<=1));
-  p.cds.boom33=3;
-  addLog(`💥 쿵쾅!! 적 기물 ${killed}개 제거!`);
-  endTurn();
-}
+// 컴퓨터(AI)용 바로가기
+function doBoom(p){ BLOCKS.boom33.act.exec(p); p.cds.boom33=3; endTurn(); }
 
 /* ---- 이동 실행 (사람 클릭 + 컴퓨터 공용) ---- */
 function performMove(mover, r, c){
   const def=defOf(mover.type);
   const or_=mover.r, oc=mover.c;
   const victim=pieceAt(r,c), vball=ballAt(r,c);
-  if(victim){ G.pieces=G.pieces.filter(x=>x!==victim); addLog(`⚔️ ${def.nm}이(가) ${defOf(victim.type).nm}을(를) 잡았다!`); }
-  if(vball){ G.balls=G.balls.filter(b=>b!==vball); addLog('🔴 대포알을 부쉈다!'); }
+  if(victim){
+    const vnm=defOf(victim.type).nm;
+    if(!killPiece(victim,'capture',mover)){ addLog('공격이 막혀서 제자리로!'); endTurn(); return; }
+    addLog(`⚔️ ${def.nm}이(가) ${vnm}을(를) 잡았다!`);
+    if(!G.pieces.includes(mover)){ endTurn(); return; } // 가시 갑옷에 당했다면 여기서 끝
+  }
+  if(vball && vball.owner!==mover.owner){ G.balls=G.balls.filter(b=>b!==vball); addLog('🔴 대포알을 부쉈다!'); }
   mover.r=r; mover.c=c;
   // 대포 패시브: 이동하면 대포알 생성
-  if((def.specials||[]).includes('cannonball') && mover.ballUses>0){
+  if((hasBlock(mover,'cannonball')||hasBlock(mover,'cannonball2')) && mover.ballUses>0){
     if(!pieceAt(or_,oc) && !ballAt(or_,oc)){
       G.balls.push({owner:mover.owner, r:or_, c:oc, dir:mover.owner===0?-1:1});
       mover.ballUses--;
       addLog('🔴 대포알 장전! 매턴 2칸씩 굴러가요!');
     }
+  }
+  // 연속 공격: 적을 잡았으면 한 번 더! (컴퓨터는 예외)
+  if(victim && hasBlock(mover,'combo') && !G.comboUsed && !(G.vsAI&&G.turn===1)){
+    if(checkWin()) return;
+    G.comboUsed=true; G.sel=null;
+    addLog('⚡ 연속 공격! 한 번 더 행동하세요!');
+    render();
+    return;
   }
   endTurn();
 }
@@ -760,28 +1017,13 @@ function cellClick(r,c){
   if(!G || $('scr-battle').classList.contains('on')===false) return;
   if(G.vsAI && G.turn===1) return; // 컴퓨터가 생각하는 중엔 클릭 금지
 
-  // 타겟팅 모드
+  // 타겟팅 모드 (특수기술 대상 고르기)
   if(G.mode){
     const t=G.targets.find(t=>t.r===r&&t.c===c);
     if(t){
-      const p=G.sel;
-      if(G.mode==='spawn'){
-        G.pieces.push({uid:uidSeq++, type:'pawn', owner:p.owner, r, c, cds:{}, ballUses:0});
-        addLog('🐣 삐약! 폰이 태어났어요!');
-      }
-      if(G.mode==='push'){
-        const victim=pieceAt(r,c);
-        const br=r+t.dr, bc=c+t.dc;
-        if(!inBoard(br,bc)){ G.pieces=G.pieces.filter(x=>x!==victim); addLog('👐 판 밖으로 밀어냈다! 제거!'); }
-        else { victim.r=br; victim.c=bc; addLog('👐 밀치기!'); }
-        p.cds.push=2;
-      }
-      if(G.mode==='swap'){
-        const mate=pieceAt(r,c);
-        [p.r,mate.r]=[mate.r,p.r]; [p.c,mate.c]=[mate.c,p.c];
-        p.cds.swap=2;
-        addLog('🔄 슝! 자리 바꾸기!');
-      }
+      const p=G.sel, a=BLOCKS[G.mode.bid].act;
+      a.exec(p,t);
+      if(a.cd) p.cds[G.mode.bid]=a.cd;
       G.mode=null; G.targets=[];
       endTurn();
     } else {
@@ -817,8 +1059,7 @@ function moveBalls(owner){
       if(!inBoard(nr,b.c)){ dead.add(b); break; }
       const occ=pieceAt(nr,b.c);
       if(occ && occ.owner!==owner){
-        G.pieces=G.pieces.filter(x=>x!==occ);
-        addLog(`🔴 대포알 명중! ${defOf(occ.type).nm} 제거!`);
+        if(killPiece(occ,'ball')) addLog(`🔴 대포알 명중! ${defOf(occ.type).nm} 제거!`);
         dead.add(b); break;
       }
       const ob=G.balls.find(x=>x!==b && !dead.has(x) && x.r===nr && x.c===b.c);
@@ -830,7 +1071,9 @@ function moveBalls(owner){
 }
 
 function checkWin(){
-  const loser=[0,1].find(o=>myPieces(o).length===0);
+  let loser;
+  if(G.crownLoser!==undefined) loser=G.crownLoser;         // 👑 왕관을 잃으면 즉시 패배
+  else loser=[0,1].find(o=>alive(o)===0);                   // 벽은 기물 수에 안 들어가요
   if(loser===undefined) return false;
   render();
   const winner=1-loser;
@@ -846,12 +1089,16 @@ function checkWin(){
 }
 
 function endTurn(){
-  G.sel=null; G.mode=null; G.targets=[];
+  G.sel=null; G.mode=null; G.targets=[]; G.comboUsed=false;
   if(checkWin()) return;
   // 턴 교대
   G.turn=1-G.turn;
   G.myTurns[G.turn]++;
-  myPieces(G.turn).forEach(p=>{ for(const k in p.cds) if(p.cds[k]>0) p.cds[k]--; });
+  if(G.lostRecently[G.turn]>0) G.lostRecently[G.turn]--;
+  myPieces(G.turn).forEach(p=>{
+    if(p.frozen>0) p.frozen--;
+    for(const k in p.cds) if(p.cds[k]>0) p.cds[k]--;
+  });
   moveBalls(G.turn);          // 새 턴 주인의 대포알 전진
   if(checkWin()) return;
   render();
@@ -872,6 +1119,7 @@ function aiMove(){
   const cands=[];
 
   myPieces(1).forEach(p=>{
+    if(p.frozen>0 || p.type==='wall') return; // 얼었거나 벽이면 쉬어요
     // 이동/잡기: 잡는 게 최고, 아니면 적에게 다가가기
     legalMoves(p).forEach(m=>{
       let s=Math.random();
@@ -895,7 +1143,7 @@ function aiMove(){
         spots.sort((a,b)=>nearestD(a.r,a.c)-nearestD(b.r,b.c));
         const t=spots[Math.floor(Math.random()*Math.min(5,spots.length))];
         cands.push({s:3+Math.random()*2, run:()=>{
-          G.pieces.push({uid:uidSeq++, type:'pawn', owner:1, r:t.r, c:t.c, cds:{}, ballUses:0});
+          G.pieces.push(newPawn(1,t.r,t.c));
           addLog('🤖🐣 컴퓨터가 폰을 낳았어요!');
           endTurn();
         }});
@@ -904,12 +1152,9 @@ function aiMove(){
     // 밀치기: 판 밖으로 밀 수 있으면 아주 좋음
     if(sp.includes('push') && !(p.cds.push>0)){
       pushTargets(p).forEach(t=>{
-        const br=t.r+t.dr, bc=t.c+t.dc;
-        const off=!inBoard(br,bc);
+        const off=!inBoard(t.r+t.dr, t.c+t.dc);
         cands.push({s:(off?12:2)+Math.random(), run:()=>{
-          const victim=pieceAt(t.r,t.c);
-          if(off){ G.pieces=G.pieces.filter(x=>x!==victim); addLog('🤖👐 컴퓨터가 판 밖으로 밀어냈다!'); }
-          else { victim.r=br; victim.c=bc; addLog('🤖👐 컴퓨터의 밀치기!'); }
+          doPush(p,t,1);
           p.cds.push=2;
           endTurn();
         }});
@@ -936,7 +1181,7 @@ function render(){
     const p=pieceAt(r,c);
     if(p){
       const def=defOf(p.type);
-      cell.innerHTML=`<div class="pc p${p.owner}">${iconHTML(def)}</div>`;
+      cell.innerHTML=`<div class="pc p${p.owner}">${iconHTML(def)}${p.frozen>0?'<span class="frz">❄️</span>':''}</div>`;
     } else {
       const b=ballAt(r,c);
       if(b) cell.innerHTML=`<span class="ball">${b.owner===0?'🔵':'🔴'}</span>`;
