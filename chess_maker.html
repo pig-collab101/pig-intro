@@ -183,7 +183,36 @@
     <h3>미리보기</h3>
     <div class="boardwrap"><div id="prevwrap"><div class="board" id="prevboard" style="--cs:30px;"></div></div></div>
     <div class="center">
-      <button class="btn green" onclick="go('scr-pieces'); initPickScreen();">다음 → 기물 고르기</button>
+      <button class="btn green" onclick="goNextFromBoard()">다음 → 기물 고르기</button>
+    </div>
+  </div>
+
+  <!-- 온라인 대결 메뉴 -->
+  <div class="screen" id="scr-online">
+    <h2>🌐 온라인 대결</h2>
+    <p class="sub">서로 다른 기기에서 실시간으로 대결해요!</p>
+    <div class="center" style="margin:20px 0;">
+      <button class="btn green" style="font-size:19px;" onclick="createRoom()">🎲 방 만들기</button>
+    </div>
+    <h3>또는 코드로 참가하기</h3>
+    <input type="text" id="joinCodeInput" maxlength="4" placeholder="방 코드 4글자 입력">
+    <div class="center" style="margin:14px 0;">
+      <button class="btn blue" onclick="joinRoomFlow()">참가하기 ✔</button>
+    </div>
+    <div class="center">
+      <button class="btn gray" onclick="go('scr-board')">← 돌아가기</button>
+    </div>
+  </div>
+
+  <!-- 온라인 대결 대기실 -->
+  <div class="screen" id="scr-online-wait">
+    <h2 id="waitTitle">잠시만요...</h2>
+    <div class="center" style="margin:24px 0;">
+      <div style="font-size:52px; letter-spacing:10px; color:#ffd93d;" id="roomCodeBig"></div>
+    </div>
+    <p class="sub" id="waitMsg"></p>
+    <div class="center" style="margin-top:20px;">
+      <button class="btn gray" onclick="cancelOnlineWait()">취소</button>
     </div>
   </div>
 
@@ -240,8 +269,8 @@
     <div class="endmsg" id="endMsg"></div>
     <p class="sub" id="endRecord" style="font-size:16px;"></p>
     <div class="center">
-      <button class="btn green" onclick="startBattle()">한 판 더! 🔁</button>
-      <button class="btn blue" onclick="go('scr-board')">새로 설정하기 ⚙️</button>
+      <button class="btn green" onclick="rematch()">한 판 더! 🔁</button>
+      <button class="btn blue" onclick="stopRoomPoll(); go('scr-board')">새로 설정하기 ⚙️</button>
     </div>
   </div>
 
@@ -261,8 +290,9 @@ function go(id){
 const config = { shape:'square', material:'wood', opp:'human' };
 
 const OPPS = [
-  {id:'human', nm:'친구랑 2인', ico:'👥'},
-  {id:'ai',    nm:'컴퓨터',     ico:'🤖'},
+  {id:'human',  nm:'친구랑 2인', ico:'👥'},
+  {id:'ai',     nm:'컴퓨터',     ico:'🤖'},
+  {id:'online', nm:'온라인 대결', ico:'🌐'},
 ];
 const SHAPES = [
   {id:'square', nm:'사각', ico:'⬛'},
@@ -625,16 +655,151 @@ function enterGame(){
   go('scr-board');
 }
 
-// 대결이 끝나면 내 전적 기록 (로그인한 사람 = 🔵 파랑)
+// 대결이 끝나면 내 전적 기록 (로그인한 사람 = 나. 온라인 대결이면 내 자리(mySeat) 기준)
 function reportResult(winner){
   if(!online || !me) return;
-  apiUsers({action:'win', name:me.name, pw:me.pw, result: winner===0?'win':'lose'}).then(res=>{
+  const mySide = mySeat===null ? 0 : mySeat; // 온라인 아니면 항상 파랑(0)
+  apiUsers({action:'win', name:me.name, pw:me.pw, result: winner===mySide?'win':'lose'}).then(res=>{
     if(res && res.ok){
       me.wins=res.wins; me.losses=res.losses; saveMe(); updateLoginUI();
       const el=$('endRecord');
       if(el) el.textContent=`👤 ${me.name}: ${res.wins}승 ${res.losses}패`;
     }
   }).catch(()=>{});
+}
+
+/* ===== 온라인 대결 (서로 다른 기기끼리!) ===== */
+let roomCode=null, onlineRole=null, mySeat=null, roomPollTimer=null;
+let onlineHostName=null, onlineGuestName=null;
+
+function apiRoom(data){
+  return fetch('/api/room', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})
+    .then(r=>r.json().then(j=>Object.assign({ok:r.ok}, j)));
+}
+function fetchRoom(code){
+  return fetch('/api/room?code='+encodeURIComponent(code), {cache:'no-store'})
+    .then(r=>r.ok? r.json() : null).catch(()=>null);
+}
+function mergeDefs(defs){
+  (defs||[]).forEach(d=>{ if(d && d.id && !customs.find(x=>x.id===d.id)) customs.push(d); });
+}
+function myDefsFor(ids){
+  const seen=new Set();
+  return ids.map(id=>customs.find(c=>c.id===id)).filter(d=>{
+    if(!d || seen.has(d.id)) return false; seen.add(d.id); return true;
+  });
+}
+function stopRoomPoll(){ if(roomPollTimer){ clearInterval(roomPollTimer); roomPollTimer=null; } }
+
+function goNextFromBoard(){
+  if(config.opp==='online'){
+    if(!me){ openLogin('scr-board'); return; }
+    go('scr-online');
+    return;
+  }
+  go('scr-pieces'); initPickScreen();
+}
+
+function cancelOnlineWait(){
+  stopRoomPoll(); roomCode=null; onlineRole=null; mySeat=null;
+  go('scr-online');
+}
+
+async function createRoom(){
+  if(!me){ openLogin('scr-board'); return; }
+  const res=await apiRoom({action:'create', shape:config.shape, material:config.material, name:me.name});
+  if(!res || !res.ok){ alert('방을 만들지 못했어요 😢 잠시 후 다시 해보세요!'); return; }
+  roomCode=res.code; onlineRole='host'; mySeat=0;
+  go('scr-pieces'); initPickScreen();
+}
+
+async function joinRoomFlow(){
+  if(!me){ openLogin('scr-board'); return; }
+  const code=$('joinCodeInput').value.trim().toUpperCase();
+  if(code.length<4){ alert('방 코드 4글자를 입력해주세요!'); return; }
+  const res=await apiRoom({action:'join', code, name:me.name});
+  if(!res || !res.ok){
+    alert(res && res.error==='full' ? '이미 다른 친구가 들어가 있는 방이에요!' : '그런 방을 찾을 수 없어요. 코드를 다시 확인해주세요!');
+    return;
+  }
+  roomCode=code; onlineRole='guest'; mySeat=1;
+  onlineHostName=res.hostName; onlineGuestName=me.name;
+  config.shape=res.shape; config.material=res.material; renderPreview();
+  mergeDefs(res.hostDefs); mergeDefs(res.guestDefs);
+  go('scr-pieces'); initPickScreen();
+}
+
+// 호스트: 기물을 다 고르면 서버에 올리고 손님(게스트)의 픽을 기다려요
+function hostSubmitPicks(){
+  apiRoom({action:'picks', code:roomCode, seat:0, picks:picks[0], defs:myDefsFor(picks[0])});
+  $('waitTitle').textContent='친구를 기다리는 중... ⏳';
+  $('roomCodeBig').textContent=roomCode;
+  $('waitMsg').textContent='이 코드를 친구에게 알려주세요! 친구가 기물을 고르면 자동으로 시작돼요.';
+  go('scr-online-wait');
+  stopRoomPoll();
+  roomPollTimer=setInterval(async ()=>{
+    const rs=await fetchRoom(roomCode);
+    if(!rs) return;
+    mergeDefs(rs.hostDefs); mergeDefs(rs.guestDefs);
+    if(rs.guestName) $('waitMsg').textContent=`${esc(rs.guestName)}님이 들어왔어요! 기물을 고르는 중...`;
+    if(rs.guestPicks){
+      stopRoomPoll();
+      picks[1]=rs.guestPicks;
+      onlineHostName=me.name; onlineGuestName=rs.guestName||'친구';
+      config.opp='online';
+      startBattle();
+      G.vsOnline=true; G.mySeat=0; G.ended=false;
+      pushRoomState();
+      startRoomPoll();
+    }
+  }, 1800);
+}
+
+// 손님: 기물을 다 고르면 서버에 올리고 호스트가 게임을 시작하길 기다려요
+function guestSubmitPicks(){
+  apiRoom({action:'picks', code:roomCode, seat:1, picks:picks[1], defs:myDefsFor(picks[1])});
+  $('waitTitle').textContent='게임 준비 중... ⏳';
+  $('roomCodeBig').textContent=roomCode;
+  $('waitMsg').textContent='호스트가 게임을 시작하면 자동으로 이어져요!';
+  go('scr-online-wait');
+  startRoomPoll();
+}
+
+// 게임 상태를 서버에 올리기 (내가 움직일 때마다)
+function pushRoomState(){
+  if(!G || !G.vsOnline || !roomCode) return;
+  G.seq=(G.seq||0)+1;
+  const snap={ turn:G.turn, pieces:G.pieces, balls:G.balls, myTurns:G.myTurns, log:G.log,
+               lostRecently:G.lostRecently, crownLoser:G.crownLoser, comboUsed:G.comboUsed };
+  apiRoom({action:'state', code:roomCode, seat:mySeat, state:snap, seq:G.seq}).catch(()=>{});
+}
+
+// 상대방이 보낸 최신 상태를 받아서 화면에 반영
+function applyRemoteState(rs, seq){
+  const wasBattle = $('scr-battle').classList.contains('on');
+  G = { turn:rs.turn, pieces:rs.pieces, balls:rs.balls, myTurns:rs.myTurns, log:rs.log||[],
+        lostRecently:rs.lostRecently||[0,0], crownLoser:rs.crownLoser, comboUsed:false,
+        vsAI:false, vsOnline:true, mySeat, sel:null, mode:null, targets:[], seq, ended:false };
+  if(!wasBattle){ buildBoardDOM(); go('scr-battle'); }
+  render();
+  if(G.crownLoser!==undefined || alive(0)===0 || alive(1)===0) checkWin();
+}
+
+// 서버 상태를 계속 확인해서 상대방 수를 받아와요
+function startRoomPoll(){
+  stopRoomPoll();
+  roomPollTimer=setInterval(async ()=>{
+    if(!roomCode) return;
+    const rs=await fetchRoom(roomCode);
+    if(!rs) return;
+    mergeDefs(rs.hostDefs); mergeDefs(rs.guestDefs);
+    if(rs.state && (!G || rs.seq>(G.seq||0))) applyRemoteState(rs.state, rs.seq);
+  }, 1800);
+}
+
+function rematch(){
+  if(G && G.vsOnline){ alert('온라인 대결은 새로 방을 만들어서 다시 시작해요! 🌐'); stopRoomPoll(); go('scr-title'); return; }
+  startBattle();
 }
 
 /* ===== 랭킹 화면 (승리 / 기물) ===== */
@@ -706,13 +871,18 @@ const picks = [[],[]];   // 플레이어별 typeId 배열
 let picking = 0;
 
 function initPickScreen(){
-  picking = 0; picks[0]=[]; picks[1]=[];
+  if(config.opp==='online' && onlineRole==='guest'){ picking=1; picks[1]=[]; }
+  else { picking = 0; picks[0]=[]; picks[1]=[]; }
   renderPickScreen();
 }
 function renderPickScreen(){
   const who=$('pickWho');
   who.className='pickbadge t'+picking;
-  who.textContent = picking===0 ? `🔵 ${me?me.name:'파랑 플레이어'} 차례` : '🔴 빨강 플레이어 차례';
+  if(config.opp==='online'){
+    who.textContent = picking===0 ? `🔵 ${me?me.name:'호스트'} (나) 차례` : `🔴 ${me?me.name:'게스트'} (나) 차례`;
+  } else {
+    who.textContent = picking===0 ? `🔵 ${me?me.name:'파랑 플레이어'} 차례` : '🔴 빨강 플레이어 차례';
+  }
 
   const slots=$('pickSlots'); slots.innerHTML='';
   for(let i=0;i<4;i++){
@@ -741,6 +911,12 @@ function renderPickScreen(){
 }
 function pickDone(){
   if(picks[picking].length===0){ alert('기물을 1개 이상 골라주세요!'); return; }
+  if(config.opp==='online'){
+    picks.flat().forEach(t=>{ const c=customs.find(x=>x.id===t); if(c) c.cnt=(c.cnt||0)+1; });
+    saveCustoms(); reportPicks();
+    if(onlineRole==='host') hostSubmitPicks(); else guestSubmitPicks();
+    return;
+  }
   if(picking===0 && config.opp==='ai'){
     // 컴퓨터가 무작위로 4개 고르기 (커스텀 기물도 포함!)
     const pool=[...BASE_PIECES, ...customs].map(d=>d.id);
@@ -860,7 +1036,8 @@ function myPieces(owner){ return G.pieces.filter(p=>p.owner===owner); }
 
 function startBattle(){
   G={turn:0, pieces:[], balls:[], myTurns:[1,0], sel:null, mode:null, targets:[], log:[],
-     vsAI:config.opp==='ai', lostRecently:[0,0], comboUsed:false, crownLoser:undefined};
+     vsAI:config.opp==='ai', vsOnline:false, mySeat:null, ended:false,
+     lostRecently:[0,0], comboUsed:false, crownLoser:undefined};
   // 배치: 각 플레이어 뒷줄부터 가운데 순서로
   [0,1].forEach(owner=>{
     const rows = owner===0 ? [7,6,5] : [0,1,2];
@@ -1062,6 +1239,10 @@ function specialInfo(p){
 
 function renderSkillbar(){
   const bar=$('skillbar'); bar.innerHTML='';
+  if(G.vsOnline && G.turn!==G.mySeat){
+    bar.innerHTML='<span style="color:#889; font-size:14px; align-self:center;">🌐 상대방 차례를 기다리는 중...</span>';
+    return;
+  }
   if(!G.sel){ bar.innerHTML='<span style="color:#889; font-size:14px; align-self:center;">내 기물을 눌러보세요!</span>'; return; }
   const p=G.sel, def=defOf(p.type);
   const label=document.createElement('span');
@@ -1125,6 +1306,7 @@ function performMove(mover, r, c){
     G.comboUsed=true; G.sel=null;
     addLog('⚡ 연속 공격! 한 번 더 행동하세요!');
     render();
+    pushRoomState();
     return;
   }
   endTurn();
@@ -1134,6 +1316,7 @@ function performMove(mover, r, c){
 function cellClick(r,c){
   if(!G || $('scr-battle').classList.contains('on')===false) return;
   if(G.vsAI && G.turn===1) return; // 컴퓨터가 생각하는 중엔 클릭 금지
+  if(G.vsOnline && G.turn!==G.mySeat) return; // 온라인: 내 차례가 아니면 클릭 금지
 
   // 타겟팅 모드 (특수기술 대상 고르기)
   if(G.mode){
@@ -1189,22 +1372,30 @@ function moveBalls(owner){
 }
 
 function checkWin(){
+  if(G.ended) return true;
   let loser;
   if(G.crownLoser!==undefined) loser=G.crownLoser;         // 👑 왕관을 잃으면 즉시 패배
   else loser=[0,1].find(o=>alive(o)===0);                   // 벽은 기물 수에 안 들어가요
   if(loser===undefined) return false;
+  G.ended=true;
   render();
   const winner=1-loser;
-  const blueName = me ? esc(me.name) : '파랑 플레이어';
   if(G.vsAI){
     $('endEmoji').textContent = winner===0 ? '🏆' : '🤖';
     $('endMsg').innerHTML = winner===0 ? '🎉 컴퓨터를 이겼어요!!' : '컴퓨터 승리... 다시 도전! 💪';
+  } else if(G.vsOnline){
+    const blueName=esc(onlineHostName||'호스트'), redName=esc(onlineGuestName||'게스트');
+    $('endEmoji').textContent = winner===mySeat ? '🏆' : '😢';
+    $('endMsg').innerHTML = winner===0 ? `🔵 ${blueName} 승리!!` : `🔴 ${redName} 승리!!`;
   } else {
+    const blueName = me ? esc(me.name) : '파랑 플레이어';
     $('endEmoji').textContent='🏆';
     $('endMsg').innerHTML = winner===0 ? `🔵 ${blueName} 승리!!` : '🔴 빨강 플레이어 승리!!';
   }
   $('endRecord').textContent='';
   reportResult(winner);   // 🏆 승리 랭킹에 기록!
+  pushRoomState();
+  stopRoomPoll();
   setTimeout(()=>go('scr-end'), 600);
   return true;
 }
@@ -1224,10 +1415,11 @@ function endTurn(){
   if(checkWin()) return;
   render();
   if(G.vsAI && G.turn===1) setTimeout(aiMove, 900); // 컴퓨터 차례!
+  pushRoomState();
 }
 
 function passTurn(){
-  if(!G || (G.vsAI && G.turn===1)) return;
+  if(!G || (G.vsAI && G.turn===1) || (G.vsOnline && G.turn!==G.mySeat)) return;
   addLog('⏭ 턴을 넘겼어요.'); endTurn();
 }
 
@@ -1291,8 +1483,14 @@ function aiMove(){
 function render(){
   const tb=$('turnbar');
   tb.className='t'+G.turn;
-  tb.textContent = G.turn===0 ? `🔵 ${me?me.name:'파랑'} 차례예요!`
-                 : (G.vsAI ? '🤖 컴퓨터가 생각 중...' : '🔴 빨강 차례예요!');
+  if(G.vsOnline){
+    const whoName = G.turn===0 ? (onlineHostName||'호스트') : (onlineGuestName||'게스트');
+    const mine = G.turn===mySeat;
+    tb.textContent = `🌐 ${G.turn===0?'🔵':'🔴'} ${esc(whoName)}${mine?' (나)':''} 차례예요!` + (mine?'':' ⏳');
+  } else {
+    tb.textContent = G.turn===0 ? `🔵 ${me?me.name:'파랑'} 차례예요!`
+                   : (G.vsAI ? '🤖 컴퓨터가 생각 중...' : '🔴 빨강 차례예요!');
+  }
 
   const moves = G.sel? legalMoves(G.sel) : [];
   document.querySelectorAll('#gameboard .cell').forEach(cell=>{
