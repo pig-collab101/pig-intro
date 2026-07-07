@@ -746,9 +746,8 @@ function hostSubmitPicks(){
       stopRoomPoll();
       picks[1]=rs.guestPicks;
       onlineHostName=me.name; onlineGuestName=rs.guestName||'친구';
-      config.opp='online';
+      config.opp='online'; mySeat=0;
       startBattle();
-      G.vsOnline=true; G.mySeat=0; G.ended=false;
       pushRoomState();
       startRoomPoll();
     }
@@ -1036,7 +1035,7 @@ function myPieces(owner){ return G.pieces.filter(p=>p.owner===owner); }
 
 function startBattle(){
   G={turn:0, pieces:[], balls:[], myTurns:[1,0], sel:null, mode:null, targets:[], log:[],
-     vsAI:config.opp==='ai', vsOnline:false, mySeat:null, ended:false,
+     vsAI:config.opp==='ai', vsOnline:config.opp==='online', mySeat:(config.opp==='online'?mySeat:null), ended:false,
      lostRecently:[0,0], comboUsed:false, crownLoser:undefined};
   // 배치: 각 플레이어 뒷줄부터 가운데 순서로
   [0,1].forEach(owner=>{
