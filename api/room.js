@@ -7,10 +7,17 @@
 // POST {action:'picks'}  → 내가 고른 기물 올리기
 // POST {action:'state'}  → 게임 상태 올리기 (턴이 바뀔 때마다)
 
-const { put, list } = require('@vercel/blob');
+const { put } = require('@vercel/blob');
 
 const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // 헷갈리는 0/O, 1/I/L 제외
 const dir = code => `chessmaker/rooms/${code}`;
+
+// 저장소 공개 주소를 토큰에서 뽑아내요 (vercel_blob_rw_<스토어ID>_<비밀>)
+// 이렇게 하면 읽을 때 비싼 list() 대신 공개 URL을 바로 가져와서 작업 횟수를 크게 아껴요.
+function blobBase() {
+  const m = (process.env.BLOB_READ_WRITE_TOKEN || '').match(/^vercel_blob_rw_([^_]+)_/);
+  return m ? `https://${m[1].toLowerCase()}.public.blob.vercel-storage.com` : '';
+}
 
 function randCode(len) {
   let s = '';
@@ -19,11 +26,10 @@ function randCode(len) {
 }
 
 async function loadJSON(path) {
-  const { blobs } = await list({ prefix: path });
-  const b = blobs.find(x => x.pathname === path);
-  if (!b) return null;
-  const r = await fetch(b.url + '?v=' + Date.now(), { cache: 'no-store' });
-  if (!r.ok) return null;
+  const base = blobBase();
+  if (!base) return null;
+  const r = await fetch(`${base}/${path}?v=${Date.now()}`, { cache: 'no-store' });
+  if (!r.ok) return null; // 404 = 아직 없는 파일
   try { return await r.json(); } catch (e) { return null; }
 }
 function saveJSON(path, obj) {

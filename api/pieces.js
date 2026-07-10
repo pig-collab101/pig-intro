@@ -2,16 +2,22 @@
 // 프로젝트에 Blob 저장소가 연결되어 있으면(BLOB_READ_WRITE_TOKEN) 자동으로 작동해요.
 // 없으면 503을 돌려주고, 게임은 알아서 오프라인 모드(localStorage)로 동작합니다.
 
-const { put, list } = require('@vercel/blob');
+const { put } = require('@vercel/blob');
 
 const PATH = 'chessmaker/pieces.json';
 
+// 저장소 공개 주소를 토큰에서 뽑아내요 (vercel_blob_rw_<스토어ID>_<비밀>)
+// 읽을 때 비싼 list() 대신 공개 URL을 바로 가져와서 작업 횟수를 크게 아껴요.
+function blobBase() {
+  const m = (process.env.BLOB_READ_WRITE_TOKEN || '').match(/^vercel_blob_rw_([^_]+)_/);
+  return m ? `https://${m[1].toLowerCase()}.public.blob.vercel-storage.com` : '';
+}
+
 async function load() {
-  const { blobs } = await list({ prefix: PATH });
-  const b = blobs.find(x => x.pathname === PATH);
-  if (!b) return {};
+  const base = blobBase();
+  if (!base) return {};
   // 캐시를 피하려고 매번 다른 주소로 읽어요
-  const r = await fetch(b.url + '?v=' + Date.now(), { cache: 'no-store' });
+  const r = await fetch(`${base}/${PATH}?v=${Date.now()}`, { cache: 'no-store' });
   if (!r.ok) return {};
   try { return await r.json(); } catch (e) { return {}; }
 }

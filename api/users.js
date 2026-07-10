@@ -2,7 +2,7 @@
 // GET  → 승리 랭킹 (승수 많은 순, 비밀번호는 절대 안 보여줘요)
 // POST → {action:'signup'|'login'|'win', name, pw, result?}
 
-const { put, list } = require('@vercel/blob');
+const { put } = require('@vercel/blob');
 const crypto = require('crypto');
 
 const PATH = 'chessmaker/users.json';
@@ -10,11 +10,17 @@ const SALT = 'chessmaker-2026';
 
 const hashPw = (name, pw) => crypto.createHash('sha256').update(name + ':' + pw + ':' + SALT).digest('hex');
 
+// 저장소 공개 주소를 토큰에서 뽑아내요 (vercel_blob_rw_<스토어ID>_<비밀>)
+// 읽을 때 비싼 list() 대신 공개 URL을 바로 가져와서 작업 횟수를 크게 아껴요.
+function blobBase() {
+  const m = (process.env.BLOB_READ_WRITE_TOKEN || '').match(/^vercel_blob_rw_([^_]+)_/);
+  return m ? `https://${m[1].toLowerCase()}.public.blob.vercel-storage.com` : '';
+}
+
 async function load() {
-  const { blobs } = await list({ prefix: PATH });
-  const b = blobs.find(x => x.pathname === PATH);
-  if (!b) return {};
-  const r = await fetch(b.url + '?v=' + Date.now(), { cache: 'no-store' });
+  const base = blobBase();
+  if (!base) return {};
+  const r = await fetch(`${base}/${PATH}?v=${Date.now()}`, { cache: 'no-store' });
   if (!r.ok) return {};
   try { return await r.json(); } catch (e) { return {}; }
 }
