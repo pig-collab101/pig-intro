@@ -137,7 +137,6 @@ module.exports = async (req, res) => {
       if (newpw.length < 4 || newpw.length > 40) { res.status(400).json({ error: 'bad-newpw' }); return; }
       const u = await readUser(name);
       if (!u || u.hash !== hashPw(name, pw)) { res.status(401).json({ error: 'wrong' }); return; }
-      try { await del(userFile(name)); } catch (e) { /* 무시 */ }
       await saveUser(name, { name: u.name || name, hash: hashPw(name, newpw), created: u.created || new Date().toISOString() }, true);
       const user0 = { sub: 'local:' + name.toLowerCase(), name: u.name || name, admin: name.toLowerCase() === ADMIN_NAME };
       const exp0 = now + SESSION_TTL;
