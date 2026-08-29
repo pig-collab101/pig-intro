@@ -36,14 +36,16 @@ async function readPost(id) {
 }
 
 // 개별 글 파일들을 모아 집계 파일을 다시 만듦 (글 등록/삭제 때만 호출)
-async function rebuildAgg() {
+// opts: { excludeId: 방금 지운 글 id (list 반영 지연 대비), ensurePost: 방금 올린 글 객체 }
+async function rebuildAgg(opts) {
+  opts = opts || {};
   let blobs = [];
   try {
     blobs = (await list({ prefix: POST_DIR, limit: 1000 })).blobs || [];
   } catch (e) { return null; }
 
   blobs.sort((a, b) => (a.pathname < b.pathname ? -1 : a.pathname > b.pathname ? 1 : 0));
-  const recent = blobs.slice(-MAX_SHOW);
+  const recent = blobs.slice(-(MAX_SHOW + 5));
 
   const items = await Promise.all(recent.map(async (b) => {
     try {
@@ -52,8 +54,11 @@ async function rebuildAgg() {
     } catch (e) { return null; }
   }));
 
-  const posts = items
-    .filter(Boolean)
+  let posts = items.filter(Boolean);
+  if (opts.excludeId) posts = posts.filter((p) => p.id !== opts.excludeId);
+  if (opts.ensurePost && !posts.some((p) => p.id === opts.ensurePost.id)) posts.push(opts.ensurePost);
+
+  posts = posts
     .sort((a, b) => String(b.time || '').localeCompare(String(a.time || '')))
     .slice(0, MAX_SHOW);
 
@@ -115,7 +120,7 @@ module.exports = async (req, res) => {
       if (!admin && target.sub !== sess.sub) { res.status(403).json({ error: 'not-yours' }); return; }
       try { await del(POST_DIR + id + '.json'); } catch (e) { /* 이미 없어도 진행 */ }
       await purgeReports(id);
-      let posts = await rebuildAgg();
+      let posts = await rebuildAgg({ excludeId: id });
       if (!posts) posts = (await loadAgg()).filter((p) => p.id !== id);
       res.setHeader('Cache-Control', 'no-store');
       res.status(200).json({ ok: true, posts: posts.slice(0, MAX_SHOW) });
@@ -185,7 +190,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    let posts = await rebuildAgg();
+    let posts = await rebuildAgg({ ensurePost: post });
     if (!posts) posts = [post].concat(await loadAgg()).slice(0, MAX_SHOW);
 
     res.setHeader('Cache-Control', 'no-store');
