@@ -1,40 +1,42 @@
 // 성경 사이트 – 아이디/비밀번호 로그인 + 자체 세션 토큰 발급 (Vercel 서버리스 함수 + Vercel Blob)
 // POST { action: 'signup' | 'login', name, pw }
-//   signup → 새 계정 생성 후 세션 토큰 발급
-//   login  → 계정/비밀번호 확인 후 세션 토큰 발급
+//
+// 계정을 유저별 개별 파일(bible/u/<해시>.json)로 저장.
+//  - head() 는 강한 일관성 → 가입 시 중복 검사 정확, 가입 직후 로그인도 즉시 가능
+//  - 개별 파일은 만들어진 뒤 안 바뀌므로 내용은 캐시돼도 안전
 // 세션 토큰 형식:  base64url(payload JSON) + "." + base64url(HMAC-SHA256(payload, SECRET))
 
 const crypto = require('crypto');
-const { put } = require('@vercel/blob');
+const { put, head } = require('@vercel/blob');
 
 const SESSION_TTL = 60 * 24 * 60 * 60; // 60일 (초)
-const USERS_PATH = 'bible/users.json';
 const PW_SALT = 'bible-2026-salt';
+const USER_DIR = 'bible/u/';
 
-// ---- Blob 저장소 (RW 토큰 또는 BLOB_STORE_ID + 배포 OIDC 헤더로 자동 인증) ----
+// ---- Blob ----
 function blobStoreId() {
   const m = (process.env.BLOB_READ_WRITE_TOKEN || '').match(/^vercel_blob_rw_([^_]+)_/);
   if (m) return m[1];
   return (process.env.BLOB_STORE_ID || '').replace(/^store_/, '');
 }
-function blobBase() {
-  const id = blobStoreId();
-  return id ? `https://${id.toLowerCase()}.public.blob.vercel-storage.com` : '';
+function userFile(name) {
+  const k = crypto.createHash('sha256').update(name.toLowerCase()).digest('hex').slice(0, 40);
+  return USER_DIR + k + '.json';
 }
-async function loadUsers() {
-  const base = blobBase();
-  if (!base) return {};
+async function readUser(name) {
+  let meta;
+  try { meta = await head(userFile(name)); }   // 없으면 throw → null
+  catch (e) { return null; }
   try {
-    const r = await fetch(`${base}/${USERS_PATH}?v=${Date.now()}`, { cache: 'no-store' });
-    if (!r.ok) return {};
-    const d = await r.json();
-    return (d && typeof d === 'object' && !Array.isArray(d)) ? d : {};
-  } catch (e) { return {}; }
+    const r = await fetch(meta.url + (meta.url.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) { return null; }
 }
-function saveUsers(db) {
-  return put(USERS_PATH, JSON.stringify(db), {
-    access: 'public', addRandomSuffix: false, allowOverwrite: true,
-    contentType: 'application/json; charset=utf-8', cacheControlMaxAge: 0,
+function saveUser(name, obj) {
+  return put(userFile(name), JSON.stringify(obj), {
+    access: 'public', addRandomSuffix: false, allowOverwrite: false,
+    contentType: 'application/json; charset=utf-8', cacheControlMaxAge: 31536000,
   });
 }
 function hashPw(name, pw) {
@@ -45,7 +47,6 @@ function hashPw(name, pw) {
 function secret() {
   if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
   if (process.env.BLOB_READ_WRITE_TOKEN) return process.env.BLOB_READ_WRITE_TOKEN;
-  // 전용 시크릿이 없으면 서버에만 존재하는(페이지에 안 실리는) 안정적인 값 조합
   const parts = [
     process.env.BLOB_WEBHOOK_PUBLIC_KEY,
     process.env.BLOB_STORE_ID,
@@ -91,21 +92,25 @@ module.exports = async (req, res) => {
     if (name.length < 2) { res.status(400).json({ error: 'bad-name' }); return; }
     if (pw.length < 4 || pw.length > 40) { res.status(400).json({ error: 'bad-pw' }); return; }
 
-    const db = await loadUsers();
-    const key = name.toLowerCase();
     const now = Math.floor(Date.now() / 1000);
+    let displayName = name;
 
     if (action === 'signup') {
-      if (db[key]) { res.status(409).json({ error: 'exists' }); return; }
-      if (Object.keys(db).length >= 5000) { res.status(507).json({ error: 'full' }); return; }
-      db[key] = { name: name, hash: hashPw(name, pw), created: new Date().toISOString() };
-      await saveUsers(db);
+      if (await readUser(name)) { res.status(409).json({ error: 'exists' }); return; }
+      try {
+        await saveUser(name, { name: name, hash: hashPw(name, pw), created: new Date().toISOString() });
+      } catch (e) {
+        // allowOverwrite:false → 동시에 같은 아이디로 가입 시 두 번째는 여기로
+        res.status(409).json({ error: 'exists' });
+        return;
+      }
     } else {
-      const u = db[key];
+      const u = await readUser(name);
       if (!u || u.hash !== hashPw(name, pw)) { res.status(401).json({ error: 'wrong' }); return; }
+      displayName = u.name || name;
     }
 
-    const user = { sub: 'local:' + key, name: db[key].name };
+    const user = { sub: 'local:' + name.toLowerCase(), name: displayName };
     const exp = now + SESSION_TTL;
     const token = sign({ sub: user.sub, name: user.name, iat: now, exp: exp });
 
