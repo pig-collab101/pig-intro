@@ -55,6 +55,16 @@ function clean(s, max) {
 
 module.exports = async (req, res) => {
   try {
+    if (req.method === 'GET' && req.query && req.query.debug === '1') {
+      res.status(200).json({
+        hasRWToken: !!process.env.BLOB_READ_WRITE_TOKEN,
+        hasStoreId: !!process.env.BLOB_STORE_ID,
+        hasOidc: !!process.env.VERCEL_OIDC_TOKEN,
+        base: blobBase(),
+        canWrite: canWrite()
+      });
+      return;
+    }
     if (req.method === 'GET') {
       const posts = await load();
       res.setHeader('Cache-Control', 'no-store');
