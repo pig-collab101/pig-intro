@@ -33,7 +33,8 @@ async function loadUsers() {
 }
 function saveUsers(db) {
   return put(USERS_PATH, JSON.stringify(db), {
-    access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json',
+    access: 'public', addRandomSuffix: false, allowOverwrite: true,
+    contentType: 'application/json; charset=utf-8', cacheControlMaxAge: 0,
   });
 }
 function hashPw(name, pw) {

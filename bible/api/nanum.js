@@ -46,7 +46,8 @@ function save(posts) {
     access: 'public',
     addRandomSuffix: false,
     allowOverwrite: true,
-    contentType: 'application/json',
+    contentType: 'application/json; charset=utf-8',
+    cacheControlMaxAge: 0,
   });
 }
 
