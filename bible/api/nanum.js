@@ -7,7 +7,7 @@
 // "읽고-고치고-쓰기"를 하면 60초 안에 올라온 다른 글을 덮어써 유실될 수 있음.
 // 글을 각각 파일로 쓰면 절대 유실 안 됨. list()는 글 쓸 때만 호출(빈도 낮음).
 
-const { put, list } = require('@vercel/blob');
+const { put, list, del } = require('@vercel/blob');
 const { verifySession } = require('./auth');
 
 const AGG_PATH = 'bible/nanum.json';   // 읽기용 집계 파일
@@ -84,13 +84,28 @@ module.exports = async (req, res) => {
       return;
     }
 
-    if (req.method !== 'POST') { res.status(405).json({ error: 'method-not-allowed' }); return; }
+    if (req.method !== 'POST' && req.method !== 'DELETE') { res.status(405).json({ error: 'method-not-allowed' }); return; }
     if (!blobStoreId()) { res.status(503).json({ error: 'no-db' }); return; }
 
     const auth = String(req.headers.authorization || '');
     const token = auth.replace(/^Bearer\s+/i, '');
     const sess = verifySession(token);
     if (!sess) { res.status(401).json({ error: 'unauthorized' }); return; }
+
+    if (req.method === 'DELETE') {
+      const id = String((req.query && req.query.id) || '').slice(0, 40);
+      if (!id) { res.status(400).json({ error: 'no-id' }); return; }
+      const agg = await loadAgg();
+      const target = agg.find(function (p) { return p.id === id; });
+      if (!target) { res.status(404).json({ error: 'not-found' }); return; }
+      if (target.sub !== sess.sub) { res.status(403).json({ error: 'not-yours' }); return; }
+      try { await del(POST_DIR + id + '.json'); } catch (e) { /* 이미 없어도 진행 */ }
+      let posts = await rebuildAgg();
+      if (!posts) posts = agg.filter(function (p) { return p.id !== id; });
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).json({ ok: true, posts: posts.slice(0, MAX_SHOW) });
+      return;
+    }
 
     const body = req.body || {};
     const text = String(body.text == null ? '' : body.text).slice(0, MAX_TEXT).trim();

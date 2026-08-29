@@ -151,6 +151,12 @@
     padding:14px 16px; font-size:0.86rem; color:var(--ink-soft); margin-bottom:14px;
   }
   .nanum-composer.is-locked{ opacity:0.55; pointer-events:none; }
+  .nanum-post .nanum-del{
+    margin-top:10px; border:1px solid var(--surface-border); background:transparent;
+    color:var(--ink-soft); font-family:inherit; font-size:0.74rem; font-weight:600;
+    padding:4px 10px; border-radius:999px; cursor:pointer;
+  }
+  .nanum-post .nanum-del:hover{ color:#b5482f; border-color:#b5482f; }
 
   /* ---- 로그인 모달 ---- */
   .auth-modal{
@@ -2831,8 +2837,32 @@
       textP.textContent = post.text;
       card.appendChild(textP);
 
+      if (session && session.user && post.sub && post.sub === session.user.sub && post.id) {
+        var delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "nanum-del";
+        delBtn.textContent = "삭제";
+        delBtn.addEventListener("click", function () { deletePost(post.id); });
+        card.appendChild(delBtn);
+      }
+
       listEl.appendChild(card);
     });
+  }
+
+  function deletePost(id) {
+    if (!session || !window.confirm("이 나눔 글을 삭제할까요?")) return;
+    fetch("/api/nanum?id=" + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + session.token }
+    }).then(function (r) {
+      return r.json().then(function (j) { return { status: r.status, j: j }; });
+    }).then(function (res) {
+      if (res.status === 401) { setStatus("로그인이 만료됐어요. 다시 로그인해주세요.", "error"); clearSession(); return; }
+      if (res.status !== 200 || !res.j || !Array.isArray(res.j.posts)) { setStatus("삭제에 실패했어요.", "error"); return; }
+      setStatus("삭제됐어요.", "ok");
+      renderList(res.j.posts);
+    }).catch(function () { setStatus("삭제에 실패했어요.", "error"); });
   }
 
   function applyAuthUI() {
