@@ -151,12 +151,46 @@
     padding:14px 16px; font-size:0.86rem; color:var(--ink-soft); margin-bottom:14px;
   }
   .nanum-composer.is-locked{ opacity:0.55; pointer-events:none; }
-  .nanum-post .nanum-del{
-    margin-top:10px; border:1px solid var(--surface-border); background:transparent;
+  .nanum-post-actions{ display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+  .nanum-post-actions button{
+    border:1px solid var(--surface-border); background:transparent;
     color:var(--ink-soft); font-family:inherit; font-size:0.74rem; font-weight:600;
     padding:4px 10px; border-radius:999px; cursor:pointer;
   }
-  .nanum-post .nanum-del:hover{ color:#b5482f; border-color:#b5482f; }
+  .nanum-post-actions button:hover{ color:#b5482f; border-color:#b5482f; }
+
+  .nanum-admin{
+    background:var(--surface); border:1.5px solid var(--gold-soft); border-radius:16px;
+    padding:16px 18px; margin-bottom:24px;
+  }
+  .nanum-admin-head{
+    font-weight:700; color:var(--gold-strong); font-size:0.92rem; margin-bottom:6px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .admin-mini{
+    border:1px solid var(--surface-border); background:transparent; color:var(--ink-soft);
+    font-family:inherit; font-size:0.72rem; font-weight:600; padding:3px 9px; border-radius:999px; cursor:pointer;
+  }
+  .admin-block{ margin-top:14px; }
+  .admin-block h4{ font-size:0.8rem; color:var(--ink); margin:0 0 8px; }
+  .admin-list{ display:flex; flex-direction:column; gap:8px; }
+  .admin-item{
+    background:var(--surface-alt); border:1px solid var(--surface-border); border-radius:10px;
+    padding:10px 12px; font-size:0.84rem; color:var(--ink);
+  }
+  .admin-item .meta{ font-size:0.74rem; color:var(--ink-soft); margin-top:3px; }
+  .admin-item .row{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .admin-act{
+    border:1px solid var(--surface-border); background:transparent; color:var(--ink-soft);
+    font-family:inherit; font-size:0.72rem; font-weight:600; padding:3px 9px; border-radius:999px; cursor:pointer;
+  }
+  .admin-act:hover{ color:#b5482f; border-color:#b5482f; }
+  .admin-empty{ font-size:0.8rem; color:var(--ink-soft); }
+  .admin-banadd{ display:flex; gap:6px; margin-top:8px; }
+  .admin-banadd input{
+    flex:1; min-width:0; border:1.5px solid var(--surface-border); border-radius:8px; padding:6px 10px;
+    font-family:inherit; font-size:0.82rem; color:var(--ink); background:var(--surface-alt);
+  }
 
   /* ---- 로그인 모달 ---- */
   .auth-modal{
@@ -1536,6 +1570,25 @@
       <button type="button" class="btn btn-primary" id="login-open-btn-2">로그인 / 회원가입</button>
     </div>
 
+    <div class="nanum-admin" id="nanum-admin" hidden>
+      <div class="nanum-admin-head">
+        <span>🛡️ 관리자</span>
+        <button type="button" class="admin-mini" id="admin-refresh">새로고침</button>
+      </div>
+      <div class="admin-block">
+        <h4>신고된 글 <span id="admin-rep-count">0</span></h4>
+        <div class="admin-list" id="admin-reports"></div>
+      </div>
+      <div class="admin-block">
+        <h4>추방된 아이디 <span id="admin-ban-count">0</span></h4>
+        <div class="admin-list" id="admin-banned"></div>
+        <div class="admin-banadd">
+          <input type="text" id="admin-ban-name" maxlength="16" placeholder="아이디로 직접 추방">
+          <button type="button" class="admin-act" id="admin-ban-btn">추방</button>
+        </div>
+      </div>
+    </div>
+
     <div class="nanum-composer" id="nanum-composer">
       <div class="nanum-row">
         <input type="text" id="nanum-name" class="nanum-name" maxlength="30" placeholder="이름" readonly>
@@ -2756,7 +2809,20 @@
   var listCountEl = document.getElementById("nanum-list-count");
   var noteEl = document.getElementById("nanum-note");
 
+  var adminBox = document.getElementById("nanum-admin");
+  var adminReportsEl = document.getElementById("admin-reports");
+  var adminBannedEl = document.getElementById("admin-banned");
+  var adminRepCountEl = document.getElementById("admin-rep-count");
+  var adminBanCountEl = document.getElementById("admin-ban-count");
+  var adminRefreshBtn = document.getElementById("admin-refresh");
+  var adminBanNameInput = document.getElementById("admin-ban-name");
+  var adminBanBtn = document.getElementById("admin-ban-btn");
+
   if (!textInput) return;
+
+  function isAdmin() {
+    return !!(session && session.user && (session.user.admin || session.user.sub === "local:adminpig1234"));
+  }
 
   var VERSE_REFS = [
     "마태오 1, 23","마태오 28, 19-20","요한 3, 16","요한 6, 35","요한 20, 28-29",
@@ -2790,7 +2856,9 @@
     } catch (e) { return ""; }
   }
 
+  var lastPosts = [];
   function renderList(posts) {
+    if (Array.isArray(posts)) lastPosts = posts;
     listEl.innerHTML = "";
     if (!posts || !posts.length) {
       var empty = document.createElement("div");
@@ -2837,13 +2905,32 @@
       textP.textContent = post.text;
       card.appendChild(textP);
 
-      if (session && session.user && post.sub && post.sub === session.user.sub && post.id) {
-        var delBtn = document.createElement("button");
-        delBtn.type = "button";
-        delBtn.className = "nanum-del";
-        delBtn.textContent = "삭제";
-        delBtn.addEventListener("click", function () { deletePost(post.id); });
-        card.appendChild(delBtn);
+      if (session && session.user && post.id) {
+        var mine = post.sub && post.sub === session.user.sub;
+        var acts = document.createElement("div");
+        acts.className = "nanum-post-actions";
+        if (mine || isAdmin()) {
+          var delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.textContent = "삭제";
+          delBtn.addEventListener("click", function () { deletePost(post.id); });
+          acts.appendChild(delBtn);
+        }
+        if (isAdmin() && !mine && post.name) {
+          var banBtn = document.createElement("button");
+          banBtn.type = "button";
+          banBtn.textContent = "글쓴이 추방";
+          banBtn.addEventListener("click", function () { banUser(post.name); });
+          acts.appendChild(banBtn);
+        }
+        if (!mine && !isAdmin()) {
+          var repBtn = document.createElement("button");
+          repBtn.type = "button";
+          repBtn.textContent = "신고";
+          repBtn.addEventListener("click", function () { reportPost(post.id, repBtn); });
+          acts.appendChild(repBtn);
+        }
+        if (acts.children.length) card.appendChild(acts);
       }
 
       listEl.appendChild(card);
@@ -2862,8 +2949,134 @@
       if (res.status !== 200 || !res.j || !Array.isArray(res.j.posts)) { setStatus("삭제에 실패했어요.", "error"); return; }
       setStatus("삭제됐어요.", "ok");
       renderList(res.j.posts);
+      if (isAdmin()) loadAdmin();
     }).catch(function () { setStatus("삭제에 실패했어요.", "error"); });
   }
+
+  function reportPost(id, btn) {
+    if (!session) return;
+    if (!window.confirm("이 글을 관리자에게 신고할까요?")) return;
+    if (btn) { btn.disabled = true; btn.textContent = "신고함"; }
+    fetch("/api/nanum", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ action: "report", id: id })
+    }).then(function (r) {
+      return r.json().then(function (j) { return { status: r.status, j: j }; });
+    }).then(function (res) {
+      if (res.status === 401) { setStatus("로그인이 만료됐어요. 다시 로그인해주세요.", "error"); clearSession(); return; }
+      if (res.status === 200) { setStatus("신고했어요. 관리자가 확인합니다.", "ok"); }
+      else { setStatus("신고에 실패했어요.", "error"); if (btn) { btn.disabled = false; btn.textContent = "신고"; } }
+    }).catch(function () {
+      setStatus("신고에 실패했어요.", "error");
+      if (btn) { btn.disabled = false; btn.textContent = "신고"; }
+    });
+  }
+
+  function banUser(name) {
+    if (!session || !isAdmin()) return;
+    if (!window.confirm("'" + name + "' 님을 추방할까요?\n이 아이디는 로그인·글쓰기가 막히고, 재가입도 안 됩니다.")) return;
+    fetch("/api/nanum", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ action: "ban", name: name })
+    }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+      .then(function (res) {
+        if (res.status === 200) { setStatus("'" + name + "' 님을 추방했어요.", "ok"); loadAdmin(); }
+        else if (res.status === 401) { clearSession(); }
+        else { setStatus("추방에 실패했어요.", "error"); }
+      }).catch(function () { setStatus("추방에 실패했어요.", "error"); });
+  }
+
+  function unbanUser(name) {
+    if (!session || !isAdmin()) return;
+    if (!window.confirm("'" + name + "' 님의 추방을 해제할까요?")) return;
+    fetch("/api/nanum", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ action: "unban", name: name })
+    }).then(function () { setStatus("'" + name + "' 님의 추방을 해제했어요.", "ok"); loadAdmin(); })
+      .catch(function () { setStatus("해제에 실패했어요.", "error"); });
+  }
+
+  function renderAdmin(data) {
+    var reports = (data && data.reports) || [];
+    var banned = (data && data.banned) || [];
+    adminRepCountEl.textContent = reports.length;
+    adminBanCountEl.textContent = banned.length;
+
+    adminReportsEl.innerHTML = "";
+    if (!reports.length) {
+      var e1 = document.createElement("div");
+      e1.className = "admin-empty";
+      e1.textContent = "신고된 글이 없어요.";
+      adminReportsEl.appendChild(e1);
+    } else {
+      reports.forEach(function (rep) {
+        var it = document.createElement("div");
+        it.className = "admin-item";
+        var txt = document.createElement("div");
+        txt.textContent = (rep.postText || "(내용 없음)");
+        it.appendChild(txt);
+        var meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = "글쓴이: " + (rep.postName || "?") + " · 신고 " + rep.count + "회 (" + (rep.reporters || []).join(", ") + ")";
+        it.appendChild(meta);
+        var row = document.createElement("div");
+        row.className = "row";
+        var d = document.createElement("button");
+        d.className = "admin-act"; d.textContent = "글 삭제";
+        d.addEventListener("click", function () { deletePost(rep.postId); });
+        row.appendChild(d);
+        if (rep.postName) {
+          var b = document.createElement("button");
+          b.className = "admin-act"; b.textContent = "글쓴이 추방";
+          b.addEventListener("click", function () { banUser(rep.postName); });
+          row.appendChild(b);
+        }
+        it.appendChild(row);
+        adminReportsEl.appendChild(it);
+      });
+    }
+
+    adminBannedEl.innerHTML = "";
+    if (!banned.length) {
+      var e2 = document.createElement("div");
+      e2.className = "admin-empty";
+      e2.textContent = "추방된 아이디가 없어요.";
+      adminBannedEl.appendChild(e2);
+    } else {
+      banned.forEach(function (bn) {
+        var it = document.createElement("div");
+        it.className = "admin-item";
+        var nm = document.createElement("div");
+        nm.textContent = bn.name || "?";
+        it.appendChild(nm);
+        var row = document.createElement("div");
+        row.className = "row";
+        var u = document.createElement("button");
+        u.className = "admin-act"; u.textContent = "추방 해제";
+        u.addEventListener("click", function () { unbanUser(bn.name); });
+        row.appendChild(u);
+        it.appendChild(row);
+        adminBannedEl.appendChild(it);
+      });
+    }
+  }
+
+  function loadAdmin() {
+    if (!isAdmin()) return;
+    fetch("/api/admin", { headers: { "Authorization": "Bearer " + session.token }, cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) { if (data) renderAdmin(data); })
+      .catch(function () {});
+  }
+
+  if (adminRefreshBtn) adminRefreshBtn.addEventListener("click", loadAdmin);
+  if (adminBanBtn) adminBanBtn.addEventListener("click", function () {
+    var n = (adminBanNameInput.value || "").trim();
+    if (n.length >= 2) { banUser(n); adminBanNameInput.value = ""; }
+  });
 
   function applyAuthUI() {
     if (session && session.user) {
@@ -2875,6 +3088,8 @@
       nameInput.value = session.user.name || "";
       textInput.disabled = false; verseSelect.disabled = false; submitBtn.disabled = false;
       if (noteEl) noteEl.textContent = "";
+      if (adminBox) adminBox.hidden = !isAdmin();
+      if (isAdmin()) loadAdmin();
     } else {
       chip.hidden = true;
       openBtns.forEach(function (b) { b.classList.remove("is-hidden"); });
@@ -2882,7 +3097,9 @@
       if (composer) composer.classList.add("is-locked");
       nameInput.value = "";
       textInput.disabled = true; verseSelect.disabled = true; submitBtn.disabled = true;
+      if (adminBox) adminBox.hidden = true;
     }
+    renderList(lastPosts);
   }
 
   function saveSession(data) {
@@ -2944,6 +3161,7 @@
     "exists": "이미 있는 아이디예요. 다른 아이디를 써주세요.",
     "wrong": "아이디 또는 비밀번호가 맞지 않아요.",
     "full": "가입 인원이 가득 찼어요.",
+    "banned": "이 아이디는 이용이 제한되었어요.",
     "no-db": "서버 저장소 준비 중이에요. 잠시 후 다시 시도해주세요."
   };
 
@@ -3007,6 +3225,7 @@
     }).then(function (res) {
       submitBtn.disabled = false;
       if (res.status === 401) { setStatus("로그인이 만료됐어요. 다시 로그인해주세요.", "error"); clearSession(); return; }
+      if (res.status === 403 && res.j && res.j.error === "banned") { setStatus("이 아이디는 글쓰기가 제한되었어요.", "error"); return; }
       if (res.status !== 200 || !res.j || !Array.isArray(res.j.posts)) {
         setStatus("게시에 실패했어요. 잠시 후 다시 시도해주세요.", "error"); return;
       }
