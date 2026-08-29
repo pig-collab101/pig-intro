@@ -24,9 +24,10 @@ function blobBase() {
   return id ? `https://${id.toLowerCase()}.public.blob.vercel-storage.com` : '';
 }
 
-// 쓰기 가능 여부: RW 토큰이 있거나, OIDC(Vercel 배포 환경) + BLOB_STORE_ID 조합이면 OK
+// 쓰기 가능 여부: 저장소 ID만 확인. (Vercel 배포 환경은 x-vercel-oidc-token 헤더로
+// @vercel/blob 이 자동 인증하고, 로컬/기타 환경은 BLOB_READ_WRITE_TOKEN 을 씀)
 function canWrite() {
-  return !!(process.env.BLOB_READ_WRITE_TOKEN || (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN));
+  return !!blobStoreId();
 }
 
 async function load() {
@@ -55,23 +56,6 @@ function clean(s, max) {
 
 module.exports = async (req, res) => {
   try {
-    if (req.method === 'GET' && req.query && req.query.debug === '1') {
-      let putErr = null;
-      try {
-        await put(PATH, JSON.stringify(await load()), {
-          access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json',
-        });
-      } catch (e) { putErr = String((e && e.message) || e); }
-      res.status(200).json({
-        hasRWToken: !!process.env.BLOB_READ_WRITE_TOKEN,
-        hasStoreId: !!process.env.BLOB_STORE_ID,
-        hasOidcEnv: !!process.env.VERCEL_OIDC_TOKEN,
-        hasOidcHeader: !!req.headers['x-vercel-oidc-token'],
-        base: blobBase(),
-        putErr: putErr,
-      });
-      return;
-    }
     if (req.method === 'GET') {
       const posts = await load();
       res.setHeader('Cache-Control', 'no-store');
