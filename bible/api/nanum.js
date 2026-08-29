@@ -7,7 +7,7 @@
 // "읽고-고치고-쓰기"를 하면 60초 안에 올라온 다른 글을 덮어써 유실될 수 있음.
 // 글을 각각 파일로 쓰면 절대 유실 안 됨. list()는 글 쓸 때만 호출(빈도 낮음).
 
-const { put, list, del } = require('@vercel/blob');
+const { put, list, del, head } = require('@vercel/blob');
 const { verifySession } = require('./auth');
 
 const AGG_PATH = 'bible/nanum.json';   // 읽기용 집계 파일
@@ -95,13 +95,18 @@ module.exports = async (req, res) => {
     if (req.method === 'DELETE') {
       const id = String((req.query && req.query.id) || '').slice(0, 40);
       if (!id) { res.status(400).json({ error: 'no-id' }); return; }
-      const agg = await loadAgg();
-      const target = agg.find(function (p) { return p.id === id; });
+      // 개별 파일에서 직접 확인 (집계 파일은 최대 60초 지연 → 방금 올린 글은 못 찾음)
+      let target = null;
+      try {
+        const meta = await head(POST_DIR + id + '.json');
+        const rr = await fetch(meta.url + (meta.url.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(), { cache: 'no-store' });
+        if (rr.ok) target = await rr.json();
+      } catch (e) { /* 없음 */ }
       if (!target) { res.status(404).json({ error: 'not-found' }); return; }
       if (target.sub !== sess.sub) { res.status(403).json({ error: 'not-yours' }); return; }
       try { await del(POST_DIR + id + '.json'); } catch (e) { /* 이미 없어도 진행 */ }
       let posts = await rebuildAgg();
-      if (!posts) posts = agg.filter(function (p) { return p.id !== id; });
+      if (!posts) posts = (await loadAgg()).filter(function (p) { return p.id !== id; });
       res.setHeader('Cache-Control', 'no-store');
       res.status(200).json({ ok: true, posts: posts.slice(0, MAX_SHOW) });
       return;
