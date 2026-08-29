@@ -159,6 +159,41 @@
   }
   .nanum-post-actions button:hover{ color:#b5482f; border-color:#b5482f; }
 
+  /* ---- 오늘의 말씀 ---- */
+  .today-wrap{ max-width:640px; margin:0 auto; }
+  .today-head{ text-align:center; margin-bottom:28px; }
+  .today-title{
+    font-family:"Noto Serif KR", serif; font-size:clamp(1.4rem, 2vw + 1rem, 1.9rem);
+    color:var(--ink); margin:0 0 8px;
+  }
+  .today-date{ font-size:0.9rem; color:var(--ink-soft); margin:0; }
+  .today-loading{ text-align:center; color:var(--ink-soft); padding:32px 0; }
+  .today-reading{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:16px;
+    box-shadow:var(--shadow); padding:18px 20px; margin-bottom:14px;
+  }
+  .today-reading .r-label{
+    display:inline-block; font-size:0.76rem; font-weight:700; letter-spacing:0.04em;
+    color:#241a06; background:var(--gold-soft); padding:3px 10px; border-radius:999px; margin-bottom:10px;
+  }
+  .today-reading .r-ref{
+    font-family:"Noto Serif KR", serif; font-size:1.1rem; font-weight:700; color:var(--ink); margin:0 0 4px;
+  }
+  .today-reading .r-source{ font-size:0.86rem; color:var(--ink-soft); margin:0 0 8px; }
+  .today-reading .r-sub{
+    font-size:0.92rem; color:var(--gold-strong); font-style:italic; margin:0;
+    padding-left:12px; border-left:2.5px solid var(--gold-soft);
+  }
+  .today-link{
+    display:block; text-align:center; margin:22px 0 10px;
+    background:var(--gold); color:#241a06; font-weight:700; font-size:0.92rem;
+    padding:13px 18px; border-radius:12px;
+  }
+  .today-link:hover{ background:var(--gold-strong); color:#fff; }
+  .today-credit{ font-size:0.76rem; color:var(--ink-soft); text-align:center; line-height:1.6; margin:12px 0 0; }
+  .today-credit a{ color:var(--gold-strong); text-decoration:underline; }
+  .today-error{ text-align:center; color:var(--ink-soft); padding:24px 0; }
+
   .nanum-admin{
     background:var(--surface); border:1.5px solid var(--gold-soft); border-radius:16px;
     padding:16px 18px; margin-bottom:24px;
@@ -1132,7 +1167,7 @@
     <a class="nav-item" href="#" data-goto="home" data-anchor="updates">업데이트 소식</a>
     <a class="nav-item" href="#" data-goto="games">말씀 게임</a>
     <a class="nav-item" href="#" data-goto="nanum">나눔마당</a>
-    <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">묵상노트<span class="badge">준비중</span></a>
+    <a class="nav-item" href="#" data-goto="today">오늘의 말씀</a>
     <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">모임안내<span class="badge">준비중</span></a>
     <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">사이트안내<span class="badge">준비중</span></a>
   </div>
@@ -1319,7 +1354,7 @@
       <div class="soon-box">
         <span class="soon-badge">준비 중</span>
         <h3>그 밖의 메뉴</h3>
-        <p>묵상노트, 모임안내, 사이트안내는 차차 채워나갈 예정이에요.</p>
+        <p>모임안내, 사이트안내는 차차 채워나갈 예정이에요.</p>
       </div>
     </div>
   </section>
@@ -1555,6 +1590,25 @@
 
     </div>
   </main>
+</div>
+</div>
+
+<div id="page-today" hidden>
+<div class="stage">
+  <div class="today-wrap">
+    <div class="today-head">
+      <p class="section-eyebrow">Today's Word</p>
+      <h2 class="today-title" id="today-title">오늘의 말씀</h2>
+      <p class="today-date" id="today-date"></p>
+    </div>
+    <div id="today-body">
+      <p class="today-loading" id="today-loading">불러오는 중…</p>
+    </div>
+    <a class="today-link" id="today-link" href="https://missa.cbck.or.kr/DailyMissa" target="_blank" rel="noopener">
+      매일미사에서 독서·복음 전문 읽기 →
+    </a>
+    <p class="today-credit">자료: 한국천주교주교회의 <a href="https://missa.cbck.or.kr/" target="_blank" rel="noopener">매일미사</a> · 이 페이지는 전례일과 독서·복음의 출처(장·절)만 안내합니다.</p>
+  </div>
 </div>
 </div>
 
@@ -2746,7 +2800,7 @@
 (function(){
   "use strict";
   function goTo(page, anchor){
-    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum" };
+    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today" };
     Object.keys(pages).forEach(function(key){
       var el = document.getElementById(pages[key]);
       if (el) el.hidden = key !== page;
@@ -2765,7 +2819,56 @@
     if (!el) return;
     e.preventDefault();
     goTo(el.getAttribute("data-goto"), el.getAttribute("data-anchor"));
+    if (el.getAttribute("data-goto") === "today" && window.__loadToday) window.__loadToday();
   });
+})();
+</script>
+
+<script>
+(function(){
+  "use strict";
+  var bodyEl = document.getElementById("today-body");
+  var titleEl = document.getElementById("today-title");
+  var dateEl = document.getElementById("today-date");
+  var linkEl = document.getElementById("today-link");
+  if (!bodyEl) return;
+  var loaded = false, loading = false;
+
+  var COLOR = { "녹": "#4c7a4f", "백": "#8a7b3c", "홍": "#b5482f", "자": "#6b4b8a", "금": "#a97a26", "장미": "#c77" };
+
+  function esc(s){ var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+
+  function render(data){
+    if (!data || data.unavailable || !data.readings || !data.readings.length){
+      titleEl.textContent = "오늘의 말씀";
+      bodyEl.innerHTML = '<p class="today-error">지금은 오늘의 독서를 불러올 수 없어요.<br>아래 버튼으로 매일미사에서 확인해 주세요.</p>';
+      return;
+    }
+    titleEl.textContent = data.title || "오늘의 말씀";
+    if (data.color && COLOR[data.color]) titleEl.style.color = COLOR[data.color];
+    dateEl.textContent = data.dateText || "";
+    if (data.source_url) linkEl.href = data.source_url;
+
+    var html = "";
+    data.readings.forEach(function(r){
+      html += '<div class="today-reading">';
+      html += '<span class="r-label">' + esc(r.label) + '</span>';
+      if (r.ref) html += '<p class="r-ref">' + esc(r.ref) + '</p>';
+      if (r.source) html += '<p class="r-source">' + esc(r.source) + '</p>';
+      if (r.subtitle) html += '<p class="r-sub">' + esc(r.subtitle) + '</p>';
+      html += '</div>';
+    });
+    bodyEl.innerHTML = html;
+  }
+
+  window.__loadToday = function(){
+    if (loaded || loading) return;
+    loading = true;
+    fetch("/api/today", { cache: "no-store" })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){ loaded = true; loading = false; render(data); })
+      .catch(function(){ loading = false; render(null); });
+  };
 })();
 </script>
 
