@@ -1,0 +1,2899 @@
+<title>BIBLE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+<script src="https://accounts.google.com/gsi/client" async></script>
+
+<style>
+  :root{
+    --bg: #f4ecd9;
+    --bg-2: #eee1c2;
+    --surface: #fffdf8;
+    --surface-alt: #fbf5e6;
+    --surface-border: #e2d0a6;
+    --ink: #26213a;
+    --ink-soft: #746a8a;
+    --gold: #a97a26;
+    --gold-strong: #8a611c;
+    --gold-soft: #e6c576;
+    --sage: #4c7a4f;
+    --rule: #d9c69a;
+    --texture-dot: rgba(169, 122, 38, 0.16);
+    --shadow: 0 20px 60px -25px rgba(60, 45, 10, 0.45);
+    --focus-ring: #8a611c;
+    --header-bg: #fffdf8;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #141830;
+      --bg-2: #1b2040;
+      --surface: #1e2342;
+      --surface-alt: #1a1f3c;
+      --surface-border: #343b64;
+      --ink: #f1e9d4;
+      --ink-soft: #a9a3c8;
+      --gold: #d9b25f;
+      --gold-strong: #f0d99a;
+      --gold-soft: #7a622f;
+      --sage: #8fc08a;
+      --rule: #3d4670;
+      --texture-dot: rgba(217, 178, 95, 0.14);
+      --shadow: 0 25px 70px -20px rgba(0, 0, 0, 0.6);
+      --focus-ring: #e6c576;
+      --header-bg: #1a1f3c;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #141830;
+    --bg-2: #1b2040;
+    --surface: #1e2342;
+    --surface-alt: #1a1f3c;
+    --surface-border: #343b64;
+    --ink: #f1e9d4;
+    --ink-soft: #a9a3c8;
+    --gold: #d9b25f;
+    --gold-strong: #f0d99a;
+    --gold-soft: #7a622f;
+    --sage: #8fc08a;
+    --rule: #3d4670;
+    --texture-dot: rgba(217, 178, 95, 0.14);
+    --shadow: 0 25px 70px -20px rgba(0, 0, 0, 0.6);
+    --focus-ring: #e6c576;
+    --header-bg: #1a1f3c;
+  }
+
+  *{ box-sizing: border-box; }
+  [hidden]{ display:none !important; }
+  html, body{ margin:0; padding:0; background:var(--bg); color:var(--ink); }
+  body{
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    background:
+      radial-gradient(circle at 78% -8%, var(--texture-dot) 0, transparent 45%),
+      radial-gradient(ellipse at 10% 30%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 92% 40%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 30% 85%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 70% 92%, var(--texture-dot) 0%, transparent 2%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+  }
+  a{ color: inherit; text-decoration: none; }
+  img{ max-width: 100%; display:block; }
+  .wrap{ max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  section{ scroll-margin-top: 90px; }
+
+  /* ---------- header ---------- */
+  .topbar{
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .topbar-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 0; gap: 20px; flex-wrap: wrap;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{
+    width:52px; height:52px; border-radius:14px; overflow:hidden;
+    box-shadow: var(--shadow); flex-shrink:0;
+    border: 1.5px solid var(--surface-border);
+  }
+  .brand-mark img{ width:100%; height:100%; object-fit:cover; }
+  .brand-text{ line-height:1.15; }
+  .brand-text .name{
+    font-family:"Noto Serif KR", serif; font-weight:700; font-size:1.35rem;
+    color: var(--ink); letter-spacing: 0.01em;
+  }
+  .brand-text .sub{ font-size:0.72rem; color: var(--ink-soft); letter-spacing:0.08em; margin-top:2px; }
+
+  .utility{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  .utility-links{ display:flex; align-items:center; gap:10px; font-size:0.82rem; color:var(--ink-soft); }
+  .utility-links span.sep{ color: var(--rule); }
+  .utility-links a{ cursor:default; }
+  .utility-links a:hover{ color: var(--gold-strong); }
+  .search{
+    display:flex; align-items:center; background:var(--surface-alt);
+    border:1px solid var(--surface-border); border-radius:999px; padding:6px 6px 6px 14px;
+  }
+  .search input{
+    border:none; background:transparent; font-family:inherit; font-size:0.82rem;
+    color:var(--ink); width:170px; outline:none;
+  }
+  .search input::placeholder{ color: var(--ink-soft); }
+  .search button{
+    border:none; background:var(--gold); color:#241a06; width:28px; height:28px;
+    border-radius:999px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+
+  .auth-area{ display:flex; align-items:center; min-height:38px; }
+  #g-signin{ display:flex; }
+  #g-signin.is-hidden{ display:none; }
+  .profile-chip{
+    display:flex; align-items:center; gap:9px; background:var(--surface);
+    border:1.5px solid var(--surface-border); border-radius:999px; padding:5px 8px 5px 6px;
+  }
+  .profile-chip img{
+    width:26px; height:26px; border-radius:999px; object-fit:cover; flex-shrink:0;
+    background:var(--surface-alt); box-shadow:0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .profile-chip .p-name{
+    font-family:"Noto Sans KR", sans-serif; font-size:0.82rem; font-weight:700; color:var(--ink);
+    max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .profile-chip .p-logout{
+    border:none; background:transparent; cursor:pointer; color:var(--ink-soft);
+    font-family:inherit; font-size:0.76rem; font-weight:600; padding:4px 8px; border-radius:999px;
+  }
+  .profile-chip .p-logout:hover{ color:var(--gold-strong); background:var(--surface-alt); }
+
+  .nanum-login-hint{
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+    background:var(--surface-alt); border:1.5px dashed var(--rule); border-radius:14px;
+    padding:14px 16px; font-size:0.86rem; color:var(--ink-soft); margin-bottom:14px;
+  }
+  .nanum-composer.is-locked{ opacity:0.55; pointer-events:none; }
+
+  .navbar{ background: var(--surface); border-bottom:1px solid var(--surface-border); }
+  .navbar-inner{
+    display:flex; align-items:center; justify-content:center; gap: 6px;
+    flex-wrap:wrap; padding: 4px 0;
+  }
+  .nav-item{
+    position:relative; padding: 16px 18px; font-size:0.95rem; font-weight:700; color:var(--ink);
+    border-radius:10px; transition: color .15s ease, background .15s ease;
+  }
+  .nav-item:hover{ color: var(--gold-strong); background: color-mix(in srgb, var(--gold-soft) 20%, transparent); }
+  .nav-item .badge{
+    position:absolute; top:8px; right:4px; font-size:0.58rem; font-weight:700;
+    color: var(--gold-strong); background: color-mix(in srgb, var(--gold-soft) 35%, transparent);
+    padding:1px 6px; border-radius:999px; letter-spacing:0.02em;
+  }
+  .nav-item.muted{ color: var(--ink-soft); }
+
+  /* ---------- hero ---------- */
+  .hero{ padding: 64px 0 56px; }
+  .hero-inner{
+    display:grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items:center;
+    position:relative;
+  }
+  .hero-eyebrow{
+    font-size:0.76rem; letter-spacing:0.2em; color:var(--gold-strong); font-weight:700;
+    text-transform:uppercase; margin:0 0 14px;
+  }
+  .hero h1{
+    font-family:"Noto Serif KR", serif; font-size:clamp(2rem, 3.6vw + 1rem, 3.1rem);
+    line-height:1.28; margin:0 0 18px; color:var(--ink); text-wrap:balance;
+  }
+  .hero p{
+    font-size:1.02rem; line-height:1.85; color:var(--ink-soft); max-width:46ch; margin:0 0 30px;
+  }
+  .hero-actions{ display:flex; gap:12px; flex-wrap:wrap; }
+  .btn{
+    appearance:none; border:none; border-radius:14px; font-family:inherit; font-weight:700;
+    cursor:pointer; font-size:0.96rem; padding:14px 24px; transition: transform .1s ease, filter .15s ease;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn:active{ transform:scale(0.98); }
+  .btn-primary{ background:linear-gradient(180deg, var(--gold-strong), var(--gold)); color:#241a06; }
+  .btn-primary:hover{ filter:brightness(1.05); }
+  .btn-ghost{ background:transparent; border:1.5px solid var(--surface-border); color:var(--ink); }
+  .btn-ghost:hover{ border-color:var(--gold); }
+
+  .hero-art{ position:relative; display:flex; align-items:center; justify-content:center; }
+  .hero-art svg{ width:100%; max-width:380px; height:auto; }
+
+  /* verse-of-the-day floating card */
+  .verse-card{
+    position:absolute; left:-10px; bottom:-30px; width: min(320px, 88%);
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:18px;
+    box-shadow:var(--shadow); padding:20px 22px;
+  }
+  .verse-card-top{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+  }
+  .verse-card-title{ font-size:0.78rem; font-weight:700; color:var(--gold-strong); letter-spacing:0.04em; }
+  .verse-card-count{ font-size:0.72rem; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .verse-card-text{
+    font-family:"Noto Serif KR", serif; font-size:0.96rem; line-height:1.65; color:var(--ink);
+    min-height: 4.6em; margin:0 0 6px;
+  }
+  .verse-card-ref{ font-size:0.8rem; color:var(--gold-strong); font-weight:700; margin:0 0 14px; }
+  .verse-card-controls{ display:flex; align-items:center; gap:8px; }
+  .vc-btn{
+    width:30px; height:30px; border-radius:999px; border:1.5px solid var(--surface-border);
+    background:var(--surface-alt); color:var(--ink); cursor:pointer; display:flex; align-items:center;
+    justify-content:center; font-size:0.85rem; transition: border-color .15s ease;
+  }
+  .vc-btn:hover{ border-color:var(--gold); }
+  .vc-btn:focus-visible, .nav-item:focus-visible, .btn:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:2px; }
+
+  @media (max-width: 860px){
+    .hero-inner{ grid-template-columns: 1fr; }
+    .hero-art{ order:-1; }
+    .verse-card{ position:static; width:100%; margin-top:24px; }
+  }
+
+  /* ---------- section shared ---------- */
+  .section{ padding: 56px 0; }
+  .section-head{ text-align:center; max-width:600px; margin:0 auto 40px; }
+  .section-eyebrow{
+    font-size:0.76rem; letter-spacing:0.18em; color:var(--gold-strong); font-weight:700;
+    text-transform:uppercase; margin:0 0 10px;
+  }
+  .section h2{
+    font-family:"Noto Serif KR", serif; font-size:clamp(1.5rem, 2vw + 1rem, 2rem);
+    margin:0 0 10px; color:var(--ink);
+  }
+  .section-note{ font-size:0.92rem; color:var(--ink-soft); line-height:1.7; margin:0; }
+
+  /* explanation cards */
+  .card-grid{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+  }
+  .explain-card{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:18px;
+    padding:26px 22px; box-shadow: var(--shadow);
+  }
+  .explain-card svg{ width:34px; height:34px; margin-bottom:14px; }
+  .explain-card h3{
+    font-family:"Noto Serif KR", serif; font-size:1.05rem; margin:0 0 8px; color:var(--ink);
+  }
+  .explain-card p{ font-size:0.88rem; line-height:1.65; color:var(--ink-soft); margin:0; }
+
+  @media (max-width: 860px){ .card-grid{ grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px){ .card-grid{ grid-template-columns: 1fr; } }
+
+  /* updates */
+  .update-list{ max-width:640px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+  .update-item{
+    display:flex; gap:16px; align-items:flex-start; background:var(--surface);
+    border:1px solid var(--surface-border); border-radius:14px; padding:16px 18px;
+  }
+  .update-dot{
+    width:10px; height:10px; border-radius:999px; background:var(--gold); margin-top:6px; flex-shrink:0;
+  }
+  .update-body .title{ font-weight:700; color:var(--ink); font-size:0.95rem; margin-bottom:4px; }
+  .update-body .desc{ font-size:0.85rem; color:var(--ink-soft); line-height:1.6; }
+  .update-date{ font-size:0.76rem; color:var(--ink-soft); white-space:nowrap; margin-left:auto; font-variant-numeric:tabular-nums; }
+
+  /* coming soon */
+  .soon-box{
+    max-width:560px; margin:0 auto; text-align:center; background:var(--surface);
+    border:1.5px dashed var(--rule); border-radius:18px; padding:40px 30px;
+  }
+  .soon-badge{
+    display:inline-block; font-size:0.72rem; font-weight:700; color:var(--gold-strong);
+    background: color-mix(in srgb, var(--gold-soft) 30%, transparent); padding:5px 14px;
+    border-radius:999px; margin-bottom:14px; letter-spacing:0.04em;
+  }
+  .soon-box h3{ font-family:"Noto Serif KR", serif; font-size:1.2rem; margin:0 0 10px; color:var(--ink); }
+  .soon-box p{ font-size:0.9rem; color:var(--ink-soft); line-height:1.7; margin:0; }
+
+  footer{
+    border-top:1px solid var(--surface-border); padding:28px 0; text-align:center;
+    font-size:0.8rem; color:var(--ink-soft);
+  }
+  footer strong{ color:var(--gold-strong); font-family:"Noto Serif KR", serif; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition-duration:0.001ms !important; animation-duration:0.001ms !important; }
+  }
+
+
+  /* ===== merged from word-mosaic-quiz.html ===== */
+
+  :root{
+    --bg: #f4ecd9;
+    --bg-2: #eee1c2;
+    --surface: #fffdf8;
+    --surface-border: #e2d0a6;
+    --tile-bg: #ffffff;
+    --tile-border: #d9c493;
+    --tile-text: #2b2440;
+    --tile-used-bg: #efe6cf;
+    --ink: #26213a;
+    --ink-soft: #746a8a;
+    --gold: #a97a26;
+    --gold-strong: #8a611c;
+    --gold-soft: #e6c576;
+    --ember: #a3442c;
+    --ember-soft: #f2d9cf;
+    --sage: #4c7a4f;
+    --sage-soft: #d9e8d5;
+    --rule: #d9c69a;
+    --texture-dot: rgba(169, 122, 38, 0.16);
+    --shadow: 0 20px 60px -25px rgba(60, 45, 10, 0.45);
+    --focus-ring: #8a611c;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #141830;
+      --bg-2: #1b2040;
+      --surface: #1e2342;
+      --surface-border: #343b64;
+      --tile-bg: #232a4e;
+      --tile-border: #3d4670;
+      --tile-text: #f1e9d4;
+      --tile-used-bg: #171b36;
+      --ink: #f1e9d4;
+      --ink-soft: #a9a3c8;
+      --gold: #d9b25f;
+      --gold-strong: #f0d99a;
+      --gold-soft: #7a622f;
+      --ember: #e2937a;
+      --ember-soft: #402221;
+      --sage: #8fc08a;
+      --sage-soft: #1f3323;
+      --rule: #3d4670;
+      --texture-dot: rgba(217, 178, 95, 0.14);
+      --shadow: 0 25px 70px -20px rgba(0, 0, 0, 0.6);
+      --focus-ring: #e6c576;
+    }
+  }
+
+  :root[data-theme="dark"]{
+    --bg: #141830;
+    --bg-2: #1b2040;
+    --surface: #1e2342;
+    --surface-border: #343b64;
+    --tile-bg: #232a4e;
+    --tile-border: #3d4670;
+    --tile-text: #f1e9d4;
+    --tile-used-bg: #171b36;
+    --ink: #f1e9d4;
+    --ink-soft: #a9a3c8;
+    --gold: #d9b25f;
+    --gold-strong: #f0d99a;
+    --gold-soft: #7a622f;
+    --ember: #e2937a;
+    --ember-soft: #402221;
+    --sage: #8fc08a;
+    --sage-soft: #1f3323;
+    --rule: #3d4670;
+    --texture-dot: rgba(217, 178, 95, 0.14);
+    --shadow: 0 25px 70px -20px rgba(0, 0, 0, 0.6);
+    --focus-ring: #e6c576;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body{
+    min-height: 100%;
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    background:
+      radial-gradient(circle at 50% -10%, var(--texture-dot) 0, transparent 55%),
+      radial-gradient(ellipse at 12% 18%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 82% 12%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 30% 78%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 70% 85%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 90% 55%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 6% 60%, var(--texture-dot) 0%, transparent 2%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+  }
+
+  .stage{
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: clamp(20px, 5vw, 56px) 16px 64px;
+  }
+
+  .app{
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: clamp(22px, 5vw, 40px);
+  }
+
+  .screen[hidden]{ display: none; }
+
+  /* ---------- shared type ---------- */
+  .eyebrow{
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--gold-strong);
+    font-weight: 700;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+  }
+
+  h1{
+    font-family: "Noto Serif KR", serif;
+    font-size: clamp(1.7rem, 4vw + 0.6rem, 2.35rem);
+    line-height: 1.25;
+    margin: 0 0 6px;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .rule{
+    width: 64px;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+    margin: 14px 0 18px;
+  }
+
+  .lede{
+    font-size: 0.98rem;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0 0 28px;
+  }
+
+  /* ---------- setup screen ---------- */
+  .option-group{ margin-bottom: 24px; }
+  .option-label{
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  .option-row{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .chip{
+    appearance: none;
+    border: 1.5px solid var(--surface-border);
+    background: var(--tile-bg);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  }
+  .chip .sub{
+    display: block;
+    font-size: 0.74rem;
+    color: var(--ink-soft);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .chip[aria-pressed="true"]{
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold-soft) 32%, var(--tile-bg));
+  }
+  .chip:hover{ transform: translateY(-1px); }
+  .chip:focus-visible{ outline: 2.5px solid var(--focus-ring); outline-offset: 2px; }
+
+  .btn{
+    appearance: none;
+    border: none;
+    border-radius: 14px;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease, filter 0.15s ease, opacity 0.15s ease;
+  }
+  .btn:focus-visible{ outline: 2.5px solid var(--focus-ring); outline-offset: 2px; }
+  .btn:active{ transform: scale(0.98); }
+  .btn:disabled{ opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-primary{
+    background: linear-gradient(180deg, var(--gold-strong), var(--gold));
+    color: #241a06;
+    font-size: 1rem;
+    padding: 14px 26px;
+  }
+  .btn-primary:hover{ filter: brightness(1.05); }
+
+  .btn-ghost{
+    background: transparent;
+    border: 1.5px solid var(--surface-border);
+    color: var(--ink);
+    font-size: 0.88rem;
+    padding: 11px 18px;
+  }
+  .btn-ghost:hover{ border-color: var(--gold); }
+
+  .btn-quiet{
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .start-row{ display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+  .hint{ font-size: 0.8rem; color: var(--ink-soft); }
+
+  /* ---------- quiz screen ---------- */
+  .quiz-top{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .quiz-top strong{ color: var(--ink); font-weight: 700; }
+
+  .progress-track{
+    height: 6px;
+    border-radius: 4px;
+    background: var(--surface-border);
+    overflow: hidden;
+    margin-bottom: 26px;
+  }
+  .progress-fill{
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+    border-radius: 4px;
+    transition: width 0.35s ease;
+  }
+
+  .verse-hint{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--gold-strong);
+    background: color-mix(in srgb, var(--gold-soft) 25%, transparent);
+    border: 1px solid var(--gold);
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  .verse-hint::before{ content: "📖"; font-size: 0.85em; }
+
+  .answer-panel{
+    border: 1.5px dashed var(--rule);
+    border-radius: 16px;
+    padding: 16px;
+    min-height: 84px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .answer-panel.placeholder-empty::before{
+    content: attr(data-placeholder);
+    font-family: "Noto Serif KR", serif;
+    font-style: normal;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    padding: 6px 2px;
+  }
+  .answer-panel.state-correct{ border-style: solid; border-color: var(--sage); background: color-mix(in srgb, var(--sage-soft) 55%, transparent); }
+  .answer-panel.state-wrong{ border-style: solid; border-color: var(--ember); }
+  .answer-panel.state-revealed{ border-style: solid; border-color: var(--gold); background: color-mix(in srgb, var(--gold-soft) 25%, transparent); }
+
+  .reset-row{ display: flex; justify-content: flex-end; margin-bottom: 22px; min-height: 20px; }
+
+  .tile{
+    font-family: "Noto Serif KR", serif;
+    font-size: 0.98rem;
+    border-radius: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease, opacity 0.12s ease;
+    line-height: 1.4;
+  }
+
+  .tray{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-bottom: 22px;
+  }
+  .tray .tile{
+    background: var(--tile-bg);
+    border: 1.5px solid var(--tile-border);
+    color: var(--tile-text);
+  }
+  .tray .tile:hover{ transform: translateY(-2px); filter: brightness(1.02); }
+  .tray .tile:focus-visible{ outline: 2.5px solid var(--focus-ring); outline-offset: 2px; }
+  .tray .tile[data-used="true"]{
+    background: var(--tile-used-bg);
+    color: var(--ink-soft);
+    border-style: dashed;
+    opacity: 0.55;
+    cursor: default;
+    transform: none;
+  }
+
+  .answer-panel .tile{
+    background: color-mix(in srgb, var(--gold-soft) 30%, var(--tile-bg));
+    border: 1.5px solid var(--gold);
+    color: var(--tile-text);
+  }
+  .answer-panel .tile.is-decoy-marked{
+    border-color: var(--ember);
+    background: color-mix(in srgb, var(--ember-soft) 70%, var(--tile-bg));
+  }
+  .answer-panel .tile.is-outorder-marked{
+    border-color: var(--gold-strong);
+    box-shadow: inset 0 0 0 1px var(--gold-strong);
+  }
+  .answer-panel .tile:focus-visible{ outline: 2.5px solid var(--focus-ring); outline-offset: 2px; }
+
+  .feedback{
+    font-size: 0.88rem;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    border-left: 3px solid transparent;
+    display: none;
+  }
+  .feedback.show{ display: block; }
+  .feedback.ok{ background: var(--sage-soft); border-color: var(--sage); color: var(--ink); }
+  .feedback.bad{ background: var(--ember-soft); border-color: var(--ember); color: var(--ink); }
+  .feedback.info{ background: color-mix(in srgb, var(--gold-soft) 30%, transparent); border-color: var(--gold); color: var(--ink); }
+
+  .reveal-panel{
+    display: none;
+    border-top: 1px solid var(--rule);
+    padding-top: 18px;
+    margin-bottom: 18px;
+  }
+  .reveal-panel.show{ display: block; }
+  .reveal-text{
+    font-family: "Noto Serif KR", serif;
+    font-size: 1.02rem;
+    line-height: 1.75;
+    color: var(--ink);
+    margin: 0 0 10px;
+  }
+  .reveal-ref{
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    color: var(--gold-strong);
+    font-weight: 700;
+  }
+  .reveal-ref::before{ content: "— "; }
+
+  .action-row{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ---------- flashcard screen ---------- */
+  .flash-card{
+    border: 1.5px solid var(--surface-border);
+    border-radius: 16px;
+    background: var(--tile-bg);
+    padding: 36px 26px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .flash-card.is-answer{
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold-soft) 22%, var(--tile-bg));
+  }
+  .flash-label{
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-strong);
+    font-weight: 700;
+    margin: 0;
+    text-transform: uppercase;
+  }
+  .flash-content{
+    font-family: "Noto Serif KR", serif;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--ink);
+    margin: 0;
+    max-width: 46ch;
+  }
+
+  /* ---------- summary screen ---------- */
+  .score-display{
+    font-family: "Noto Serif KR", serif;
+    font-size: clamp(2.4rem, 8vw, 3.4rem);
+    font-weight: 600;
+    line-height: 1;
+    margin: 6px 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-display span{ font-size: 0.4em; color: var(--ink-soft); font-weight: 500; }
+
+  .missed-list{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 28px;
+  }
+  .missed-chip{
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--ember-soft);
+    color: var(--ink);
+    border: 1px solid var(--ember);
+  }
+
+  @media (max-width: 420px){
+    .action-row .btn{ flex: 1 1 auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+  }
+
+
+  /* ===== merged from word-mosaic-games.html ===== */
+
+  :root{
+    --bg: #f4ecd9;
+    --bg-2: #eee1c2;
+    --surface: #fffdf8;
+    --surface-border: #e2d0a6;
+    --tile-bg: #ffffff;
+    --tile-border: #d9c493;
+    --tile-text: #2b2440;
+    --ink: #26213a;
+    --ink-soft: #746a8a;
+    --gold: #a97a26;
+    --gold-strong: #8a611c;
+    --gold-soft: #e6c576;
+    --ember: #a3442c;
+    --ember-soft: #f2d9cf;
+    --sage: #4c7a4f;
+    --sage-soft: #d9e8d5;
+    --rule: #d9c69a;
+    --texture-dot: rgba(169, 122, 38, 0.16);
+    --shadow: 0 20px 60px -25px rgba(60, 45, 10, 0.45);
+    --focus-ring: #8a611c;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #141830; --bg-2: #1b2040; --surface: #1e2342; --surface-border: #343b64;
+      --tile-bg: #232a4e; --tile-border: #3d4670; --tile-text: #f1e9d4;
+      --ink: #f1e9d4; --ink-soft: #a9a3c8; --gold: #d9b25f; --gold-strong: #f0d99a;
+      --gold-soft: #7a622f; --ember: #e2937a; --ember-soft: #402221;
+      --sage: #8fc08a; --sage-soft: #1f3323; --rule: #3d4670;
+      --texture-dot: rgba(217, 178, 95, 0.14); --shadow: 0 25px 70px -20px rgba(0,0,0,0.6);
+      --focus-ring: #e6c576;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #141830; --bg-2: #1b2040; --surface: #1e2342; --surface-border: #343b64;
+    --tile-bg: #232a4e; --tile-border: #3d4670; --tile-text: #f1e9d4;
+    --ink: #f1e9d4; --ink-soft: #a9a3c8; --gold: #d9b25f; --gold-strong: #f0d99a;
+    --gold-soft: #7a622f; --ember: #e2937a; --ember-soft: #402221;
+    --sage: #8fc08a; --sage-soft: #1f3323; --rule: #3d4670;
+    --texture-dot: rgba(217, 178, 95, 0.14); --shadow: 0 25px 70px -20px rgba(0,0,0,0.6);
+    --focus-ring: #e6c576;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; padding:0; background:var(--bg); color:var(--ink); }
+  body{
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    background:
+      radial-gradient(circle at 50% -10%, var(--texture-dot) 0, transparent 55%),
+      radial-gradient(ellipse at 12% 18%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 82% 12%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 30% 78%, var(--texture-dot) 0%, transparent 2%),
+      radial-gradient(ellipse at 70% 85%, var(--texture-dot) 0%, transparent 2%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+  }
+
+  .stage{ min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding: clamp(20px,5vw,56px) 16px 64px; }
+  .app{ width:100%; max-width:680px; }
+  .card{ background:var(--surface); border:1px solid var(--surface-border); border-radius:22px; box-shadow:var(--shadow); padding:clamp(22px,5vw,40px); }
+  .screen[hidden]{ display:none; }
+
+  .eyebrow{ font-size:0.72rem; letter-spacing:0.18em; color:var(--gold-strong); font-weight:700; margin:0 0 10px; text-transform:uppercase; }
+  h1{ font-family:"Noto Serif KR", serif; font-size:clamp(1.6rem, 4vw + 0.5rem, 2.2rem); line-height:1.25; margin:0 0 6px; text-wrap:balance; color:var(--ink); }
+  .rule{ width:64px; height:3px; border-radius:2px; background:linear-gradient(90deg, var(--gold), var(--gold-soft)); margin:14px 0 18px; }
+  .lede{ font-size:0.96rem; line-height:1.7; color:var(--ink-soft); max-width:46ch; margin:0 0 26px; }
+
+  .btn{ appearance:none; border:none; border-radius:14px; font-family:inherit; font-weight:700; cursor:pointer; transition:transform .1s ease, filter .15s ease, opacity .15s ease; }
+  .btn:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:2px; }
+  .btn:active{ transform:scale(0.98); }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(180deg, var(--gold-strong), var(--gold)); color:#241a06; font-size:1rem; padding:13px 22px; }
+  .btn-primary:hover{ filter:brightness(1.05); }
+  .btn-ghost{ background:transparent; border:1.5px solid var(--surface-border); color:var(--ink); font-size:0.88rem; padding:10px 18px; }
+  .btn-ghost:hover{ border-color:var(--gold); }
+  .btn-quiet{ background:transparent; color:var(--ink-soft); font-size:0.85rem; padding:8px 10px; text-decoration:underline; text-underline-offset:3px; border:none; cursor:pointer; font-family:inherit; }
+
+  /* ---------- menu screen ---------- */
+  .game-picker{ display:flex; flex-direction:column; gap:14px; }
+  .game-option{
+    display:flex; align-items:center; gap:16px; text-align:left; width:100%;
+    background:var(--tile-bg); border:1.5px solid var(--tile-border); border-radius:16px;
+    padding:18px 20px; cursor:pointer; transition:border-color .15s ease, transform .1s ease;
+    font-family:inherit; color:var(--ink);
+  }
+  .game-option:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .game-option:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:2px; }
+  .game-option .icon{
+    width:52px; height:52px; border-radius:14px; flex-shrink:0; display:flex; align-items:center;
+    justify-content:center; background: color-mix(in srgb, var(--gold-soft) 30%, var(--tile-bg));
+    border:1px solid var(--gold-soft);
+  }
+  .game-option .icon svg{ width:28px; height:28px; }
+  .game-option .body{ display:flex; flex-direction:column; gap:4px; }
+  .game-option .title{ font-family:"Noto Serif KR", serif; font-weight:700; font-size:1.08rem; }
+  .game-option .desc{ font-size:0.85rem; color:var(--ink-soft); line-height:1.55; }
+
+  /* ---------- shared game top bar ---------- */
+  .game-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:8px; }
+  .game-stats{ display:flex; gap:14px; font-size:0.82rem; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .game-stats strong{ color:var(--ink); }
+
+  /* ---------- grid ---------- */
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+
+  .bingo-cell{
+    aspect-ratio:1; border:1.5px solid var(--tile-border); border-radius:14px; background:var(--tile-bg);
+    display:flex; align-items:center; justify-content:center; text-align:center; padding:8px;
+    font-family:"Noto Serif KR", serif; font-size:0.78rem; font-weight:700; color:var(--tile-text);
+    cursor:pointer; transition:transform .12s ease, border-color .15s ease, background .15s ease;
+  }
+  .bingo-cell:hover{ transform:translateY(-2px); border-color:var(--gold); }
+  .bingo-cell.solved{ background:color-mix(in srgb, var(--sage-soft) 70%, var(--tile-bg)); border-color:var(--sage); cursor:default; transform:none; }
+  .bingo-cell.revealed{ background:color-mix(in srgb, var(--gold-soft) 35%, var(--tile-bg)); border-color:var(--gold); cursor:default; transform:none; }
+  .bingo-cell.active{ box-shadow: inset 0 0 0 2px var(--gold-strong); }
+  .bingo-cell.inline{ box-shadow: inset 0 0 0 2px var(--gold-strong); }
+
+  .ttt-cell{
+    aspect-ratio:1; border:1.5px solid var(--tile-border); border-radius:16px; background:var(--tile-bg);
+    display:flex; align-items:center; justify-content:center; font-family:"Noto Serif KR", serif;
+    font-size:clamp(2rem, 6vw, 2.6rem); font-weight:700; cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .ttt-cell:not(.filled):hover{ border-color:var(--gold); }
+  .ttt-cell.filled{ cursor:default; }
+  .ttt-cell.mark-x{ color:var(--gold-strong); }
+  .ttt-cell.mark-o{ color:var(--ink-soft); }
+  .ttt-cell.win{ background:color-mix(in srgb, var(--sage-soft) 60%, var(--tile-bg)); border-color:var(--sage); }
+
+  /* ---------- answer / question panels ---------- */
+  .qpanel{ border:1.5px solid var(--surface-border); border-radius:16px; padding:18px 20px; margin-bottom:18px; background:var(--surface); }
+  .qpanel-label{ font-size:0.78rem; font-weight:700; color:var(--gold-strong); letter-spacing:0.04em; margin:0 0 8px; }
+  .qpanel-ref{ font-family:"Noto Serif KR", serif; font-size:1.02rem; font-weight:700; color:var(--ink); margin:0 0 14px; }
+  .qpanel textarea{
+    width:100%; min-height:78px; resize:vertical; border:1.5px solid var(--tile-border); border-radius:12px;
+    padding:12px 14px; font-family:"Noto Serif KR", serif; font-size:0.94rem; color:var(--ink);
+    background:var(--tile-bg); line-height:1.6; margin-bottom:12px;
+  }
+  .qpanel textarea:focus-visible, .qpanel textarea:focus{ outline:2.5px solid var(--focus-ring); outline-offset:1px; }
+  .qpanel .row{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  .ttt-question{ text-align:center; }
+  .ttt-question .prompt{ font-family:"Noto Serif KR", serif; font-size:1.02rem; line-height:1.7; color:var(--ink); margin:0 0 16px; }
+  .choice-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .choice-btn{
+    background:var(--tile-bg); border:1.5px solid var(--tile-border); border-radius:12px; padding:12px 10px;
+    font-family:inherit; font-size:0.88rem; font-weight:600; color:var(--ink); cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .choice-btn:hover{ border-color:var(--gold); }
+  .choice-btn:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:2px; }
+  .choice-btn.correct{ background:color-mix(in srgb, var(--sage-soft) 70%, var(--tile-bg)); border-color:var(--sage); }
+  .choice-btn.wrong{ background:color-mix(in srgb, var(--ember-soft) 70%, var(--tile-bg)); border-color:var(--ember); }
+  .choice-btn:disabled{ cursor:default; opacity:0.75; }
+
+  .feedback{ font-size:0.88rem; padding:10px 14px; border-radius:10px; margin-bottom:14px; border-left:3px solid transparent; display:none; }
+  .feedback.show{ display:block; }
+  .feedback.ok{ background:var(--sage-soft); border-color:var(--sage); color:var(--ink); }
+  .feedback.bad{ background:var(--ember-soft); border-color:var(--ember); color:var(--ink); }
+  .feedback.info{ background:color-mix(in srgb, var(--gold-soft) 30%, transparent); border-color:var(--gold); color:var(--ink); }
+
+  .banner{
+    text-align:center; padding:18px; border-radius:16px; margin-bottom:18px; display:none;
+    font-family:"Noto Serif KR", serif; font-size:1.15rem; font-weight:700; color:var(--ink);
+  }
+  .banner.show{ display:block; }
+  .banner.win{ background:var(--sage-soft); border:1.5px solid var(--sage); }
+  .banner.lose{ background:var(--ember-soft); border:1.5px solid var(--ember); }
+  .banner.draw{ background:color-mix(in srgb, var(--gold-soft) 30%, transparent); border:1.5px solid var(--gold); }
+
+  .action-row{ display:flex; flex-wrap:wrap; gap:10px; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition-duration:0.001ms !important; animation-duration:0.001ms !important; } }
+
+
+  /* ===== unified-site overrides ===== */
+  .stage{ min-height:60vh; }
+
+  /* ===== nanum board (community sharing) ===== */
+  .nanum-wrap{ max-width:680px; margin:0 auto; }
+  .nanum-head{ text-align:center; max-width:520px; margin:0 auto 32px; }
+  .nanum-composer{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:20px;
+    box-shadow:var(--shadow); padding:clamp(20px,4vw,30px); margin-bottom:36px;
+  }
+  .nanum-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .nanum-row .nanum-name{ flex:1 1 160px; min-width:0; }
+  .nanum-row .nanum-verse{ flex:1 1 200px; min-width:0; }
+  .nanum-composer input, .nanum-composer select, .nanum-composer textarea{
+    width:100%; border:1.5px solid var(--tile-border, var(--surface-border)); border-radius:12px;
+    padding:11px 13px; font-family:inherit; font-size:0.92rem; color:var(--ink);
+    background:var(--tile-bg, var(--surface)); box-sizing:border-box;
+  }
+  .nanum-composer textarea{
+    min-height:92px; resize:vertical; font-family:"Noto Serif KR", serif; line-height:1.65; margin-bottom:6px;
+  }
+  .nanum-composer input:focus-visible, .nanum-composer select:focus-visible, .nanum-composer textarea:focus-visible{
+    outline:2.5px solid var(--focus-ring); outline-offset:1px;
+  }
+  .nanum-foot{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:10px; }
+  .nanum-count{ font-size:0.78rem; color:var(--ink-soft); }
+  .nanum-status{ font-size:0.82rem; color:var(--ink-soft); min-height:1.2em; }
+  .nanum-status.is-error{ color:#b5482f; }
+  .nanum-status.is-ok{ color:var(--sage); }
+  .nanum-list-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
+  .nanum-list-head h3{ font-family:"Noto Serif KR", serif; font-size:1.05rem; color:var(--ink); margin:0; }
+  .nanum-list-count{ font-size:0.82rem; color:var(--ink-soft); }
+  .nanum-list{ display:flex; flex-direction:column; gap:14px; }
+  .nanum-post{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:16px;
+    padding:18px 20px; box-shadow:var(--shadow);
+  }
+  .nanum-post-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .nanum-post-name{ font-weight:700; color:var(--ink); font-size:0.92rem; }
+  .nanum-post-time{ font-size:0.76rem; color:var(--ink-soft); }
+  .nanum-post-verse{
+    display:inline-block; font-size:0.76rem; font-weight:700; color:var(--gold-strong);
+    background: color-mix(in srgb, var(--gold-soft) 28%, transparent); padding:3px 10px;
+    border-radius:999px; margin-bottom:8px;
+  }
+  .nanum-post-text{ font-family:"Noto Serif KR", serif; font-size:0.94rem; line-height:1.75; color:var(--ink); margin:0; white-space:pre-wrap; }
+  .nanum-empty{
+    text-align:center; padding:40px 20px; color:var(--ink-soft); font-size:0.9rem;
+    border:1.5px dashed var(--rule); border-radius:16px;
+  }
+  .nanum-note{
+    font-size:0.8rem; color:var(--ink-soft); text-align:center; margin:18px 0 0;
+  }
+</style>
+
+<div class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#" data-goto="home">
+      <div class="brand-mark"><img src="data:image/jpeg;base64,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" alt="BIBLE Web Site 로고"></div>
+      <div class="brand-text">
+        <div class="name">BIBLE</div>
+        <div class="sub">말씀 웹사이트 · WORD OF GOD</div>
+      </div>
+    </a>
+    <div class="utility">
+      <div class="utility-links">
+        <a href="#" data-goto="home">홈</a><span class="sep">|</span>
+        <a href="#" data-goto="home" data-anchor="soon" title="준비 중인 기능이에요">사이트맵</a>
+      </div>
+      <div class="auth-area" id="auth-area">
+        <div id="g-signin"></div>
+        <div class="profile-chip" id="profile-chip" hidden>
+          <img id="profile-pic" alt="" referrerpolicy="no-referrer">
+          <span class="p-name" id="profile-name"></span>
+          <button type="button" class="p-logout" id="logout-btn">로그아웃</button>
+        </div>
+      </div>
+      <div class="search">
+        <input type="text" placeholder="검색어를 입력해주세요" disabled>
+        <button type="button" title="준비 중인 기능이에요" aria-label="검색">🔍</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar">
+  <div class="wrap navbar-inner">
+    <a class="nav-item" href="#" data-goto="quiz">말씀 퀴즈</a>
+    <a class="nav-item" href="#" data-goto="home" data-anchor="updates">업데이트 소식</a>
+    <a class="nav-item" href="#" data-goto="games">말씀 게임</a>
+    <a class="nav-item" href="#" data-goto="nanum">나눔마당</a>
+    <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">묵상노트<span class="badge">준비중</span></a>
+    <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">모임안내<span class="badge">준비중</span></a>
+    <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">사이트안내<span class="badge">준비중</span></a>
+  </div>
+</nav>
+
+<div id="page-home">
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div>
+        <p class="hero-eyebrow">Bible Web Site</p>
+        <h1>말씀이 삶이 되는 곳</h1>
+        <p>성경은 구약 46권과 신약 27권, 모두 73권으로 이루어진 하느님의 말씀입니다. 이곳에서는 매일 한 구절씩 마음에 새기고, 놀이처럼 즐기며 말씀과 조금씩 가까워질 수 있어요.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#" data-goto="quiz">말씀 모자이크 퀴즈 시작하기 →</a>
+          <a class="btn btn-ghost" href="#explain">성경 살펴보기</a>
+        </div>
+      </div>
+
+      <div class="hero-art">
+        <svg viewBox="0 0 400 400" role="img" aria-label="빛과 십자가, 펼쳐진 책 그림">
+          <defs>
+            <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="var(--gold-soft)" stop-opacity="0.65"/>
+              <stop offset="100%" stop-color="var(--gold-soft)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="200" cy="150" r="130" fill="url(#glow)"/>
+          <rect x="188" y="80" width="14" height="120" rx="5" fill="var(--gold)"/>
+          <rect x="150" y="118" width="90" height="14" rx="5" fill="var(--gold)"/>
+          <ellipse cx="200" cy="332" rx="155" ry="11" fill="var(--ink)" opacity="0.08"/>
+          <polygon points="50,255 200,240 200,320 50,335" fill="var(--surface)" stroke="var(--gold)" stroke-width="1.5"/>
+          <polygon points="350,255 200,240 200,320 350,335" fill="var(--surface)" stroke="var(--gold)" stroke-width="1.5"/>
+          <line x1="200" y1="240" x2="200" y2="320" stroke="var(--gold)" stroke-width="1.5"/>
+          <line x1="72" y1="268" x2="176" y2="258" stroke="var(--rule)" stroke-width="2"/>
+          <line x1="72" y1="282" x2="176" y2="272" stroke="var(--rule)" stroke-width="2"/>
+          <line x1="72" y1="296" x2="176" y2="286" stroke="var(--rule)" stroke-width="2"/>
+          <line x1="224" y1="258" x2="328" y2="268" stroke="var(--rule)" stroke-width="2"/>
+          <line x1="224" y1="272" x2="328" y2="282" stroke="var(--rule)" stroke-width="2"/>
+          <line x1="224" y1="286" x2="328" y2="296" stroke="var(--rule)" stroke-width="2"/>
+          <circle cx="90" cy="120" r="3" fill="var(--gold)" opacity="0.7"/>
+          <circle cx="320" cy="100" r="2.4" fill="var(--gold)" opacity="0.6"/>
+          <circle cx="330" cy="160" r="2" fill="var(--gold)" opacity="0.5"/>
+          <circle cx="70" cy="170" r="2" fill="var(--gold)" opacity="0.5"/>
+        </svg>
+
+        <div class="verse-card" id="verse-card">
+          <div class="verse-card-top">
+            <span class="verse-card-title">오늘의 말씀</span>
+            <span class="verse-card-count" id="vc-count">1 / 31</span>
+          </div>
+          <p class="verse-card-text" id="vc-text"></p>
+          <p class="verse-card-ref" id="vc-ref"></p>
+          <div class="verse-card-controls">
+            <button type="button" class="vc-btn" id="vc-prev" aria-label="이전 말씀">‹</button>
+            <button type="button" class="vc-btn" id="vc-pause" aria-label="자동 재생 멈춤/재생">❚❚</button>
+            <button type="button" class="vc-btn" id="vc-next" aria-label="다음 말씀">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="explain">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="section-eyebrow">성경 설명</p>
+        <h2>성경, 무엇을 담고 있을까요?</h2>
+        <p class="section-note">한 권의 책이 아니라, 여러 시대에 걸쳐 쓰인 73권의 모음이에요. 각 부분이 서로 다른 이야기를 들려줍니다.</p>
+      </div>
+      <div class="card-grid">
+        <div class="explain-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6"><path d="M4 4c4 0 6 1.5 8 3 2-1.5 4-3 8-3v15c-4 0-6 1.5-8 3-2-1.5-4-3-8-3V4Z"/><path d="M12 7v15" opacity=".5"/></svg>
+          <h3>구약성경 · 46권</h3>
+          <p>천지창조부터 예언자들까지, 하느님과 이스라엘 백성이 함께 걸어온 이야기예요.</p>
+        </div>
+        <div class="explain-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6"><path d="M12 21s-7-4.35-9.5-8.5C.6 8.9 2.4 5 6 5c2 0 3.5 1.2 6 4 2.5-2.8 4-4 6-4 3.6 0 5.4 3.9 3.5 7.5C19 16.65 12 21 12 21Z"/></svg>
+          <h3>신약성경 · 27권</h3>
+          <p>예수 그리스도의 삶과 가르침, 그리고 초대 교회가 걸어간 발자취를 전해요.</p>
+        </div>
+        <div class="explain-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6"><path d="M4 4h11a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4V4Z"/><path d="M8 9h7M8 13h7" stroke-linecap="round"/></svg>
+          <h3>4대 복음서</h3>
+          <p>마태오·마르코·루카·요한 네 사람이 각자의 자리에서 전하는 예수님의 생애예요.</p>
+        </div>
+        <div class="explain-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6"><path d="M12 3v18M6 7c0 3 2 5 6 5s6-2 6-5M6 17c0-3 2-5 6-5s6 2 6 5" stroke-linecap="round"/></svg>
+          <h3>시편과 지혜서</h3>
+          <p>시편, 잠언, 지혜서처럼 기도와 삶의 지혜를 담은 노래와 가르침이에요.</p>
+        </div>
+        <div class="explain-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6"><path d="M3 6h18v13H3z"/><path d="m3 6 9 7 9-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h3>서간</h3>
+          <p>바오로를 비롯한 사도들이 여러 공동체에 사랑을 담아 보낸 편지들이에요.</p>
+        </div>
+        <div class="explain-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6"><path d="M12 2 4 12h5v10l8-12h-5V2Z" stroke-linejoin="round"/></svg>
+          <h3>말씀의 실천</h3>
+          <p>읽은 말씀을 그날의 작은 실천으로 옮기며 삶 속에서 살아가는 것이에요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="updates" style="background:var(--surface-alt);">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="section-eyebrow">Updates</p>
+        <h2>업데이트 소식</h2>
+        <p class="section-note">이 사이트는 조금씩 자라나고 있어요. 최근에 새로 생긴 것들이에요.</p>
+      </div>
+      <div class="update-list">
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">나눔마당 오픈</div>
+            <div class="desc">말씀을 묵상하며 떠오른 생각을 자유롭게 나누는 게시판이 열렸어요. 누구나 보고, 남길 수 있어요.</div>
+          </div>
+          <span class="update-date">2026.08.28</span>
+        </div>
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">말씀 3빙고 &amp; 말씀 틱택토 오픈</div>
+            <div class="desc">출처를 보고 구절을 직접 적어 빙고를 만들거나, 컴퓨터와 틱택토로 겨뤄보는 게임이 새로 생겼어요.</div>
+          </div>
+          <span class="update-date">2026.08.28</span>
+        </div>
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">말씀 모자이크 퀴즈 오픈</div>
+            <div class="desc">31개 구절을 낱말 조각으로 맞추는 암송 게임이 열렸어요. 오답 낱말도 골라내야 해요.</div>
+          </div>
+          <span class="update-date">2026.08.28</span>
+        </div>
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">카드 복습 모드 &amp; 연속 기록</div>
+            <div class="desc">출처 ↔ 구절을 뒤집어보는 복습 모드와, 연속 정답·최고 기록 저장 기능이 추가됐어요.</div>
+          </div>
+          <span class="update-date">2026.08.28</span>
+        </div>
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">인쇄용 암송 카드 PDF</div>
+            <div class="desc">31개 구절을 잘라 쓰는 카드로 정리한 인쇄용 PDF가 준비됐어요.</div>
+          </div>
+          <span class="update-date">2026.08.28</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="game">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="section-eyebrow">Games</p>
+        <h2>말씀 게임</h2>
+        <p class="section-note">말씀 모자이크에 이어, 두 가지 게임이 더 생겼어요.</p>
+      </div>
+      <div class="card-grid" style="grid-template-columns:repeat(2,1fr); max-width:640px; margin:0 auto;">
+        <div class="explain-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+          <h3>말씀 3빙고</h3>
+          <p>출처를 보고 그 구절을 직접 적어보세요. 맞히면 색칠되고, 한 줄을 채우면 빙고예요.</p>
+        </div>
+        <div class="explain-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6"><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
+          <h3>말씀 틱택토</h3>
+          <p>구절 문제를 맞혀야 칸에 표시를 놓을 수 있어요. 컴퓨터와 겨뤄 3줄을 먼저 만들어 보세요.</p>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:28px;">
+        <a class="btn btn-primary" href="#" data-goto="games">말씀 게임마당 열기 →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="soon">
+    <div class="wrap">
+      <div class="soon-box">
+        <span class="soon-badge">준비 중</span>
+        <h3>그 밖의 메뉴</h3>
+        <p>묵상노트, 모임안내, 사이트안내는 차차 채워나갈 예정이에요.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="page-quiz" hidden>
+<div class="stage">
+  <main class="app">
+    <div class="card">
+
+      <!-- ===== setup screen ===== -->
+      <section class="screen" id="screen-setup">
+        <p class="eyebrow">성구 암송 게임</p>
+        <h1>말씀 모자이크</h1>
+        <div class="rule" aria-hidden="true"></div>
+        <p class="lede">흩어진 말씀 조각을 순서대로 이어 붙이세요. 조각 가운데는 본문에 없는 낱말도 섞여 있으니, 눈여겨보고 골라내야 해요.</p>
+
+        <div class="option-group">
+          <div class="option-label">모드</div>
+          <div class="option-row" id="mode-row" role="group" aria-label="게임 모드 선택">
+            <button type="button" class="chip" data-mode="assemble" aria-pressed="true">조각 맞추기 <span class="sub">낱말을 순서대로</span></button>
+            <button type="button" class="chip" data-mode="flashcards" aria-pressed="false">카드 복습 <span class="sub">출처 ↔ 구절</span></button>
+          </div>
+        </div>
+
+        <div class="option-group" id="difficulty-group">
+          <div class="option-label">난이도</div>
+          <div class="option-row" id="difficulty-row" role="group" aria-label="난이도 선택">
+            <button type="button" class="chip" data-difficulty="easy" aria-pressed="false">쉬움 <span class="sub">틀린 낱말 2개</span></button>
+            <button type="button" class="chip" data-difficulty="normal" aria-pressed="true">보통 <span class="sub">틀린 낱말 4개</span></button>
+          </div>
+        </div>
+
+        <div class="option-group" id="direction-group" hidden>
+          <div class="option-label">복습 방향</div>
+          <div class="option-row" id="direction-row" role="group" aria-label="복습 방향 선택">
+            <button type="button" class="chip" data-direction="ref-to-text" aria-pressed="false">출처 → 구절</button>
+            <button type="button" class="chip" data-direction="text-to-ref" aria-pressed="false">구절 → 출처</button>
+            <button type="button" class="chip" data-direction="mixed" aria-pressed="true">랜덤 섞기</button>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <div class="option-label">라운드</div>
+          <div class="option-row" id="round-row" role="group" aria-label="라운드 길이 선택">
+            <button type="button" class="chip" data-round="all" aria-pressed="true">전체 31구절</button>
+            <button type="button" class="chip" data-round="ten">랜덤 10구절</button>
+          </div>
+        </div>
+
+        <div class="start-row">
+          <button type="button" class="btn btn-primary" id="btn-start">시작하기 →</button>
+          <span class="hint" id="setup-hint"></span>
+        </div>
+        <p class="hint" id="record-hint" style="margin-top:10px;"></p>
+      </section>
+
+      <!-- ===== quiz screen ===== -->
+      <section class="screen" id="screen-quiz" hidden>
+        <div class="quiz-top">
+          <span>구절 <strong id="quiz-pos">1</strong> / <span id="quiz-total">31</span></span>
+          <span>연속 <strong id="quiz-streak">0</strong></span>
+          <span>정답 <strong id="quiz-score">0</strong></span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+        <div class="verse-hint" id="verse-hint"></div>
+
+        <div class="answer-panel placeholder-empty" id="answer-panel" data-placeholder="여기에 낱말 조각을 순서대로 올려놓으세요"></div>
+        <div class="reset-row">
+          <button type="button" class="btn-quiet" id="btn-reset">조각 초기화</button>
+        </div>
+
+        <div class="tray" id="tray"></div>
+
+        <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+        <div class="reveal-panel" id="reveal-panel">
+          <p class="reveal-text" id="reveal-text"></p>
+          <p class="reveal-ref" id="reveal-ref"></p>
+        </div>
+
+        <div class="action-row">
+          <button type="button" class="btn btn-primary" id="btn-check">조각 맞추기 확인</button>
+          <button type="button" class="btn btn-ghost" id="btn-give-up">정답 보기</button>
+          <button type="button" class="btn btn-primary" id="btn-next" hidden>다음 구절 →</button>
+        </div>
+      </section>
+
+      <!-- ===== flashcard review screen ===== -->
+      <section class="screen" id="screen-cards" hidden>
+        <div class="quiz-top">
+          <span>카드 <strong id="card-pos">1</strong> / <span id="card-total">31</span></span>
+          <span>연속 <strong id="card-streak">0</strong></span>
+          <span>기억 <strong id="card-remembered">0</strong></span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="card-progress-fill" style="width:0%"></div></div>
+
+        <div class="flash-card" id="flash-card">
+          <p class="flash-label" id="flash-label"></p>
+          <p class="flash-content" id="flash-content"></p>
+        </div>
+
+        <div class="action-row" id="card-action-flip">
+          <button type="button" class="btn btn-primary" id="btn-flip">정답 보기</button>
+        </div>
+        <div class="action-row" id="card-action-rate" hidden>
+          <button type="button" class="btn btn-ghost" id="btn-rate-again">다시 볼게요 🔁</button>
+          <button type="button" class="btn btn-primary" id="btn-rate-good">기억했어요 ✅</button>
+        </div>
+      </section>
+
+      <!-- ===== summary screen ===== -->
+      <section class="screen" id="screen-summary" hidden>
+        <p class="eyebrow">한 라운드 완료</p>
+        <h1 id="summary-title">잘 하셨어요</h1>
+        <div class="rule" aria-hidden="true"></div>
+        <div class="score-display" id="summary-score">0<span>/31</span></div>
+        <p class="hint" id="summary-score-label" style="margin:-4px 0 4px;"></p>
+        <p class="lede" id="summary-note" style="margin-bottom:8px;"></p>
+        <p class="hint" id="summary-record" style="margin-bottom:22px;"></p>
+
+        <div id="missed-wrap" hidden>
+          <div class="option-label"><span id="missed-label">다시 살펴볼 구절</span></div>
+          <div class="missed-list" id="missed-list"></div>
+        </div>
+
+        <div class="action-row">
+          <button type="button" class="btn btn-primary" id="btn-retry-missed" hidden>틀린 구절만 다시 풀기</button>
+          <button type="button" class="btn btn-ghost" id="btn-new-round">새 라운드</button>
+          <button type="button" class="btn-quiet" id="btn-to-setup">처음 화면으로</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+</div>
+<div id="page-games" hidden>
+<div class="stage">
+  <main class="app">
+    <div class="card">
+
+      <!-- ===== menu screen ===== -->
+      <section class="screen" id="screen-menu">
+        <p class="eyebrow">성구 암송 게임마당</p>
+        <h1>말씀 게임마당</h1>
+        <div class="rule" aria-hidden="true"></div>
+        <p class="lede">말씀 모자이크에 이어, 두 가지 게임을 더 준비했어요. 하나를 골라 시작해 보세요.</p>
+
+        <div class="game-picker">
+          <button type="button" class="game-option" id="pick-bingo">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+            <span class="body">
+              <span class="title">말씀 3빙고</span>
+              <span class="desc">칸마다 적힌 출처를 보고 그 구절을 직접 적어보세요. 맞히면 색칠되고, 한 줄을 채우면 빙고예요.</span>
+            </span>
+          </button>
+          <button type="button" class="game-option" id="pick-ttt">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></span>
+            <span class="body">
+              <span class="title">말씀 틱택토</span>
+              <span class="desc">구절 문제를 맞혀야 칸에 표시를 놓을 수 있어요. 컴퓨터와 겨뤄 3줄을 먼저 만들어 보세요.</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ===== bingo screen ===== -->
+      <section class="screen" id="screen-bingo" hidden>
+        <div class="game-top">
+          <div>
+            <p class="eyebrow">말씀 3빙고</p>
+            <h1 style="font-size:1.4rem; margin-bottom:0;">칸을 채워 빙고를 만드세요</h1>
+          </div>
+          <div class="game-stats">
+            <span>채운 칸 <strong id="bingo-filled">0</strong>/9</span>
+            <span>빙고 <strong id="bingo-lines">0</strong>줄</span>
+          </div>
+        </div>
+
+        <div class="grid3" id="bingo-grid"></div>
+
+        <div class="qpanel" id="bingo-qpanel" hidden>
+          <p class="qpanel-label">이 출처의 말씀을 적어보세요</p>
+          <p class="qpanel-ref" id="bingo-qref"></p>
+          <textarea id="bingo-input" placeholder="말씀을 그대로 옮겨 적어보세요..."></textarea>
+          <div class="feedback" id="bingo-feedback"></div>
+          <div class="row">
+            <button type="button" class="btn btn-primary" id="bingo-check">확인</button>
+            <button type="button" class="btn btn-ghost" id="bingo-reveal">정답 보기</button>
+            <button type="button" class="btn-quiet" id="bingo-close">닫기</button>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button type="button" class="btn btn-ghost" id="bingo-newboard">새 보드</button>
+          <button type="button" class="btn-quiet" id="bingo-to-menu">메뉴로</button>
+        </div>
+      </section>
+
+      <!-- ===== tic-tac-toe screen ===== -->
+      <section class="screen" id="screen-ttt" hidden>
+        <div class="game-top">
+          <div>
+            <p class="eyebrow">말씀 틱택토</p>
+            <h1 style="font-size:1.4rem; margin-bottom:0;">나(X) vs 컴퓨터(O)</h1>
+          </div>
+          <div class="game-stats">
+            <span>승 <strong id="ttt-wins">0</strong></span>
+            <span>무 <strong id="ttt-draws">0</strong></span>
+            <span>패 <strong id="ttt-losses">0</strong></span>
+          </div>
+        </div>
+
+        <div class="banner" id="ttt-banner"></div>
+
+        <div class="ttt-question" id="ttt-qpanel">
+          <p class="prompt" id="ttt-prompt"></p>
+          <div class="choice-grid" id="ttt-choices"></div>
+          <div class="feedback" id="ttt-feedback"></div>
+        </div>
+
+        <p class="lede" id="ttt-turn-hint" style="text-align:center; margin:0 0 14px;" hidden>정답이에요! 칸을 하나 선택하세요.</p>
+
+        <div class="grid3" id="ttt-grid"></div>
+
+        <div class="action-row">
+          <button type="button" class="btn btn-primary" id="ttt-restart" hidden>다시 하기</button>
+          <button type="button" class="btn-quiet" id="ttt-to-menu">메뉴로</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<div id="page-nanum" hidden>
+<script id="nanum-data" type="application/json">[{"name": "BIBLE", "verseRef": "", "text": "나눔마당에 오신 것을 환영해요. 말씀을 읽으며 떠오른 생각이나 기도를 자유롭게 나눠보세요.", "time": "2026-08-28T12:00:00Z"}]</script>
+<div class="stage">
+  <div class="nanum-wrap">
+
+    <div class="nanum-head">
+      <p class="section-eyebrow">Sharing</p>
+      <h2 style="font-family:'Noto Serif KR', serif; font-size:clamp(1.4rem, 2vw + 1rem, 1.9rem); color:var(--ink); margin:0 0 10px;">나눔마당</h2>
+      <p class="section-note">말씀을 묵상하며 떠오른 생각을 자유롭게 나눠보세요. 이곳에 남긴 글은 이 사이트를 찾는 모든 분들이 함께 볼 수 있어요.</p>
+    </div>
+
+    <div class="nanum-login-hint" id="nanum-login-hint" hidden>
+      <span>나눔 글을 남기려면 오른쪽 위에서 <strong>Google 로그인</strong>을 해주세요.</span>
+      <div id="g-signin-inline"></div>
+    </div>
+
+    <div class="nanum-composer" id="nanum-composer">
+      <div class="nanum-row">
+        <input type="text" id="nanum-name" class="nanum-name" maxlength="30" placeholder="이름" readonly>
+        <select id="nanum-verse" class="nanum-verse">
+          <option value="">관련 구절 선택 (선택사항)</option>
+        </select>
+      </div>
+      <textarea id="nanum-text" maxlength="300" placeholder="말씀을 읽고 떠오른 생각이나 기도를 나눠주세요..."></textarea>
+      <div class="nanum-foot">
+        <span class="nanum-count"><span id="nanum-count">0</span>/300자</span>
+        <button type="button" class="btn btn-primary" id="nanum-submit">나누기</button>
+      </div>
+      <div class="nanum-status" id="nanum-status"></div>
+    </div>
+
+    <div class="nanum-list-head">
+      <h3>다른 분들의 나눔</h3>
+      <span class="nanum-list-count" id="nanum-list-count"></span>
+    </div>
+    <div class="nanum-list" id="nanum-list"></div>
+    <p class="nanum-note" id="nanum-note"></p>
+
+  </div>
+</div>
+</div>
+
+<footer>
+  <div class="wrap"><strong>BIBLE</strong> Web Site · 계속 자라나는 중입니다</div>
+
+
+<script>
+
+(function(){
+  "use strict";
+  var VERSES = [
+    { ref: "마태오 1, 23", text: "보아라, 동정녀가 잉태하여 아들을 낳으리니 그 이름을 임마누엘이라고 하리라." },
+    { ref: "마태오 28, 19-20", text: "너희는 가서 모든 민족들을 제자로 삼아, 아버지와 아들과 성령의 이름으로 세례를 주어라." },
+    { ref: "요한 3, 16", text: "하느님께서는 세상을 너무나 사랑하신 나머지 외아들을 내주시어, 그를 믿는 사람은 영원한 생명을 얻게 하셨다." },
+    { ref: "요한 6, 35", text: "내가 생명의 빵이다. 나에게 오는 사람은 결코 배고프지 않을 것이다." },
+    { ref: "요한 20, 28-29", text: "보지 않고도 믿는 사람은 행복하다." },
+    { ref: "루카 6, 36", text: "너희 아버지께서 자비하신 것처럼 너희도 자비로운 사람이 되어라." },
+    { ref: "루카 14, 11", text: "누구든지 자신을 높이는 이는 낮아지고 자신을 낮추는 이는 높아질 것이다." },
+    { ref: "마태오 25, 40", text: "이 가장 작은 이들 가운데 한 사람에게 해 준 것이 바로 나에게 해 준 것이다." },
+    { ref: "마태오 28, 20", text: "내가 세상 끝 날까지 언제나 너희와 함께 있겠다." },
+    { ref: "마르코 8, 29", text: "스승님은 그리스도이십니다." },
+    { ref: "마태오 4, 4", text: "사람은 빵만으로 살지 않고 하느님의 입에서 나오는 모든 말씀으로 산다." },
+    { ref: "마태오 4, 19", text: "나를 따라오너라. 내가 너희를 사람 낚는 어부로 만들겠다." },
+    { ref: "마태오 11, 29", text: "나는 마음이 온유하고 겸손하니 내 멍에를 메고 나에게 배워라." },
+    { ref: "마태오 14, 27", text: "용기를 내어라. 나다. 두려워하지 마라." },
+    { ref: "마르코 16, 15", text: "너희는 온세상에 가서 모든 피조물에게 복음을 선포하여라." },
+    { ref: "루카 11, 10", text: "누구든지 청하는 이는 받고, 찾는 이는 얻는다." },
+    { ref: "요한 6, 68", text: "주님께는 영원한 생명의 말씀이 있습니다." },
+    { ref: "요한 8, 12", text: "나는 세상의 빛이다. 나를 따르는 이는 어둠 속을 걷지 않을 것이다." },
+    { ref: "마르코 1, 15", text: "때가 차서 하느님의 나라가 가까이 왔다. 회개하고 복음을 믿어라." },
+    { ref: "마르코 5, 34", text: "딸아, 네 믿음이 너를 구원하였다. 평안히 가거라." },
+    { ref: "마르코 12, 30", text: "너는 마음을 다하고 목숨을 다하고 정신을 다하고 힘을 다하여 주 너의 하느님을 사랑해야 한다." },
+    { ref: "마르코 13, 13", text: "끝까지 견디어 내는 이는 구원을 받을 것이다." },
+    { ref: "요한 10, 9", text: "나는 문이다. 누구든지 나를 통하여 들어오면 구원을 받을 것이다." },
+    { ref: "요한 13, 14-15", text: "내가 너희에게 한 것처럼 너희도 서로 발을 씻어 주어야 한다." },
+    { ref: "루카 2, 14", text: "지극히 높은 곳에서는 하느님께 영광, 땅에서는 평화!" },
+    { ref: "마태오 5, 48", text: "하늘의 너희 아버지께서 완전하신 것처럼 너희도 완전한 사람이 되어야 한다." },
+    { ref: "마태오 11, 6", text: "나에게 의심을 품지 않는 이는 행복하다." },
+    { ref: "마태오 16, 19", text: "네가 땅에서 매면 하늘에서도 매일 것이고, 땅에서 풀면 하늘에서도 풀릴 것이다." },
+    { ref: "요한 15, 5", text: "나는 포도나무요 너희는 가지다. 내 안에 머무르는 사람은 많은 열매를 맺는다." },
+    { ref: "요한 14, 6", text: "나는 길이요 진리요 생명이다. 나를 통하지 않고서는 아무도 아버지께 갈 수 없다." },
+    { ref: "요한 15, 9", text: "너희는 내 사랑 안에 머물러라." }
+  ];
+
+  var idx = 0, timer = null, paused = false;
+  var vcText = document.getElementById("vc-text");
+  var vcRef = document.getElementById("vc-ref");
+  var vcCount = document.getElementById("vc-count");
+  var btnPrev = document.getElementById("vc-prev");
+  var btnNext = document.getElementById("vc-next");
+  var btnPause = document.getElementById("vc-pause");
+
+  function render(){
+    var v = VERSES[idx];
+    vcText.textContent = v.text;
+    vcRef.textContent = v.ref;
+    vcCount.textContent = (idx + 1) + " / " + VERSES.length;
+  }
+  function go(delta){
+    idx = (idx + delta + VERSES.length) % VERSES.length;
+    render();
+  }
+  function startTimer(){
+    stopTimer();
+    timer = setInterval(function(){ go(1); }, 6000);
+  }
+  function stopTimer(){ if (timer) clearInterval(timer); timer = null; }
+
+  btnPrev.addEventListener("click", function(){ go(-1); if (!paused) startTimer(); });
+  btnNext.addEventListener("click", function(){ go(1); if (!paused) startTimer(); });
+  btnPause.addEventListener("click", function(){
+    paused = !paused;
+    btnPause.textContent = paused ? "►" : "❚❚";
+    btnPause.setAttribute("aria-label", paused ? "자동 재생 시작" : "자동 재생 멈춤");
+    if (paused) stopTimer(); else startTimer();
+  });
+
+  render();
+  startTimer();
+})();
+
+</script>
+
+<script>
+
+(function(){
+  "use strict";
+
+  var VERSES = [
+    { ref: "마태오 1, 23", text: "“보아라, 동정녀가 잉태하여 아들을 낳으리니 그 이름을 임마누엘이라고 하리라.” 하신 말씀이다. 임마누엘은 번역하면 ‘하느님께서 우리와 함께 계시다.’는 뜻이다." },
+    { ref: "마태오 28, 19-20", text: "너희는 가서 모든 민족들을 제자로 삼아, 아버지와 아들과 성령의 이름으로 세례를 주고, 내가 너희에게 명령한 모든 것을 가르쳐 지키게 하여라." },
+    { ref: "요한 3, 16", text: "하느님께서는 세상을 너무나 사랑하신 나머지 외아들을 내주시어, 그를 믿는 사람은 누구나 멸망하지 않고 영원한 생명을 얻게 하셨다." },
+    { ref: "요한 6, 35", text: "내가 생명의 빵이다. 나에게 오는 사람은 결코 배고프지 않을 것이며, 나를 믿는 사람은 결코 목마르지 않을 것이다." },
+    { ref: "요한 20, 28-29", text: "“저의 주님, 저의 하느님!” 그러자 예수님께서 토마스에게 말씀하셨다. “너는 나를 보고서야 믿느냐? 보지 않고도 믿는 사람은 행복하다.”" },
+    { ref: "루카 6, 36", text: "너희 아버지께서 자비하신 것처럼 너희도 자비로운 사람이 되어라." },
+    { ref: "루카 14, 11", text: "누구든지 자신을 높이는 이는 낮아지고 자신을 낮추는 이는 높아질 것이다." },
+    { ref: "마태오 25, 40", text: "너희가 내 형제들인 이 가장 작은 이들 가운데 한 사람에게 해 준 것이 바로 나에게 해 준 것이다." },
+    { ref: "마태오 28, 20", text: "보라, 내가 세상 끝 날까지 언제나 너희와 함께 있겠다." },
+    { ref: "마르코 8, 29", text: "“그러면 너희는 나를 누구라고 하느냐?” 하고 물으시자, 베드로가 “스승님은 그리스도이십니다.” 하고 대답하였다." },
+    { ref: "마태오 4, 4", text: "성경에 기록되어 있다. ‘사람은 빵만으로 살지 않고 하느님의 입에서 나오는 모든 말씀으로 산다.’" },
+    { ref: "마태오 4, 19", text: "나를 따라오너라. 내가 너희를 사람 낚는 어부로 만들겠다." },
+    { ref: "마태오 11, 29", text: "나는 마음이 온유하고 겸손하니 내 멍에를 메고 나에게 배워라." },
+    { ref: "마태오 14, 27", text: "용기를 내어라. 나다. 두려워하지 마라." },
+    { ref: "마르코 16, 15", text: "너희는 온세상에 가서 모든 피조물에게 복음을 선포하여라." },
+    { ref: "루카 11, 10", text: "누구든지 청하는 이는 받고, 찾는 이는 얻고 문을 두드리는 이에게는 열릴 것이다." },
+    { ref: "요한 6, 68", text: "주님, 저희가 누구에게 가겠습니까? 주님께는 영원한 생명의 말씀이 있습니다." },
+    { ref: "요한 8, 12", text: "나는 세상의 빛이다. 나를 따르는 이는 어둠 속을 걷지 않고 생명의 빛을 얻을 것이다." },
+    { ref: "마르코 1, 15", text: "때가 차서 하느님의 나라가 가까이 왔다. 회개하고 복음을 믿어라." },
+    { ref: "마르코 5, 34", text: "딸아, 네 믿음이 너를 구원하였다. 평안히 가거라. 그리고 병에서 벗어나 건강해져라." },
+    { ref: "마르코 12, 30", text: "너는 마음을 다하고 목숨을 다하고 정신을 다하고 힘을 다하여 주 너의 하느님을 사랑해야 한다." },
+    { ref: "마르코 13, 13", text: "끝까지 견디어 내는 이는 구원을 받을 것이다." },
+    { ref: "요한 10, 9", text: "나는 문이다. 누구든지 나를 통하여 들어오면 구원을 받고, 또 드나들며 풀밭을 찾아 얻을 것이다." },
+    { ref: "요한 13, 14-15", text: "주님이며 스승인 내가 너희의 발을 씻었으면, 너희도 서로 발을 씻어 주어야 한다. 내가 너희에게 한 것처럼 너희도 하라고, 내가 본을 보여 준 것이다." },
+    { ref: "루카 2, 14", text: "지극히 높은 곳에서는 하느님께 영광 땅에서는 그분 마음에 드는 사람들에게 평화!" },
+    { ref: "마태오 5, 48", text: "하늘의 너희 아버지께서 완전하신 것처럼 너희도 완전한 사람이 되어야 한다." },
+    { ref: "마태오 11, 6", text: "나에게 의심을 품지 않는 이는 행복하다." },
+    { ref: "마태오 16, 19", text: "또 나는 너에게 하늘 나라의 열쇠를 주겠다. 그러니 네가 무엇이든지 땅에서 매면 하늘에서도 매일 것이고, 네가 무엇이든지 땅에서 풀면 하늘에서도 풀릴 것이다." },
+    { ref: "요한 15, 5", text: "나는 포도나무요 너희는 가지다. 내 안에 머무르고 나도 그안에 머무르는 사람은 많은 열매를 맺는다. 너희는 나 없이 아무것도 하지 못한다." },
+    { ref: "요한 14, 6", text: "나는 길이요 진리요 생명이다. 나를 통하지 않고서는 아무도 아버지께 갈 수 없다." },
+    { ref: "요한 15, 9", text: "너희는 내 사랑 안에 머물러라." }
+  ];
+
+  function tokenize(text){ return text.split(/\s+/).filter(Boolean); }
+
+  var ALL_TOKENS = []; // { text, verseIndex }
+  VERSES.forEach(function(v, vi){
+    tokenize(v.text).forEach(function(t){ ALL_TOKENS.push({ text: t, verseIndex: vi }); });
+  });
+
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  // ---------------- persisted per-viewer settings (best-effort) ----------------
+  var settings = { mode: "assemble", difficulty: "normal", round: "all", direction: "mixed" };
+  try {
+    var saved = JSON.parse(localStorage.getItem("word-mosaic-settings") || "null");
+    if (saved){
+      if (saved.mode === "assemble" || saved.mode === "flashcards") settings.mode = saved.mode;
+      if (saved.difficulty === "easy" || saved.difficulty === "normal") settings.difficulty = saved.difficulty;
+      if (saved.round === "all" || saved.round === "ten") settings.round = saved.round;
+      if (saved.direction === "ref-to-text" || saved.direction === "text-to-ref" || saved.direction === "mixed") settings.direction = saved.direction;
+    }
+  } catch (e) { /* ignore */ }
+
+  function saveSettings(){
+    try { localStorage.setItem("word-mosaic-settings", JSON.stringify(settings)); } catch (e) { /* ignore */ }
+  }
+
+  // ---------------- best-record tracking (best-effort, per browser) ----------------
+  var RECORDS_KEY = "word-mosaic-records";
+  function loadRecords(){
+    try { return JSON.parse(localStorage.getItem(RECORDS_KEY) || "{}"); } catch (e) { return {}; }
+  }
+  function saveRecords(records){
+    try { localStorage.setItem(RECORDS_KEY, JSON.stringify(records)); } catch (e) { /* ignore */ }
+  }
+  function recordKey(){
+    return settings.mode === "assemble"
+      ? "assemble|" + settings.difficulty + "|" + settings.round
+      : "flashcards|" + settings.direction + "|" + settings.round;
+  }
+  function getRecord(){
+    var records = loadRecords();
+    return records[recordKey()] || { bestScore: 0, bestStreak: 0 };
+  }
+  function updateRecord(score, streak){
+    var records = loadRecords();
+    var key = recordKey();
+    var prev = records[key] || { bestScore: 0, bestStreak: 0 };
+    var improvedScore = score > prev.bestScore;
+    var improvedStreak = streak > prev.bestStreak;
+    records[key] = { bestScore: Math.max(prev.bestScore, score), bestStreak: Math.max(prev.bestStreak, streak) };
+    saveRecords(records);
+    return { improvedScore: improvedScore, improvedStreak: improvedStreak, record: records[key] };
+  }
+
+  // ---------------- DOM refs ----------------
+  var screenSetup = document.getElementById("screen-setup");
+  var screenQuiz = document.getElementById("screen-quiz");
+  var screenCards = document.getElementById("screen-cards");
+  var screenSummary = document.getElementById("screen-summary");
+
+  var modeRow = document.getElementById("mode-row");
+  var difficultyGroup = document.getElementById("difficulty-group");
+  var difficultyRow = document.getElementById("difficulty-row");
+  var directionGroup = document.getElementById("direction-group");
+  var directionRow = document.getElementById("direction-row");
+  var roundRow = document.getElementById("round-row");
+  var btnStart = document.getElementById("btn-start");
+  var setupHint = document.getElementById("setup-hint");
+  var recordHint = document.getElementById("record-hint");
+
+  var quizPos = document.getElementById("quiz-pos");
+  var quizTotal = document.getElementById("quiz-total");
+  var quizStreak = document.getElementById("quiz-streak");
+  var quizScore = document.getElementById("quiz-score");
+  var progressFill = document.getElementById("progress-fill");
+  var verseHint = document.getElementById("verse-hint");
+  var answerPanel = document.getElementById("answer-panel");
+  var tray = document.getElementById("tray");
+  var feedback = document.getElementById("feedback");
+  var revealPanel = document.getElementById("reveal-panel");
+  var revealText = document.getElementById("reveal-text");
+  var revealRef = document.getElementById("reveal-ref");
+  var btnCheck = document.getElementById("btn-check");
+  var btnGiveUp = document.getElementById("btn-give-up");
+  var btnNext = document.getElementById("btn-next");
+  var btnReset = document.getElementById("btn-reset");
+
+  var cardPos = document.getElementById("card-pos");
+  var cardTotal = document.getElementById("card-total");
+  var cardStreak = document.getElementById("card-streak");
+  var cardRemembered = document.getElementById("card-remembered");
+  var cardProgressFill = document.getElementById("card-progress-fill");
+  var flashCard = document.getElementById("flash-card");
+  var flashLabel = document.getElementById("flash-label");
+  var flashContent = document.getElementById("flash-content");
+  var cardActionFlip = document.getElementById("card-action-flip");
+  var cardActionRate = document.getElementById("card-action-rate");
+  var btnFlip = document.getElementById("btn-flip");
+  var btnRateAgain = document.getElementById("btn-rate-again");
+  var btnRateGood = document.getElementById("btn-rate-good");
+
+  var summaryTitle = document.getElementById("summary-title");
+  var summaryScore = document.getElementById("summary-score");
+  var summaryScoreLabel = document.getElementById("summary-score-label");
+  var summaryNote = document.getElementById("summary-note");
+  var summaryRecord = document.getElementById("summary-record");
+  var missedWrap = document.getElementById("missed-wrap");
+  var missedLabel = document.getElementById("missed-label");
+  var missedList = document.getElementById("missed-list");
+  var btnRetryMissed = document.getElementById("btn-retry-missed");
+  var btnNewRound = document.getElementById("btn-new-round");
+  var btnToSetup = document.getElementById("btn-to-setup");
+
+  function showScreen(name){
+    screenSetup.hidden = name !== "setup";
+    screenQuiz.hidden = name !== "quiz";
+    screenCards.hidden = name !== "cards";
+    screenSummary.hidden = name !== "summary";
+  }
+
+  // ---------------- setup screen interactions ----------------
+  function formatRecord(rec){
+    return settings.mode === "assemble"
+      ? "이 설정 최고 기록: " + rec.bestScore + "문제 정답 · 최고 연속 " + rec.bestStreak
+      : "이 설정 최고 기록: " + rec.bestScore + "장 기억 · 최고 연속 " + rec.bestStreak;
+  }
+
+  function refreshChips(){
+    modeRow.querySelectorAll(".chip").forEach(function(btn){
+      btn.setAttribute("aria-pressed", btn.dataset.mode === settings.mode ? "true" : "false");
+    });
+    difficultyGroup.hidden = settings.mode !== "assemble";
+    directionGroup.hidden = settings.mode !== "flashcards";
+    difficultyRow.querySelectorAll(".chip").forEach(function(btn){
+      btn.setAttribute("aria-pressed", btn.dataset.difficulty === settings.difficulty ? "true" : "false");
+    });
+    directionRow.querySelectorAll(".chip").forEach(function(btn){
+      btn.setAttribute("aria-pressed", btn.dataset.direction === settings.direction ? "true" : "false");
+    });
+    roundRow.querySelectorAll(".chip").forEach(function(btn){
+      btn.setAttribute("aria-pressed", btn.dataset.round === settings.round ? "true" : "false");
+    });
+    var count = settings.round === "all" ? 31 : 10;
+    setupHint.textContent = "총 " + count + (settings.mode === "assemble" ? "문제" : "장");
+    recordHint.textContent = formatRecord(getRecord());
+  }
+  modeRow.addEventListener("click", function(e){
+    var btn = e.target.closest(".chip");
+    if (!btn) return;
+    settings.mode = btn.dataset.mode;
+    saveSettings();
+    refreshChips();
+  });
+  difficultyRow.addEventListener("click", function(e){
+    var btn = e.target.closest(".chip");
+    if (!btn) return;
+    settings.difficulty = btn.dataset.difficulty;
+    saveSettings();
+    refreshChips();
+  });
+  directionRow.addEventListener("click", function(e){
+    var btn = e.target.closest(".chip");
+    if (!btn) return;
+    settings.direction = btn.dataset.direction;
+    saveSettings();
+    refreshChips();
+  });
+  roundRow.addEventListener("click", function(e){
+    var btn = e.target.closest(".chip");
+    if (!btn) return;
+    settings.round = btn.dataset.round;
+    saveSettings();
+    refreshChips();
+  });
+  refreshChips();
+
+  function pickIndices(){
+    var indices = VERSES.map(function(_, i){ return i; });
+    if (settings.round === "ten"){
+      indices = shuffle(indices).slice(0, Math.min(10, indices.length));
+    }
+    return indices;
+  }
+
+  function startFromSettings(){
+    if (settings.mode === "assemble"){
+      startRound(pickIndices());
+    } else {
+      startFlashRound(pickIndices());
+    }
+  }
+
+  btnStart.addEventListener("click", startFromSettings);
+
+  // ---------------- round / game state (assemble mode) ----------------
+  var round = { order: [], pos: 0, score: 0, streak: 0, bestStreakInRound: 0, missed: [] };
+  var q = null; // current question state
+
+  function startRound(indices){
+    round = { order: shuffle(indices), pos: 0, score: 0, streak: 0, bestStreakInRound: 0, missed: [] };
+    quizTotal.textContent = String(round.order.length);
+    showScreen("quiz");
+    loadQuestion();
+  }
+
+  function decoyCount(){ return settings.difficulty === "easy" ? 2 : 4; }
+
+  function buildQuestion(verseIndex){
+    var verse = VERSES[verseIndex];
+    var correctWords = tokenize(verse.text);
+    var correctSet = {};
+    correctWords.forEach(function(w){ correctSet[w] = true; });
+
+    var pool = ALL_TOKENS.filter(function(t){
+      return t.verseIndex !== verseIndex && !correctSet[t.text];
+    });
+    var pickedDecoyTexts = {};
+    var decoys = [];
+    var shuffledPool = shuffle(pool);
+    for (var i = 0; i < shuffledPool.length && decoys.length < decoyCount(); i++){
+      var cand = shuffledPool[i];
+      if (pickedDecoyTexts[cand.text]) continue;
+      pickedDecoyTexts[cand.text] = true;
+      decoys.push(cand.text);
+    }
+
+    var tiles = [];
+    correctWords.forEach(function(w, idx){
+      tiles.push({ id: "c" + idx, text: w, decoy: false, correctIndex: idx, used: false });
+    });
+    decoys.forEach(function(w, idx){
+      tiles.push({ id: "d" + idx, text: w, decoy: true, correctIndex: -1, used: false });
+    });
+
+    return {
+      verseIndex: verseIndex,
+      verse: verse,
+      correctWords: correctWords,
+      correctLength: correctWords.length,
+      tray: shuffle(tiles),
+      answer: [],
+      solved: false,
+      revealed: false
+    };
+  }
+
+  function loadQuestion(){
+    var verseIndex = round.order[round.pos];
+    q = buildQuestion(verseIndex);
+
+    quizPos.textContent = String(round.pos + 1);
+    quizScore.textContent = String(round.score);
+    quizStreak.textContent = String(round.streak);
+    progressFill.style.width = Math.round((round.pos / round.order.length) * 100) + "%";
+    verseHint.textContent = q.verse.ref;
+
+    feedback.className = "feedback";
+    feedback.textContent = "";
+    revealPanel.classList.remove("show");
+    answerPanel.classList.remove("state-correct", "state-wrong", "state-revealed");
+    btnCheck.hidden = false;
+    btnCheck.disabled = false;
+    btnGiveUp.hidden = false;
+    btnGiveUp.disabled = false;
+    btnNext.hidden = true;
+
+    renderTray();
+    renderAnswer();
+  }
+
+  function renderTray(){
+    tray.innerHTML = "";
+    q.tray.forEach(function(tile){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "tile";
+      b.textContent = tile.text;
+      b.dataset.id = tile.id;
+      b.dataset.used = tile.used ? "true" : "false";
+      b.disabled = tile.used || q.solved || q.revealed;
+      b.addEventListener("click", function(){ placeTile(tile); });
+      tray.appendChild(b);
+    });
+  }
+
+  function renderAnswer(){
+    answerPanel.innerHTML = "";
+    if (q.answer.length === 0){
+      answerPanel.classList.add("placeholder-empty");
+    } else {
+      answerPanel.classList.remove("placeholder-empty");
+    }
+    q.answer.forEach(function(tile){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "tile";
+      if (tile.markDecoy) b.classList.add("is-decoy-marked");
+      if (tile.markOutOfOrder) b.classList.add("is-outorder-marked");
+      b.textContent = tile.text;
+      b.disabled = q.solved || q.revealed;
+      b.addEventListener("click", function(){ removeTile(tile); });
+      answerPanel.appendChild(b);
+    });
+  }
+
+  function placeTile(tile){
+    if (tile.used || q.solved || q.revealed) return;
+    tile.used = true;
+    tile.markDecoy = false;
+    tile.markOutOfOrder = false;
+    q.answer.push(tile);
+    feedback.className = "feedback";
+    answerPanel.classList.remove("state-wrong");
+    renderTray();
+    renderAnswer();
+  }
+
+  function removeTile(tile){
+    if (q.solved || q.revealed) return;
+    var idx = q.answer.indexOf(tile);
+    if (idx === -1) return;
+    q.answer.splice(idx, 1);
+    tile.used = false;
+    renderTray();
+    renderAnswer();
+  }
+
+  btnReset.addEventListener("click", function(){
+    if (!q || q.solved || q.revealed) return;
+    q.answer.forEach(function(t){ t.used = false; });
+    q.answer = [];
+    feedback.className = "feedback";
+    answerPanel.classList.remove("state-wrong");
+    renderTray();
+    renderAnswer();
+  });
+
+  function showReveal(){
+    revealText.textContent = q.verse.text;
+    revealRef.textContent = q.verse.ref;
+    revealPanel.classList.add("show");
+  }
+
+  btnCheck.addEventListener("click", function(){
+    if (!q || q.solved || q.revealed) return;
+
+    var usedDecoy = q.answer.some(function(t){ return t.decoy; });
+    var lengthOk = q.answer.length === q.correctLength;
+    // Compare by word text at each position, not by original tile identity —
+    // duplicate words (e.g. "다하고" appearing three times) are interchangeable,
+    // so any tile with the right text in the right slot must count as correct.
+    var textsMatch = q.answer.every(function(t, i){ return !t.decoy && t.text === q.correctWords[i]; });
+    var success = !usedDecoy && lengthOk && textsMatch;
+
+    if (success){
+      q.solved = true;
+      round.score += 1;
+      round.streak += 1;
+      round.bestStreakInRound = Math.max(round.bestStreakInRound, round.streak);
+      quizScore.textContent = String(round.score);
+      quizStreak.textContent = String(round.streak);
+      feedback.className = "feedback ok show";
+      feedback.textContent = round.streak >= 3 ? "정확해요! " + round.streak + "연속 정답이에요." : "정확해요! 말씀을 잘 맞추었어요.";
+      answerPanel.classList.remove("state-wrong");
+      answerPanel.classList.add("state-correct");
+      showReveal();
+      btnCheck.hidden = true;
+      btnGiveUp.hidden = true;
+      btnNext.hidden = false;
+      renderTray();
+      renderAnswer();
+    } else {
+      q.answer.forEach(function(t, i){
+        t.markDecoy = !!t.decoy;
+        t.markOutOfOrder = !t.decoy && t.text !== q.correctWords[i];
+      });
+      feedback.className = "feedback bad show";
+      if (usedDecoy){
+        feedback.textContent = "본문에 없는 낱말이 섞여 있어요. 붉게 표시된 조각을 다시 살펴보세요.";
+      } else if (!lengthOk){
+        feedback.textContent = "아직 낱말이 다 모이지 않았어요.";
+      } else {
+        feedback.textContent = "순서가 맞지 않아요. 조각을 눌러 빼고 다시 놓아 보세요.";
+      }
+      answerPanel.classList.add("state-wrong");
+      renderAnswer();
+    }
+  });
+
+  btnGiveUp.addEventListener("click", function(){
+    if (!q || q.solved || q.revealed) return;
+    q.revealed = true;
+    round.streak = 0;
+    quizStreak.textContent = "0";
+    round.missed.push(q.verse.ref);
+    q.tray.forEach(function(t){ t.used = false; });
+    q.answer = tokenize(q.verse.text).map(function(w, i){
+      return { id: "r" + i, text: w, decoy: false, correctIndex: i, used: true, markDecoy: false, markOutOfOrder: false };
+    });
+    feedback.className = "feedback info show";
+    feedback.textContent = "정답을 보여드릴게요. 다음 구절에서 다시 도전해 보세요.";
+    answerPanel.classList.remove("state-wrong", "state-correct");
+    answerPanel.classList.add("state-revealed");
+    showReveal();
+    btnCheck.hidden = true;
+    btnGiveUp.hidden = true;
+    btnNext.hidden = false;
+    renderTray();
+    renderAnswer();
+  });
+
+  btnNext.addEventListener("click", function(){
+    round.pos += 1;
+    if (round.pos >= round.order.length){
+      finishRound();
+    } else {
+      loadQuestion();
+    }
+  });
+
+  function finishRound(){
+    progressFill.style.width = "100%";
+    var recordResult = updateRecord(round.score, round.bestStreakInRound);
+    populateSummary({
+      mode: "assemble",
+      total: round.order.length,
+      score: round.score,
+      scoreLabel: "정답 · 이번 최고 연속 " + round.bestStreakInRound,
+      missedRefs: round.missed,
+      missedLabel: "다시 살펴볼 구절",
+      retryLabel: "틀린 구절만 다시 풀기",
+      record: recordResult
+    });
+  }
+
+  // =========================================================
+  // ===================== flashcard mode =====================
+  // =========================================================
+  var flashRound = { order: [], pos: 0, remembered: 0, streak: 0, bestStreakInRound: 0, missed: [] };
+  var card = null; // current flashcard state
+
+  function startFlashRound(indices){
+    flashRound = { order: shuffle(indices), pos: 0, remembered: 0, streak: 0, bestStreakInRound: 0, missed: [] };
+    cardTotal.textContent = String(flashRound.order.length);
+    showScreen("cards");
+    loadFlashCard();
+  }
+
+  function buildFlashCard(verseIndex){
+    var verse = VERSES[verseIndex];
+    var direction = settings.direction === "mixed"
+      ? (Math.random() < 0.5 ? "ref-to-text" : "text-to-ref")
+      : settings.direction;
+    return { verseIndex: verseIndex, verse: verse, direction: direction, answered: false };
+  }
+
+  function loadFlashCard(){
+    var verseIndex = flashRound.order[flashRound.pos];
+    card = buildFlashCard(verseIndex);
+
+    cardPos.textContent = String(flashRound.pos + 1);
+    cardStreak.textContent = String(flashRound.streak);
+    cardRemembered.textContent = String(flashRound.remembered);
+    cardProgressFill.style.width = Math.round((flashRound.pos / flashRound.order.length) * 100) + "%";
+
+    flashCard.classList.remove("is-answer");
+    if (card.direction === "ref-to-text"){
+      flashLabel.textContent = "출처";
+      flashContent.textContent = card.verse.ref;
+    } else {
+      flashLabel.textContent = "이 말씀의 출처는?";
+      flashContent.textContent = card.verse.text;
+    }
+
+    cardActionFlip.hidden = false;
+    cardActionRate.hidden = true;
+  }
+
+  btnFlip.addEventListener("click", function(){
+    if (!card || card.answered) return;
+    card.answered = true;
+    flashCard.classList.add("is-answer");
+    if (card.direction === "ref-to-text"){
+      flashLabel.textContent = "말씀";
+      flashContent.textContent = card.verse.text;
+    } else {
+      flashLabel.textContent = "출처";
+      flashContent.textContent = card.verse.ref;
+    }
+    cardActionFlip.hidden = true;
+    cardActionRate.hidden = false;
+  });
+
+  function advanceFlashCard(){
+    flashRound.pos += 1;
+    if (flashRound.pos >= flashRound.order.length){
+      finishFlashRound();
+    } else {
+      loadFlashCard();
+    }
+  }
+
+  btnRateGood.addEventListener("click", function(){
+    if (!card) return;
+    flashRound.remembered += 1;
+    flashRound.streak += 1;
+    flashRound.bestStreakInRound = Math.max(flashRound.bestStreakInRound, flashRound.streak);
+    advanceFlashCard();
+  });
+
+  btnRateAgain.addEventListener("click", function(){
+    if (!card) return;
+    flashRound.streak = 0;
+    flashRound.missed.push(card.verse.ref);
+    advanceFlashCard();
+  });
+
+  function finishFlashRound(){
+    cardProgressFill.style.width = "100%";
+    var recordResult = updateRecord(flashRound.remembered, flashRound.bestStreakInRound);
+    populateSummary({
+      mode: "flashcards",
+      total: flashRound.order.length,
+      score: flashRound.remembered,
+      scoreLabel: "기억한 카드 · 이번 최고 연속 " + flashRound.bestStreakInRound,
+      missedRefs: flashRound.missed,
+      missedLabel: "다시 볼 카드",
+      retryLabel: "복습 카드만 다시 보기",
+      record: recordResult
+    });
+  }
+
+  // =========================================================
+  // ========================= summary =========================
+  // =========================================================
+  var lastFinishedMode = "assemble";
+
+  function populateSummary(opts){
+    lastFinishedMode = opts.mode;
+    var total = opts.total, score = opts.score;
+    summaryScore.innerHTML = score + '<span>/' + total + '</span>';
+    summaryScoreLabel.textContent = opts.scoreLabel;
+
+    var recordNote = "";
+    if (opts.record && (opts.record.improvedScore || opts.record.improvedStreak)){
+      recordNote = " 🎉 최고 기록을 경신했어요!";
+    }
+    var ratio = total ? score / total : 0;
+    if (ratio === 1){
+      summaryTitle.textContent = "완벽해요";
+      summaryNote.textContent = (opts.mode === "assemble" ? "모든 말씀을 정확히 맞추었어요." : "모든 카드를 다 기억했어요.") + recordNote;
+    } else if (ratio >= 0.7){
+      summaryTitle.textContent = "잘 하셨어요";
+      summaryNote.textContent = "조금만 더 살펴보면 완벽해질 거예요." + recordNote;
+    } else {
+      summaryTitle.textContent = "한 라운드 완료";
+      summaryNote.textContent = (opts.mode === "assemble" ? "놓친 구절을 한 번 더 살펴보세요." : "다시 볼 카드를 한 번 더 살펴보세요.") + recordNote;
+    }
+
+    if (opts.record){
+      summaryRecord.textContent = "이 설정 최고 기록: " + opts.record.record.bestScore + " / " + total + " · 최고 연속 " + opts.record.record.bestStreak;
+    } else {
+      summaryRecord.textContent = "";
+    }
+
+    missedLabel.textContent = opts.missedLabel;
+    if (opts.missedRefs.length){
+      missedWrap.hidden = false;
+      missedList.innerHTML = "";
+      opts.missedRefs.forEach(function(ref){
+        var chip = document.createElement("span");
+        chip.className = "missed-chip";
+        chip.textContent = ref;
+        missedList.appendChild(chip);
+      });
+      btnRetryMissed.hidden = false;
+      btnRetryMissed.textContent = opts.retryLabel;
+    } else {
+      missedWrap.hidden = true;
+      btnRetryMissed.hidden = true;
+    }
+
+    showScreen("summary");
+  }
+
+  btnRetryMissed.addEventListener("click", function(){
+    var refs = (lastFinishedMode === "assemble" ? round.missed : flashRound.missed).slice();
+    var indices = VERSES
+      .map(function(v, i){ return { i: i, ref: v.ref }; })
+      .filter(function(o){ return refs.indexOf(o.ref) !== -1; })
+      .map(function(o){ return o.i; });
+    if (!indices.length) return;
+    if (lastFinishedMode === "assemble"){
+      startRound(indices);
+    } else {
+      startFlashRound(indices);
+    }
+  });
+
+  btnNewRound.addEventListener("click", startFromSettings);
+
+  btnToSetup.addEventListener("click", function(){
+    refreshChips();
+    showScreen("setup");
+  });
+
+  showScreen("setup");
+})();
+
+</script>
+
+<script>
+
+(function(){
+  "use strict";
+
+  var VERSES = [
+    { ref: "마태오 1, 23", text: "“보아라, 동정녀가 잉태하여 아들을 낳으리니 그 이름을 임마누엘이라고 하리라.” 하신 말씀이다. 임마누엘은 번역하면 ‘하느님께서 우리와 함께 계시다.’는 뜻이다." },
+    { ref: "마태오 28, 19-20", text: "너희는 가서 모든 민족들을 제자로 삼아, 아버지와 아들과 성령의 이름으로 세례를 주고, 내가 너희에게 명령한 모든 것을 가르쳐 지키게 하여라." },
+    { ref: "요한 3, 16", text: "하느님께서는 세상을 너무나 사랑하신 나머지 외아들을 내주시어, 그를 믿는 사람은 누구나 멸망하지 않고 영원한 생명을 얻게 하셨다." },
+    { ref: "요한 6, 35", text: "내가 생명의 빵이다. 나에게 오는 사람은 결코 배고프지 않을 것이며, 나를 믿는 사람은 결코 목마르지 않을 것이다." },
+    { ref: "요한 20, 28-29", text: "“저의 주님, 저의 하느님!” 그러자 예수님께서 토마스에게 말씀하셨다. “너는 나를 보고서야 믿느냐? 보지 않고도 믿는 사람은 행복하다.”" },
+    { ref: "루카 6, 36", text: "너희 아버지께서 자비하신 것처럼 너희도 자비로운 사람이 되어라." },
+    { ref: "루카 14, 11", text: "누구든지 자신을 높이는 이는 낮아지고 자신을 낮추는 이는 높아질 것이다." },
+    { ref: "마태오 25, 40", text: "너희가 내 형제들인 이 가장 작은 이들 가운데 한 사람에게 해 준 것이 바로 나에게 해 준 것이다." },
+    { ref: "마태오 28, 20", text: "보라, 내가 세상 끝 날까지 언제나 너희와 함께 있겠다." },
+    { ref: "마르코 8, 29", text: "“그러면 너희는 나를 누구라고 하느냐?” 하고 물으시자, 베드로가 “스승님은 그리스도이십니다.” 하고 대답하였다." },
+    { ref: "마태오 4, 4", text: "성경에 기록되어 있다. ‘사람은 빵만으로 살지 않고 하느님의 입에서 나오는 모든 말씀으로 산다.’" },
+    { ref: "마태오 4, 19", text: "나를 따라오너라. 내가 너희를 사람 낚는 어부로 만들겠다." },
+    { ref: "마태오 11, 29", text: "나는 마음이 온유하고 겸손하니 내 멍에를 메고 나에게 배워라." },
+    { ref: "마태오 14, 27", text: "용기를 내어라. 나다. 두려워하지 마라." },
+    { ref: "마르코 16, 15", text: "너희는 온세상에 가서 모든 피조물에게 복음을 선포하여라." },
+    { ref: "루카 11, 10", text: "누구든지 청하는 이는 받고, 찾는 이는 얻고 문을 두드리는 이에게는 열릴 것이다." },
+    { ref: "요한 6, 68", text: "주님, 저희가 누구에게 가겠습니까? 주님께는 영원한 생명의 말씀이 있습니다." },
+    { ref: "요한 8, 12", text: "나는 세상의 빛이다. 나를 따르는 이는 어둠 속을 걷지 않고 생명의 빛을 얻을 것이다." },
+    { ref: "마르코 1, 15", text: "때가 차서 하느님의 나라가 가까이 왔다. 회개하고 복음을 믿어라." },
+    { ref: "마르코 5, 34", text: "딸아, 네 믿음이 너를 구원하였다. 평안히 가거라. 그리고 병에서 벗어나 건강해져라." },
+    { ref: "마르코 12, 30", text: "너는 마음을 다하고 목숨을 다하고 정신을 다하고 힘을 다하여 주 너의 하느님을 사랑해야 한다." },
+    { ref: "마르코 13, 13", text: "끝까지 견디어 내는 이는 구원을 받을 것이다." },
+    { ref: "요한 10, 9", text: "나는 문이다. 누구든지 나를 통하여 들어오면 구원을 받고, 또 드나들며 풀밭을 찾아 얻을 것이다." },
+    { ref: "요한 13, 14-15", text: "주님이며 스승인 내가 너희의 발을 씻었으면, 너희도 서로 발을 씻어 주어야 한다. 내가 너희에게 한 것처럼 너희도 하라고, 내가 본을 보여 준 것이다." },
+    { ref: "루카 2, 14", text: "지극히 높은 곳에서는 하느님께 영광 땅에서는 그분 마음에 드는 사람들에게 평화!" },
+    { ref: "마태오 5, 48", text: "하늘의 너희 아버지께서 완전하신 것처럼 너희도 완전한 사람이 되어야 한다." },
+    { ref: "마태오 11, 6", text: "나에게 의심을 품지 않는 이는 행복하다." },
+    { ref: "마태오 16, 19", text: "또 나는 너에게 하늘 나라의 열쇠를 주겠다. 그러니 네가 무엇이든지 땅에서 매면 하늘에서도 매일 것이고, 네가 무엇이든지 땅에서 풀면 하늘에서도 풀릴 것이다." },
+    { ref: "요한 15, 5", text: "나는 포도나무요 너희는 가지다. 내 안에 머무르고 나도 그안에 머무르는 사람은 많은 열매를 맺는다. 너희는 나 없이 아무것도 하지 못한다." },
+    { ref: "요한 14, 6", text: "나는 길이요 진리요 생명이다. 나를 통하지 않고서는 아무도 아버지께 갈 수 없다." },
+    { ref: "요한 15, 9", text: "너희는 내 사랑 안에 머물러라." }
+  ];
+
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function normalizeWords(text){
+    return text
+      .replace(/[“”‘’"'.,!?~()\[\]·…\-]/g, "")
+      .split(/\s+/)
+      .filter(Boolean);
+  }
+
+  // word-multiset overlap ratio against the correct verse's word count
+  function matchRatio(userText, correctText){
+    var correctWords = normalizeWords(correctText);
+    var userWords = normalizeWords(userText);
+    var pool = {};
+    correctWords.forEach(function(w){ pool[w] = (pool[w] || 0) + 1; });
+    var matched = 0;
+    userWords.forEach(function(w){
+      if (pool[w] > 0){ pool[w] -= 1; matched += 1; }
+    });
+    return correctWords.length ? matched / correctWords.length : 0;
+  }
+
+  var LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  var screenMenu = document.getElementById("screen-menu");
+  var screenBingo = document.getElementById("screen-bingo");
+  var screenTtt = document.getElementById("screen-ttt");
+
+  function showScreen(name){
+    screenMenu.hidden = name !== "menu";
+    screenBingo.hidden = name !== "bingo";
+    screenTtt.hidden = name !== "ttt";
+  }
+
+  document.getElementById("pick-bingo").addEventListener("click", function(){ showScreen("bingo"); startBingo(); });
+  document.getElementById("pick-ttt").addEventListener("click", function(){ showScreen("ttt"); startTtt(); });
+  document.getElementById("bingo-to-menu").addEventListener("click", function(){ showScreen("menu"); });
+  document.getElementById("ttt-to-menu").addEventListener("click", function(){ showScreen("menu"); });
+
+  // =========================================================
+  // ========================= BINGO ==========================
+  // =========================================================
+  var bingoGrid = document.getElementById("bingo-grid");
+  var bingoFilled = document.getElementById("bingo-filled");
+  var bingoLines = document.getElementById("bingo-lines");
+  var bingoQpanel = document.getElementById("bingo-qpanel");
+  var bingoQref = document.getElementById("bingo-qref");
+  var bingoInput = document.getElementById("bingo-input");
+  var bingoFeedback = document.getElementById("bingo-feedback");
+  var bingoCheck = document.getElementById("bingo-check");
+  var bingoReveal = document.getElementById("bingo-reveal");
+  var bingoClose = document.getElementById("bingo-close");
+  var bingoNewBoard = document.getElementById("bingo-newboard");
+
+  var bingo = { cells: [], activeIndex: -1, completedLines: 0 };
+
+  function startBingo(){
+    var picks = shuffle(VERSES.map(function(_, i){ return i; })).slice(0, 9);
+    bingo = {
+      cells: picks.map(function(vi){ return { verseIndex: vi, state: "open" }; }),
+      activeIndex: -1,
+      completedLines: 0
+    };
+    bingoQpanel.hidden = true;
+    renderBingo();
+  }
+
+  function renderBingo(){
+    bingoGrid.innerHTML = "";
+    var filledCount = 0;
+    bingo.cells.forEach(function(cell, i){
+      if (cell.state !== "open") filledCount += 1;
+      var v = VERSES[cell.verseIndex];
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "bingo-cell" + (cell.state !== "open" ? " " + cell.state : "") + (i === bingo.activeIndex ? " active" : "");
+      b.textContent = v.ref;
+      b.disabled = cell.state !== "open";
+      b.addEventListener("click", function(){ openBingoCell(i); });
+      bingoGrid.appendChild(b);
+    });
+    bingoFilled.textContent = String(filledCount);
+    bingoLines.textContent = String(bingo.completedLines);
+  }
+
+  function openBingoCell(i){
+    bingo.activeIndex = i;
+    var v = VERSES[bingo.cells[i].verseIndex];
+    bingoQref.textContent = v.ref;
+    bingoInput.value = "";
+    bingoFeedback.className = "feedback";
+    bingoFeedback.textContent = "";
+    bingoQpanel.hidden = false;
+    renderBingo();
+    bingoInput.focus();
+  }
+
+  function resolveBingoCell(state){
+    bingo.cells[bingo.activeIndex].state = state;
+    bingoQpanel.hidden = true;
+    bingo.activeIndex = -1;
+    checkBingoLines();
+    renderBingo();
+  }
+
+  function checkBingoLines(){
+    var count = 0;
+    LINES.forEach(function(line){
+      var full = line.every(function(idx){ return bingo.cells[idx].state !== "open"; });
+      if (full) count += 1;
+    });
+    if (count > bingo.completedLines){
+      bingoFeedback.className = "feedback ok show";
+      bingoFeedback.textContent = "빙고! " + count + "줄을 완성했어요.";
+    }
+    bingo.completedLines = count;
+  }
+
+  bingoCheck.addEventListener("click", function(){
+    if (bingo.activeIndex === -1) return;
+    var v = VERSES[bingo.cells[bingo.activeIndex].verseIndex];
+    var ratio = matchRatio(bingoInput.value, v.text);
+    if (ratio >= 0.75){
+      bingoFeedback.className = "feedback ok show";
+      bingoFeedback.textContent = "정확해요!";
+      setTimeout(function(){ resolveBingoCell("solved"); }, 500);
+    } else {
+      bingoFeedback.className = "feedback bad show";
+      bingoFeedback.textContent = "조금 더 살펴보세요. (일치율 " + Math.round(ratio * 100) + "%)";
+    }
+  });
+  bingoReveal.addEventListener("click", function(){
+    if (bingo.activeIndex === -1) return;
+    resolveBingoCell("revealed");
+  });
+  bingoClose.addEventListener("click", function(){
+    bingoQpanel.hidden = true;
+    bingo.activeIndex = -1;
+    renderBingo();
+  });
+  bingoNewBoard.addEventListener("click", startBingo);
+
+  // =========================================================
+  // ===================== TIC-TAC-TOE =========================
+  // =========================================================
+  var tttGrid = document.getElementById("ttt-grid");
+  var tttQpanel = document.getElementById("ttt-qpanel");
+  var tttPrompt = document.getElementById("ttt-prompt");
+  var tttChoices = document.getElementById("ttt-choices");
+  var tttFeedback = document.getElementById("ttt-feedback");
+  var tttTurnHint = document.getElementById("ttt-turn-hint");
+  var tttBanner = document.getElementById("ttt-banner");
+  var tttRestart = document.getElementById("ttt-restart");
+  var tttWinsEl = document.getElementById("ttt-wins");
+  var tttDrawsEl = document.getElementById("ttt-draws");
+  var tttLossesEl = document.getElementById("ttt-losses");
+
+  var TTT_RECORD_KEY = "word-mosaic-ttt-record";
+  function loadTttRecord(){
+    try { return JSON.parse(localStorage.getItem(TTT_RECORD_KEY) || "null") || { wins:0, draws:0, losses:0 }; }
+    catch (e) { return { wins:0, draws:0, losses:0 }; }
+  }
+  function saveTttRecord(rec){
+    try { localStorage.setItem(TTT_RECORD_KEY, JSON.stringify(rec)); } catch (e) { /* ignore */ }
+  }
+  var tttRecord = loadTttRecord();
+
+  var ttt = { board: [], over: false, awaitingCell: false };
+
+  function startTtt(){
+    ttt = { board: Array(9).fill(null), over: false, awaitingCell: false };
+    tttBanner.className = "banner";
+    tttBanner.textContent = "";
+    tttRestart.hidden = true;
+    tttTurnHint.hidden = true;
+    tttQpanel.hidden = false;
+    renderTttStats();
+    renderTtt();
+    askTttQuestion();
+  }
+
+  function renderTttStats(){
+    tttWinsEl.textContent = String(tttRecord.wins);
+    tttDrawsEl.textContent = String(tttRecord.draws);
+    tttLossesEl.textContent = String(tttRecord.losses);
+  }
+
+  function renderTtt(winLine){
+    tttGrid.innerHTML = "";
+    ttt.board.forEach(function(mark, i){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ttt-cell" + (mark ? " filled mark-" + mark.toLowerCase() : "") + (winLine && winLine.indexOf(i) !== -1 ? " win" : "");
+      b.textContent = mark || "";
+      b.disabled = !!mark || !ttt.awaitingCell || ttt.over;
+      b.addEventListener("click", function(){ placePlayerMark(i); });
+      tttGrid.appendChild(b);
+    });
+  }
+
+  function checkWinner(board){
+    for (var i = 0; i < LINES.length; i++){
+      var line = LINES[i];
+      var a = board[line[0]], b = board[line[1]], c = board[line[2]];
+      if (a && a === b && b === c) return { mark: a, line: line };
+    }
+    return null;
+  }
+
+  function askTttQuestion(){
+    if (ttt.over) return;
+    var vi = Math.floor(Math.random() * VERSES.length);
+    var v = VERSES[vi];
+    var decoys = shuffle(VERSES.map(function(_, i){ return i; }).filter(function(i){ return i !== vi; })).slice(0, 3);
+    var options = shuffle([vi].concat(decoys));
+
+    var excerpt = v.text.length > 70 ? v.text.slice(0, 70) + "…" : v.text;
+    tttPrompt.textContent = excerpt;
+    tttChoices.innerHTML = "";
+    tttFeedback.className = "feedback";
+    tttFeedback.textContent = "";
+    tttTurnHint.hidden = true;
+    tttQpanel.hidden = false;
+    ttt.awaitingCell = false;
+
+    options.forEach(function(optIndex){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "choice-btn";
+      btn.textContent = VERSES[optIndex].ref;
+      btn.addEventListener("click", function(){ answerTtt(optIndex === vi, btn, vi); });
+      tttChoices.appendChild(btn);
+    });
+  }
+
+  function answerTtt(isCorrect, btn, correctIndex){
+    Array.prototype.forEach.call(tttChoices.children, function(child){ child.disabled = true; });
+    if (isCorrect){
+      btn.classList.add("correct");
+      tttFeedback.className = "feedback ok show";
+      tttFeedback.textContent = "정답이에요!";
+      ttt.awaitingCell = true;
+      tttTurnHint.hidden = false;
+      renderTtt();
+    } else {
+      btn.classList.add("wrong");
+      tttFeedback.className = "feedback bad show";
+      tttFeedback.textContent = "아쉬워요. 정답은 " + VERSES[correctIndex].ref + "예요. 컴퓨터 차례로 넘어가요.";
+      setTimeout(computerMove, 900);
+    }
+  }
+
+  function placePlayerMark(i){
+    if (!ttt.awaitingCell || ttt.board[i] || ttt.over) return;
+    ttt.board[i] = "X";
+    ttt.awaitingCell = false;
+    tttQpanel.hidden = true;
+    tttTurnHint.hidden = true;
+
+    var result = checkWinner(ttt.board);
+    if (result){ return endTtt("win", result.line); }
+    if (ttt.board.every(function(m){ return m; })){ return endTtt("draw"); }
+
+    renderTtt();
+    setTimeout(computerMove, 500);
+  }
+
+  function computerMove(){
+    if (ttt.over) return;
+    var i = pickComputerMove(ttt.board);
+    if (i === -1){ renderTtt(); return; }
+    ttt.board[i] = "O";
+
+    var result = checkWinner(ttt.board);
+    if (result){ return endTtt("lose", result.line); }
+    if (ttt.board.every(function(m){ return m; })){ return endTtt("draw"); }
+
+    renderTtt();
+    askTttQuestion();
+  }
+
+  function pickComputerMove(board){
+    var empty = [];
+    board.forEach(function(m, i){ if (!m) empty.push(i); });
+    if (!empty.length) return -1;
+
+    function findWinning(mark){
+      for (var i = 0; i < empty.length; i++){
+        var trial = board.slice();
+        trial[empty[i]] = mark;
+        if (checkWinner(trial)) return empty[i];
+      }
+      return -1;
+    }
+
+    var win = findWinning("O");
+    if (win !== -1) return win;
+    var block = findWinning("X");
+    if (block !== -1) return block;
+    if (!board[4]) return 4;
+    var corners = [0,2,6,8].filter(function(i){ return !board[i]; });
+    if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+
+  function endTtt(kind, line){
+    ttt.over = true;
+    tttQpanel.hidden = true;
+    tttTurnHint.hidden = true;
+    tttRestart.hidden = false;
+    renderTtt(line);
+
+    if (kind === "win"){
+      tttRecord.wins += 1;
+      tttBanner.className = "banner win show";
+      tttBanner.textContent = "이겼어요! 🎉";
+    } else if (kind === "lose"){
+      tttRecord.losses += 1;
+      tttBanner.className = "banner lose show";
+      tttBanner.textContent = "졌어요. 다음엔 이길 거예요.";
+    } else {
+      tttRecord.draws += 1;
+      tttBanner.className = "banner draw show";
+      tttBanner.textContent = "비겼어요!";
+    }
+    saveTttRecord(tttRecord);
+    renderTttStats();
+  }
+
+  tttRestart.addEventListener("click", startTtt);
+
+  showScreen("menu");
+})();
+
+</script>
+
+<script>
+(function(){
+  "use strict";
+  function goTo(page, anchor){
+    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum" };
+    Object.keys(pages).forEach(function(key){
+      var el = document.getElementById(pages[key]);
+      if (el) el.hidden = key !== page;
+    });
+    if (anchor){
+      requestAnimationFrame(function(){
+        var target = document.getElementById(anchor);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } else {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }
+  document.addEventListener("click", function(e){
+    var el = e.target.closest("[data-goto]");
+    if (!el) return;
+    e.preventDefault();
+    goTo(el.getAttribute("data-goto"), el.getAttribute("data-anchor"));
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ Google 로그인 + 나눔마당 (실서버 저장) ============ */
+
+  var SESSION_KEY = "bible-session-v1";
+  var session = null;
+  try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e) { session = null; }
+  if (session && (!session.token || !session.exp || session.exp * 1000 < Date.now())) {
+    session = null;
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
+
+  var gsBtn = document.getElementById("g-signin");
+  var gsBtnInline = document.getElementById("g-signin-inline");
+  var chip = document.getElementById("profile-chip");
+  var picEl = document.getElementById("profile-pic");
+  var nameEl = document.getElementById("profile-name");
+  var logoutBtn = document.getElementById("logout-btn");
+
+  var loginHint = document.getElementById("nanum-login-hint");
+  var composer = document.getElementById("nanum-composer");
+  var nameInput = document.getElementById("nanum-name");
+  var verseSelect = document.getElementById("nanum-verse");
+  var textInput = document.getElementById("nanum-text");
+  var countEl = document.getElementById("nanum-count");
+  var submitBtn = document.getElementById("nanum-submit");
+  var statusEl = document.getElementById("nanum-status");
+  var listEl = document.getElementById("nanum-list");
+  var listCountEl = document.getElementById("nanum-list-count");
+  var noteEl = document.getElementById("nanum-note");
+
+  if (!textInput) return;
+
+  var VERSE_REFS = [
+    "마태오 1, 23","마태오 28, 19-20","요한 3, 16","요한 6, 35","요한 20, 28-29",
+    "루카 6, 36","루카 14, 11","마태오 25, 40","마태오 28, 20","마르코 8, 29",
+    "마태오 4, 4","마태오 4, 19","마태오 11, 29","마태오 14, 27","마르코 16, 15",
+    "루카 11, 10","요한 6, 68","요한 8, 12","마르코 1, 15","마르코 5, 34",
+    "마르코 12, 30","마르코 13, 13","요한 10, 9","요한 13, 14-15","루카 2, 14",
+    "마태오 5, 48","마태오 11, 6","마태오 16, 19","요한 15, 5","요한 14, 6","요한 15, 9"
+  ];
+  VERSE_REFS.forEach(function (ref) {
+    var opt = document.createElement("option");
+    opt.value = ref; opt.textContent = ref;
+    verseSelect.appendChild(opt);
+  });
+
+  var MAX_LEN = 300;
+  textInput.addEventListener("input", function () {
+    countEl.textContent = String(textInput.value.length);
+  });
+
+  function setStatus(msg, kind) {
+    statusEl.textContent = msg || "";
+    statusEl.className = "nanum-status" + (kind ? " is-" + kind : "");
+  }
+
+  function formatTime(iso) {
+    try {
+      var d = new Date(iso);
+      function pad(n) { return n < 10 ? "0" + n : String(n); }
+      return d.getFullYear() + "." + pad(d.getMonth() + 1) + "." + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+    } catch (e) { return ""; }
+  }
+
+  function renderList(posts) {
+    listEl.innerHTML = "";
+    if (!posts || !posts.length) {
+      var empty = document.createElement("div");
+      empty.className = "nanum-empty";
+      empty.textContent = "아직 나눈 이야기가 없어요. 첫 번째로 나눠보세요!";
+      listEl.appendChild(empty);
+      listCountEl.textContent = "";
+      return;
+    }
+    listCountEl.textContent = posts.length + "개의 이야기";
+    posts.forEach(function (post) {
+      var card = document.createElement("div");
+      card.className = "nanum-post";
+
+      var head = document.createElement("div");
+      head.className = "nanum-post-head";
+      var nameWrap = document.createElement("span");
+      nameWrap.className = "nanum-post-name";
+      if (post.picture) {
+        var av = document.createElement("img");
+        av.src = post.picture;
+        av.alt = "";
+        av.referrerPolicy = "no-referrer";
+        av.style.cssText = "width:20px;height:20px;border-radius:999px;object-fit:cover;vertical-align:-5px;margin-right:6px;";
+        nameWrap.appendChild(av);
+      }
+      nameWrap.appendChild(document.createTextNode(post.name ? post.name : "익명"));
+      var timeSpan = document.createElement("span");
+      timeSpan.className = "nanum-post-time";
+      timeSpan.textContent = formatTime(post.time);
+      head.appendChild(nameWrap);
+      head.appendChild(timeSpan);
+      card.appendChild(head);
+
+      if (post.verseRef) {
+        var tag = document.createElement("span");
+        tag.className = "nanum-post-verse";
+        tag.textContent = post.verseRef;
+        card.appendChild(tag);
+      }
+
+      var textP = document.createElement("p");
+      textP.className = "nanum-post-text";
+      textP.textContent = post.text;
+      card.appendChild(textP);
+
+      listEl.appendChild(card);
+    });
+  }
+
+  function applyAuthUI() {
+    if (session && session.user) {
+      chip.hidden = false;
+      if (gsBtn) gsBtn.classList.add("is-hidden");
+      if (session.user.picture) { picEl.src = session.user.picture; picEl.style.display = ""; }
+      else { picEl.style.display = "none"; }
+      nameEl.textContent = session.user.name || "사용자";
+      if (loginHint) loginHint.hidden = true;
+      if (composer) composer.classList.remove("is-locked");
+      nameInput.value = session.user.name || "";
+      textInput.disabled = false; verseSelect.disabled = false; submitBtn.disabled = false;
+      if (noteEl) noteEl.textContent = "";
+    } else {
+      chip.hidden = true;
+      if (gsBtn) gsBtn.classList.remove("is-hidden");
+      if (loginHint) loginHint.hidden = false;
+      if (composer) composer.classList.add("is-locked");
+      nameInput.value = "";
+      textInput.disabled = true; verseSelect.disabled = true; submitBtn.disabled = true;
+    }
+  }
+
+  function saveSession(data) {
+    session = { token: data.token, exp: data.exp, user: data.user };
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch (e) {}
+    applyAuthUI();
+  }
+
+  function clearSession() {
+    session = null;
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+    try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
+    applyAuthUI();
+  }
+
+  logoutBtn.addEventListener("click", clearSession);
+
+  function onCredential(resp) {
+    if (!resp || !resp.credential) return;
+    setStatus("로그인 중...", null);
+    fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential: resp.credential })
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+    }).then(function (res) {
+      if (!res.ok || !res.j || !res.j.token) throw new Error((res.j && res.j.error) || "auth-failed");
+      saveSession(res.j);
+      setStatus("", null);
+    }).catch(function () {
+      setStatus("로그인에 실패했어요. 다시 시도해주세요.", "error");
+    });
+  }
+
+  var gisTries = 0;
+  function initGIS(clientId) {
+    if (!clientId) return;
+    (function ready() {
+      if (!(window.google && google.accounts && google.accounts.id)) {
+        if (gisTries++ < 100) setTimeout(ready, 100);
+        return;
+      }
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: onCredential,
+        auto_select: true,
+        cancel_on_tap_outside: true
+      });
+      var opts = { theme: "outline", size: "medium", text: "signin_with", shape: "pill", locale: "ko" };
+      if (gsBtn) google.accounts.id.renderButton(gsBtn, opts);
+      if (gsBtnInline) google.accounts.id.renderButton(gsBtnInline, opts);
+      if (!session) { try { google.accounts.id.prompt(); } catch (e) {} }
+    })();
+  }
+
+  fetch("/api/config").then(function (r) { return r.json(); }).then(function (cfg) {
+    initGIS(cfg && cfg.clientId);
+  }).catch(function () {});
+
+  function readSeed() {
+    var el = document.getElementById("nanum-data");
+    if (!el) return [];
+    try { return JSON.parse(el.textContent) || []; } catch (e) { return []; }
+  }
+
+  function loadPosts() {
+    renderList(readSeed());
+    fetch("/api/nanum", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) { if (Array.isArray(data)) renderList(data); })
+      .catch(function () {});
+  }
+
+  submitBtn.addEventListener("click", function () {
+    if (!session) { setStatus("먼저 Google 로그인을 해주세요.", "error"); return; }
+    var text = textInput.value.trim();
+    if (!text) { setStatus("나눌 내용을 적어주세요.", "error"); return; }
+
+    submitBtn.disabled = true;
+    setStatus("게시 중...", null);
+    fetch("/api/nanum", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ text: text.slice(0, MAX_LEN), verseRef: verseSelect.value || "" })
+    }).then(function (r) {
+      return r.json().then(function (j) { return { status: r.status, j: j }; });
+    }).then(function (res) {
+      submitBtn.disabled = false;
+      if (res.status === 401) { setStatus("로그인이 만료됐어요. 다시 로그인해주세요.", "error"); clearSession(); return; }
+      if (res.status !== 200 || !res.j || !Array.isArray(res.j.posts)) {
+        setStatus("게시에 실패했어요. 잠시 후 다시 시도해주세요.", "error"); return;
+      }
+      textInput.value = ""; countEl.textContent = "0"; verseSelect.value = "";
+      setStatus("나눔이 등록됐어요. 감사합니다!", "ok");
+      renderList(res.j.posts);
+    }).catch(function () {
+      submitBtn.disabled = false;
+      setStatus("게시에 실패했어요. 잠시 후 다시 시도해주세요.", "error");
+    });
+  });
+
+  applyAuthUI();
+  loadPosts();
+})();
+</script>
