@@ -121,7 +121,7 @@ module.exports = async (req, res) => {
   if (!blobStoreId()) { res.status(503).json({ error: 'no-db' }); return; }
   try {
     const body = req.body || {};
-    const action = ['signup', 'login', 'changepw'].indexOf(body.action) >= 0 ? body.action : 'login';
+    const action = ['signup', 'login', 'changepw', 'rename'].indexOf(body.action) >= 0 ? body.action : 'login';
     const name = cleanName(body.name);
     const pw = String(body.pw == null ? '' : body.pw);
     if (name.length < 2) { res.status(400).json({ error: 'bad-name' }); return; }
@@ -131,6 +131,28 @@ module.exports = async (req, res) => {
 
     const now = Math.floor(Date.now() / 1000);
     let displayName = name;
+
+    if (action === 'rename') {
+      if (name.toLowerCase() === ADMIN_NAME) { res.status(403).json({ error: 'no-rename-admin' }); return; }
+      const newname = cleanName(body.newname);
+      if (newname.length < 2) { res.status(400).json({ error: 'bad-newname' }); return; }
+      if (newname.toLowerCase() === name.toLowerCase()) { res.status(400).json({ error: 'same-name' }); return; }
+      if (newname.toLowerCase() === ADMIN_NAME) { res.status(409).json({ error: 'exists' }); return; }
+      if (await isBanned(newname)) { res.status(403).json({ error: 'banned' }); return; }
+      const cur = await readUser(name);
+      if (!cur || cur.hash !== hashPw(name, pw)) { res.status(401).json({ error: 'wrong' }); return; }
+      if (await readUser(newname)) { res.status(409).json({ error: 'exists' }); return; }
+      try {
+        // 비번 해시에 아이디가 섞여 있어 새 아이디로 다시 해시해야 함 (pw 평문은 요청에 있음)
+        await saveUser(newname, { name: newname, hash: hashPw(newname, pw), created: cur.created || new Date().toISOString() }, false);
+      } catch (e) { res.status(409).json({ error: 'exists' }); return; }
+      try { await del(userFile(name)); } catch (e) { /* 무시 */ }
+      const userR = { sub: 'local:' + newname.toLowerCase(), name: newname, admin: false };
+      const expR = now + SESSION_TTL;
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).json({ token: sign({ sub: userR.sub, name: userR.name, iat: now, exp: expR }), exp: expR, user: userR });
+      return;
+    }
 
     if (action === 'changepw') {
       const newpw = String(body.newpw == null ? '' : body.newpw);
