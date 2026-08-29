@@ -10,10 +10,23 @@ const PATH = 'bible/nanum.json';
 const MAX_POSTS = 200;
 const MAX_TEXT = 300;
 
-// 저장소 공개 주소를 토큰에서 뽑아내요 (list() 대신 공개 URL 직접 읽기 → 작업 횟수 절약)
-function blobBase() {
+// 저장소 ID를 구해요. RW 토큰(vercel_blob_rw_<id>_<secret>) 또는 BLOB_STORE_ID(store_<id>) 둘 다 지원.
+function blobStoreId() {
   const m = (process.env.BLOB_READ_WRITE_TOKEN || '').match(/^vercel_blob_rw_([^_]+)_/);
-  return m ? `https://${m[1].toLowerCase()}.public.blob.vercel-storage.com` : '';
+  if (m) return m[1];
+  const sid = process.env.BLOB_STORE_ID || '';
+  return sid.replace(/^store_/, '');
+}
+
+// 저장소 공개 주소 (list() 대신 공개 URL 직접 읽기 → 작업 횟수 절약)
+function blobBase() {
+  const id = blobStoreId();
+  return id ? `https://${id.toLowerCase()}.public.blob.vercel-storage.com` : '';
+}
+
+// 쓰기 가능 여부: RW 토큰이 있거나, OIDC(Vercel 배포 환경) + BLOB_STORE_ID 조합이면 OK
+function canWrite() {
+  return !!(process.env.BLOB_READ_WRITE_TOKEN || (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN));
 }
 
 async function load() {
@@ -50,7 +63,7 @@ module.exports = async (req, res) => {
     }
 
     if (req.method !== 'POST') { res.status(405).json({ error: 'method-not-allowed' }); return; }
-    if (!process.env.BLOB_READ_WRITE_TOKEN) { res.status(503).json({ error: 'no-db' }); return; }
+    if (!canWrite()) { res.status(503).json({ error: 'no-db' }); return; }
 
     const auth = String(req.headers.authorization || '');
     const token = auth.replace(/^Bearer\s+/i, '');

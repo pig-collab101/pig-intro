@@ -9,7 +9,16 @@ const SESSION_TTL = 30 * 24 * 60 * 60; // 30일 (초)
 const ALLOWED_ISS = ['accounts.google.com', 'https://accounts.google.com'];
 
 function secret() {
-  return process.env.SESSION_SECRET || process.env.BLOB_READ_WRITE_TOKEN || 'bible-fallback-secret';
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  if (process.env.BLOB_READ_WRITE_TOKEN) return process.env.BLOB_READ_WRITE_TOKEN;
+  // 전용 시크릿이 없으면, 서버에만 존재하는(페이지에 안 실리는) 안정적인 값들을 조합해서 씀
+  const parts = [
+    process.env.BLOB_WEBHOOK_PUBLIC_KEY,
+    process.env.BLOB_STORE_ID,
+    process.env.VERCEL_PROJECT_ID,
+    process.env.VERCEL_GIT_REPO_ID
+  ].filter(Boolean);
+  return parts.length ? 'bible|' + parts.join('|') : 'bible-fallback-secret';
 }
 
 function b64url(buf) {
