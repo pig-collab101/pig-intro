@@ -2957,7 +2957,7 @@
       if (res.status !== 200 || !res.j || !Array.isArray(res.j.posts)) { setStatus("삭제에 실패했어요.", "error"); return; }
       setStatus("삭제됐어요.", "ok");
       renderList(res.j.posts);
-      if (isAdmin()) loadAdmin();
+      if (isAdmin()) loadAdminSoon();
     }).catch(function () { setStatus("삭제에 실패했어요.", "error"); });
   }
 
@@ -2990,7 +2990,7 @@
       body: JSON.stringify({ action: "ban", name: name })
     }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
       .then(function (res) {
-        if (res.status === 200) { setStatus("'" + name + "' 님을 추방했어요.", "ok"); loadAdmin(); }
+        if (res.status === 200) { setStatus("'" + name + "' 님을 추방했어요.", "ok"); loadAdminSoon(); }
         else if (res.status === 401) { clearSession(); }
         else { setStatus("추방에 실패했어요.", "error"); }
       }).catch(function () { setStatus("추방에 실패했어요.", "error"); });
@@ -3003,7 +3003,7 @@
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
       body: JSON.stringify({ action: "unban", name: name })
-    }).then(function () { setStatus("'" + name + "' 님의 추방을 해제했어요.", "ok"); loadAdmin(); })
+    }).then(function () { setStatus("'" + name + "' 님의 추방을 해제했어요.", "ok"); loadAdminSoon(); })
       .catch(function () { setStatus("해제에 실패했어요.", "error"); });
   }
 
@@ -3079,6 +3079,8 @@
       .then(function (data) { if (data) renderAdmin(data); })
       .catch(function () {});
   }
+  // 방금 바뀐 내용이 목록 API에 반영되는 데 잠깐 걸려서, 한 번 더 늦게 새로고침
+  function loadAdminSoon() { loadAdmin(); setTimeout(loadAdmin, 2500); }
 
   if (adminRefreshBtn) adminRefreshBtn.addEventListener("click", loadAdmin);
   if (adminBanBtn) adminBanBtn.addEventListener("click", function () {
