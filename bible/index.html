@@ -1091,6 +1091,7 @@
         <button type="button" class="btn-login" id="login-open-btn">로그인</button>
         <div class="profile-chip" id="profile-chip" hidden>
           <span class="p-name" id="profile-name"></span>
+          <button type="button" class="p-logout" id="changepw-btn">비번변경</button>
           <button type="button" class="p-logout" id="logout-btn">로그아웃</button>
         </div>
       </div>
@@ -1109,8 +1110,10 @@
     <p class="sub" id="auth-sub">나눔마당에 글을 남기려면 로그인하세요.</p>
     <label for="auth-name">아이디 (닉네임)</label>
     <input type="text" id="auth-name" maxlength="16" autocomplete="username" placeholder="2~16자">
-    <label for="auth-pw">비밀번호</label>
+    <label for="auth-pw" id="auth-pw-label">비밀번호</label>
     <input type="password" id="auth-pw" maxlength="40" autocomplete="current-password" placeholder="4자 이상">
+    <label for="auth-newpw" id="auth-newpw-label" hidden>새 비밀번호</label>
+    <input type="password" id="auth-newpw" maxlength="40" autocomplete="new-password" placeholder="4자 이상" hidden>
     <div class="auth-msg" id="auth-msg"></div>
     <div class="auth-actions">
       <button type="button" class="btn btn-primary" id="auth-submit">로그인</button>
@@ -2790,11 +2793,16 @@
   var mSub = document.getElementById("auth-sub");
   var mName = document.getElementById("auth-name");
   var mPw = document.getElementById("auth-pw");
+  var mPwLabel = document.getElementById("auth-pw-label");
+  var mNewpw = document.getElementById("auth-newpw");
+  var mNewpwLabel = document.getElementById("auth-newpw-label");
   var mMsg = document.getElementById("auth-msg");
   var mSubmit = document.getElementById("auth-submit");
+  var mSwitch = document.getElementById("auth-switch");
   var mSwitchBtn = document.getElementById("auth-switch-btn");
   var mSwitchText = document.getElementById("auth-switch-text");
   var mClose = document.getElementById("auth-close");
+  var changepwBtn = document.getElementById("changepw-btn");
   var authMode = "login";
 
   var loginHint = document.getElementById("nanum-login-hint");
@@ -3119,9 +3127,20 @@
   /* ---- 로그인 모달 ---- */
   function setAuthMode(m) {
     authMode = m;
-    if (m === "signup") {
+    var cp = (m === "changepw");
+    mNewpw.hidden = !cp; mNewpwLabel.hidden = !cp;
+    mSwitch.hidden = cp;
+    mName.readOnly = cp;
+    if (cp) {
+      mTitle.textContent = "비밀번호 변경";
+      mSub.textContent = "현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿔요.";
+      mPwLabel.textContent = "현재 비밀번호";
+      mSubmit.textContent = "변경";
+      mName.value = (session && session.user && session.user.name) || "";
+    } else if (m === "signup") {
       mTitle.textContent = "회원가입";
       mSub.textContent = "아이디와 비밀번호로 새 계정을 만들어요.";
+      mPwLabel.textContent = "비밀번호";
       mSubmit.textContent = "회원가입";
       mPw.autocomplete = "new-password";
       mSwitchText.textContent = "이미 계정이 있으신가요?";
@@ -3129,6 +3148,7 @@
     } else {
       mTitle.textContent = "로그인";
       mSub.textContent = "나눔마당에 글을 남기려면 로그인하세요.";
+      mPwLabel.textContent = "비밀번호";
       mSubmit.textContent = "로그인";
       mPw.autocomplete = "current-password";
       mSwitchText.textContent = "계정이 없으신가요?";
@@ -3140,18 +3160,21 @@
     mMsg.textContent = msg || "";
     mMsg.className = "auth-msg" + (kind ? " is-" + kind : "");
   }
-  function openModal() {
-    setAuthMode("login");
+  function openModal(mode) {
+    setAuthMode(mode || "login");
+    mPw.value = ""; mNewpw.value = "";
     modal.hidden = false;
-    setTimeout(function () { mName.focus(); }, 30);
+    setTimeout(function () { (mode === "changepw" ? mPw : mName).focus(); }, 30);
   }
-  function closeModal() { modal.hidden = true; mPw.value = ""; }
+  function closeModal() { modal.hidden = true; mPw.value = ""; mNewpw.value = ""; }
 
-  openBtns.forEach(function (b) { b.addEventListener("click", openModal); });
+  openBtns.forEach(function (b) { b.addEventListener("click", function () { openModal("login"); }); });
+  if (changepwBtn) changepwBtn.addEventListener("click", function () { openModal("changepw"); });
   mClose.addEventListener("click", closeModal);
   modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
   mSwitchBtn.addEventListener("click", function () { setAuthMode(authMode === "login" ? "signup" : "login"); });
-  mPw.addEventListener("keydown", function (e) { if (e.key === "Enter") doAuth(); });
+  mPw.addEventListener("keydown", function (e) { if (e.key === "Enter") { if (authMode === "changepw") mNewpw.focus(); else doAuth(); } });
+  mNewpw.addEventListener("keydown", function (e) { if (e.key === "Enter") doAuth(); });
   mName.addEventListener("keydown", function (e) { if (e.key === "Enter") mPw.focus(); });
   mSubmit.addEventListener("click", doAuth);
 
@@ -3170,25 +3193,41 @@
     var pw = mPw.value;
     if (name.length < 2) { setAuthMsg("아이디는 2자 이상이에요.", "error"); return; }
     if (pw.length < 4) { setAuthMsg("비밀번호는 4자 이상이에요.", "error"); return; }
+    var payload = { action: authMode, name: name, pw: pw };
+    if (authMode === "changepw") {
+      var np = mNewpw.value;
+      if (np.length < 4) { setAuthMsg("새 비밀번호는 4자 이상이에요.", "error"); return; }
+      if (np === pw) { setAuthMsg("새 비밀번호가 기존과 같아요.", "error"); return; }
+      payload.newpw = np;
+    }
 
     mSubmit.disabled = true;
-    setAuthMsg(authMode === "signup" ? "가입 중..." : "로그인 중...", null);
+    setAuthMsg(authMode === "signup" ? "가입 중..." : authMode === "changepw" ? "변경 중..." : "로그인 중...", null);
     fetch("/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: authMode, name: name, pw: pw })
+      body: JSON.stringify(payload)
     }).then(function (r) {
       return r.json().then(function (j) { return { ok: r.ok, j: j }; });
     }).then(function (res) {
       mSubmit.disabled = false;
       if (!res.ok || !res.j || !res.j.token) {
         var code = res.j && res.j.error;
-        setAuthMsg(AUTH_ERR[code] || "처리에 실패했어요. 잠시 후 다시 시도해주세요.", "error");
+        var msg = AUTH_ERR[code];
+        if (code === "bad-newpw") msg = "새 비밀번호는 4자 이상 40자 이하로 입력해주세요.";
+        if (authMode === "changepw" && code === "wrong") msg = "현재 비밀번호가 맞지 않아요.";
+        setAuthMsg(msg || "처리에 실패했어요. 잠시 후 다시 시도해주세요.", "error");
         return;
       }
+      var wasChangepw = (authMode === "changepw");
       saveSession(res.j);
-      closeModal();
-      setStatus("", null);
+      if (wasChangepw) {
+        setAuthMsg("비밀번호가 변경됐어요.", "ok");
+        setTimeout(closeModal, 1200);
+      } else {
+        closeModal();
+        setStatus("", null);
+      }
     }).catch(function () {
       mSubmit.disabled = false;
       setAuthMsg("네트워크 오류예요. 잠시 후 다시 시도해주세요.", "error");

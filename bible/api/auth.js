@@ -43,9 +43,9 @@ async function readJsonBlob(pathname) {
 }
 
 async function readUser(name) { return readJsonBlob(userFile(name)); }
-function saveUser(name, obj) {
+function saveUser(name, obj, overwrite) {
   return put(userFile(name), JSON.stringify(obj), {
-    access: 'public', addRandomSuffix: false, allowOverwrite: false,
+    access: 'public', addRandomSuffix: false, allowOverwrite: !!overwrite,
     contentType: 'application/json; charset=utf-8', cacheControlMaxAge: 31536000,
   });
 }
@@ -121,7 +121,7 @@ module.exports = async (req, res) => {
   if (!blobStoreId()) { res.status(503).json({ error: 'no-db' }); return; }
   try {
     const body = req.body || {};
-    const action = body.action === 'signup' ? 'signup' : 'login';
+    const action = ['signup', 'login', 'changepw'].indexOf(body.action) >= 0 ? body.action : 'login';
     const name = cleanName(body.name);
     const pw = String(body.pw == null ? '' : body.pw);
     if (name.length < 2) { res.status(400).json({ error: 'bad-name' }); return; }
@@ -131,6 +131,19 @@ module.exports = async (req, res) => {
 
     const now = Math.floor(Date.now() / 1000);
     let displayName = name;
+
+    if (action === 'changepw') {
+      const newpw = String(body.newpw == null ? '' : body.newpw);
+      if (newpw.length < 4 || newpw.length > 40) { res.status(400).json({ error: 'bad-newpw' }); return; }
+      const u = await readUser(name);
+      if (!u || u.hash !== hashPw(name, pw)) { res.status(401).json({ error: 'wrong' }); return; }
+      await saveUser(name, { name: u.name || name, hash: hashPw(name, newpw), created: u.created || new Date().toISOString() }, true);
+      const user0 = { sub: 'local:' + name.toLowerCase(), name: u.name || name, admin: name.toLowerCase() === ADMIN_NAME };
+      const exp0 = now + SESSION_TTL;
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).json({ token: sign({ sub: user0.sub, name: user0.name, iat: now, exp: exp0 }), exp: exp0, user: user0 });
+      return;
+    }
 
     if (action === 'signup') {
       if (await readUser(name)) { res.status(409).json({ error: 'exists' }); return; }
