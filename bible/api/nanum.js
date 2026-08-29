@@ -56,12 +56,19 @@ function clean(s, max) {
 module.exports = async (req, res) => {
   try {
     if (req.method === 'GET' && req.query && req.query.debug === '1') {
+      let putErr = null;
+      try {
+        await put(PATH, JSON.stringify(await load()), {
+          access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json',
+        });
+      } catch (e) { putErr = String((e && e.message) || e); }
       res.status(200).json({
         hasRWToken: !!process.env.BLOB_READ_WRITE_TOKEN,
         hasStoreId: !!process.env.BLOB_STORE_ID,
-        hasOidc: !!process.env.VERCEL_OIDC_TOKEN,
+        hasOidcEnv: !!process.env.VERCEL_OIDC_TOKEN,
+        hasOidcHeader: !!req.headers['x-vercel-oidc-token'],
         base: blobBase(),
-        canWrite: canWrite()
+        putErr: putErr,
       });
       return;
     }
