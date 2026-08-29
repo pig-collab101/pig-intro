@@ -2849,12 +2849,23 @@
     dateEl.textContent = data.dateText || "";
     if (data.source_url) linkEl.href = data.source_url;
 
+    function bookOf(src){
+      var s = String(src || "").replace(/^[^가-힣A-Za-z0-9]+/, "").replace(/\s+/g, " ").trim();
+      s = s.replace(/입니다\.?\s*$/, "").trim();
+      s = s.replace(/(.+?)[가이] 전한 거룩한 복음$/, "$1 복음");
+      s = s.replace(/\s*말씀$/, "");
+      s = s.replace(/의$/, "");
+      s = s.replace(/^사도 \S+의 (.+)$/, "$1");
+      return s.trim();
+    }
+
     var html = "";
     data.readings.forEach(function(r){
+      var book = bookOf(r.source);
+      var headline = book ? (book + " " + (r.ref || "")) : (r.ref || "");
       html += '<div class="today-reading">';
       html += '<span class="r-label">' + esc(r.label) + '</span>';
-      if (r.ref) html += '<p class="r-ref">' + esc(r.ref) + '</p>';
-      if (r.source) html += '<p class="r-source">' + esc(r.source) + '</p>';
+      if (headline) html += '<p class="r-ref">' + esc(headline) + '</p>';
       if (r.subtitle) html += '<p class="r-sub">' + esc(r.subtitle) + '</p>';
       html += '</div>';
     });
