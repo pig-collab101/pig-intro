@@ -1,7 +1,6 @@
 <title>BIBLE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
-<script src="https://accounts.google.com/gsi/client" async></script>
 
 <style>
   :root{
@@ -124,15 +123,17 @@
   }
 
   .auth-area{ display:flex; align-items:center; min-height:38px; }
-  #g-signin{ display:flex; }
-  #g-signin.is-hidden{ display:none; }
-  .profile-chip{
-    display:flex; align-items:center; gap:9px; background:var(--surface);
-    border:1.5px solid var(--surface-border); border-radius:999px; padding:5px 8px 5px 6px;
+  .btn-login{
+    display:inline-flex; align-items:center; gap:7px; background:var(--surface);
+    border:1.5px solid var(--surface-border); border-radius:999px; padding:8px 18px;
+    font-family:"Noto Sans KR", sans-serif; font-size:0.82rem; font-weight:700; color:var(--ink);
+    cursor:pointer; transition: border-color .15s ease, background .15s ease;
   }
-  .profile-chip img{
-    width:26px; height:26px; border-radius:999px; object-fit:cover; flex-shrink:0;
-    background:var(--surface-alt); box-shadow:0 0 0 1px rgba(0,0,0,0.06);
+  .btn-login:hover{ border-color:var(--gold); }
+  .btn-login.is-hidden{ display:none; }
+  .profile-chip{
+    display:flex; align-items:center; gap:6px; background:var(--surface);
+    border:1.5px solid var(--surface-border); border-radius:999px; padding:5px 6px 5px 14px;
   }
   .profile-chip .p-name{
     font-family:"Noto Sans KR", sans-serif; font-size:0.82rem; font-weight:700; color:var(--ink);
@@ -150,6 +151,40 @@
     padding:14px 16px; font-size:0.86rem; color:var(--ink-soft); margin-bottom:14px;
   }
   .nanum-composer.is-locked{ opacity:0.55; pointer-events:none; }
+
+  /* ---- 로그인 모달 ---- */
+  .auth-modal{
+    position:fixed; inset:0; z-index:300; padding:20px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(20,15,5,0.5);
+  }
+  .auth-modal[hidden]{ display:none; }
+  .auth-box{
+    position:relative; background:var(--surface); border:1.5px solid var(--surface-border);
+    border-radius:18px; box-shadow:var(--shadow); padding:26px 24px 24px; width:100%; max-width:340px;
+  }
+  .auth-box h3{ font-family:"Noto Serif KR", serif; font-size:1.15rem; color:var(--ink); margin:0 0 4px; }
+  .auth-box .sub{ font-size:0.8rem; color:var(--ink-soft); margin:0 0 14px; }
+  .auth-box label{ display:block; font-size:0.74rem; font-weight:700; color:var(--ink-soft); margin:12px 0 5px; }
+  .auth-box input{
+    width:100%; border:1.5px solid var(--surface-border); border-radius:10px; padding:10px 12px;
+    font-family:inherit; font-size:0.92rem; color:var(--ink); background:var(--surface-alt); box-sizing:border-box;
+  }
+  .auth-box input:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:1px; }
+  .auth-msg{ font-size:0.8rem; min-height:1.1em; margin:12px 0 0; }
+  .auth-msg.is-error{ color:#b5482f; }
+  .auth-msg.is-ok{ color:var(--sage); }
+  .auth-actions{ margin-top:14px; }
+  .auth-actions .btn{ width:100%; }
+  .auth-switch{ font-size:0.78rem; color:var(--ink-soft); text-align:center; margin:14px 0 0; }
+  .auth-switch button{
+    border:none; background:none; color:var(--gold-strong); font-weight:700;
+    cursor:pointer; font-family:inherit; font-size:0.78rem; padding:0; text-decoration:underline;
+  }
+  .auth-close{
+    position:absolute; top:10px; right:12px; border:none; background:none; cursor:pointer;
+    font-size:1.2rem; line-height:1; color:var(--ink-soft); padding:4px;
+  }
 
   .navbar{ background: var(--surface); border-bottom:1px solid var(--surface-border); }
   .navbar-inner{
@@ -1013,9 +1048,8 @@
         <a href="#" data-goto="home" data-anchor="soon" title="준비 중인 기능이에요">사이트맵</a>
       </div>
       <div class="auth-area" id="auth-area">
-        <div id="g-signin"></div>
+        <button type="button" class="btn-login" id="login-open-btn">로그인</button>
         <div class="profile-chip" id="profile-chip" hidden>
-          <img id="profile-pic" alt="" referrerpolicy="no-referrer">
           <span class="p-name" id="profile-name"></span>
           <button type="button" class="p-logout" id="logout-btn">로그아웃</button>
         </div>
@@ -1025,6 +1059,26 @@
         <button type="button" title="준비 중인 기능이에요" aria-label="검색">🔍</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="auth-modal" id="auth-modal" hidden>
+  <div class="auth-box">
+    <button type="button" class="auth-close" id="auth-close" aria-label="닫기">×</button>
+    <h3 id="auth-title">로그인</h3>
+    <p class="sub" id="auth-sub">나눔마당에 글을 남기려면 로그인하세요.</p>
+    <label for="auth-name">아이디 (닉네임)</label>
+    <input type="text" id="auth-name" maxlength="16" autocomplete="username" placeholder="2~16자">
+    <label for="auth-pw">비밀번호</label>
+    <input type="password" id="auth-pw" maxlength="40" autocomplete="current-password" placeholder="4자 이상">
+    <div class="auth-msg" id="auth-msg"></div>
+    <div class="auth-actions">
+      <button type="button" class="btn btn-primary" id="auth-submit">로그인</button>
+    </div>
+    <p class="auth-switch" id="auth-switch">
+      <span id="auth-switch-text">계정이 없으신가요?</span>
+      <button type="button" id="auth-switch-btn">회원가입</button>
+    </p>
   </div>
 </div>
 
@@ -1472,8 +1526,8 @@
     </div>
 
     <div class="nanum-login-hint" id="nanum-login-hint" hidden>
-      <span>나눔 글을 남기려면 오른쪽 위에서 <strong>Google 로그인</strong>을 해주세요.</span>
-      <div id="g-signin-inline"></div>
+      <span>나눔 글을 남기려면 <strong>로그인</strong>이 필요해요.</span>
+      <button type="button" class="btn btn-primary" id="login-open-btn-2">로그인 / 회원가입</button>
     </div>
 
     <div class="nanum-composer" id="nanum-composer">
@@ -2657,7 +2711,7 @@
 (function(){
   "use strict";
 
-  /* ============ Google 로그인 + 나눔마당 (실서버 저장) ============ */
+  /* ============ 로그인(아이디/비밀번호) + 나눔마당 (실서버 저장) ============ */
 
   var SESSION_KEY = "bible-session-v1";
   var session = null;
@@ -2667,12 +2721,22 @@
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
   }
 
-  var gsBtn = document.getElementById("g-signin");
-  var gsBtnInline = document.getElementById("g-signin-inline");
+  var openBtns = [document.getElementById("login-open-btn"), document.getElementById("login-open-btn-2")].filter(Boolean);
   var chip = document.getElementById("profile-chip");
-  var picEl = document.getElementById("profile-pic");
   var nameEl = document.getElementById("profile-name");
   var logoutBtn = document.getElementById("logout-btn");
+
+  var modal = document.getElementById("auth-modal");
+  var mTitle = document.getElementById("auth-title");
+  var mSub = document.getElementById("auth-sub");
+  var mName = document.getElementById("auth-name");
+  var mPw = document.getElementById("auth-pw");
+  var mMsg = document.getElementById("auth-msg");
+  var mSubmit = document.getElementById("auth-submit");
+  var mSwitchBtn = document.getElementById("auth-switch-btn");
+  var mSwitchText = document.getElementById("auth-switch-text");
+  var mClose = document.getElementById("auth-close");
+  var authMode = "login";
 
   var loginHint = document.getElementById("nanum-login-hint");
   var composer = document.getElementById("nanum-composer");
@@ -2774,9 +2838,7 @@
   function applyAuthUI() {
     if (session && session.user) {
       chip.hidden = false;
-      if (gsBtn) gsBtn.classList.add("is-hidden");
-      if (session.user.picture) { picEl.src = session.user.picture; picEl.style.display = ""; }
-      else { picEl.style.display = "none"; }
+      openBtns.forEach(function (b) { b.classList.add("is-hidden"); });
       nameEl.textContent = session.user.name || "사용자";
       if (loginHint) loginHint.hidden = true;
       if (composer) composer.classList.remove("is-locked");
@@ -2785,7 +2847,7 @@
       if (noteEl) noteEl.textContent = "";
     } else {
       chip.hidden = true;
-      if (gsBtn) gsBtn.classList.remove("is-hidden");
+      openBtns.forEach(function (b) { b.classList.remove("is-hidden"); });
       if (loginHint) loginHint.hidden = false;
       if (composer) composer.classList.add("is-locked");
       nameInput.value = "";
@@ -2802,54 +2864,88 @@
   function clearSession() {
     session = null;
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
-    try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
     applyAuthUI();
   }
 
   logoutBtn.addEventListener("click", clearSession);
 
-  function onCredential(resp) {
-    if (!resp || !resp.credential) return;
-    setStatus("로그인 중...", null);
+  /* ---- 로그인 모달 ---- */
+  function setAuthMode(m) {
+    authMode = m;
+    if (m === "signup") {
+      mTitle.textContent = "회원가입";
+      mSub.textContent = "아이디와 비밀번호로 새 계정을 만들어요.";
+      mSubmit.textContent = "회원가입";
+      mPw.autocomplete = "new-password";
+      mSwitchText.textContent = "이미 계정이 있으신가요?";
+      mSwitchBtn.textContent = "로그인";
+    } else {
+      mTitle.textContent = "로그인";
+      mSub.textContent = "나눔마당에 글을 남기려면 로그인하세요.";
+      mSubmit.textContent = "로그인";
+      mPw.autocomplete = "current-password";
+      mSwitchText.textContent = "계정이 없으신가요?";
+      mSwitchBtn.textContent = "회원가입";
+    }
+    setAuthMsg("", null);
+  }
+  function setAuthMsg(msg, kind) {
+    mMsg.textContent = msg || "";
+    mMsg.className = "auth-msg" + (kind ? " is-" + kind : "");
+  }
+  function openModal() {
+    setAuthMode("login");
+    modal.hidden = false;
+    setTimeout(function () { mName.focus(); }, 30);
+  }
+  function closeModal() { modal.hidden = true; mPw.value = ""; }
+
+  openBtns.forEach(function (b) { b.addEventListener("click", openModal); });
+  mClose.addEventListener("click", closeModal);
+  modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
+  mSwitchBtn.addEventListener("click", function () { setAuthMode(authMode === "login" ? "signup" : "login"); });
+  mPw.addEventListener("keydown", function (e) { if (e.key === "Enter") doAuth(); });
+  mName.addEventListener("keydown", function (e) { if (e.key === "Enter") mPw.focus(); });
+  mSubmit.addEventListener("click", doAuth);
+
+  var AUTH_ERR = {
+    "bad-name": "아이디는 2~16자로 입력해주세요.",
+    "bad-pw": "비밀번호는 4자 이상 40자 이하로 입력해주세요.",
+    "exists": "이미 있는 아이디예요. 다른 아이디를 써주세요.",
+    "wrong": "아이디 또는 비밀번호가 맞지 않아요.",
+    "full": "가입 인원이 가득 찼어요.",
+    "no-db": "서버 저장소 준비 중이에요. 잠시 후 다시 시도해주세요."
+  };
+
+  function doAuth() {
+    var name = mName.value.trim();
+    var pw = mPw.value;
+    if (name.length < 2) { setAuthMsg("아이디는 2자 이상이에요.", "error"); return; }
+    if (pw.length < 4) { setAuthMsg("비밀번호는 4자 이상이에요.", "error"); return; }
+
+    mSubmit.disabled = true;
+    setAuthMsg(authMode === "signup" ? "가입 중..." : "로그인 중...", null);
     fetch("/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credential: resp.credential })
+      body: JSON.stringify({ action: authMode, name: name, pw: pw })
     }).then(function (r) {
       return r.json().then(function (j) { return { ok: r.ok, j: j }; });
     }).then(function (res) {
-      if (!res.ok || !res.j || !res.j.token) throw new Error((res.j && res.j.error) || "auth-failed");
-      saveSession(res.j);
-      setStatus("", null);
-    }).catch(function () {
-      setStatus("로그인에 실패했어요. 다시 시도해주세요.", "error");
-    });
-  }
-
-  var gisTries = 0;
-  function initGIS(clientId) {
-    if (!clientId) return;
-    (function ready() {
-      if (!(window.google && google.accounts && google.accounts.id)) {
-        if (gisTries++ < 100) setTimeout(ready, 100);
+      mSubmit.disabled = false;
+      if (!res.ok || !res.j || !res.j.token) {
+        var code = res.j && res.j.error;
+        setAuthMsg(AUTH_ERR[code] || "처리에 실패했어요. 잠시 후 다시 시도해주세요.", "error");
         return;
       }
-      google.accounts.id.initialize({
-        client_id: clientId,
-        callback: onCredential,
-        auto_select: true,
-        cancel_on_tap_outside: true
-      });
-      var opts = { theme: "outline", size: "medium", text: "signin_with", shape: "pill", locale: "ko" };
-      if (gsBtn) google.accounts.id.renderButton(gsBtn, opts);
-      if (gsBtnInline) google.accounts.id.renderButton(gsBtnInline, opts);
-      if (!session) { try { google.accounts.id.prompt(); } catch (e) {} }
-    })();
+      saveSession(res.j);
+      closeModal();
+      setStatus("", null);
+    }).catch(function () {
+      mSubmit.disabled = false;
+      setAuthMsg("네트워크 오류예요. 잠시 후 다시 시도해주세요.", "error");
+    });
   }
-
-  fetch("/api/config").then(function (r) { return r.json(); }).then(function (cfg) {
-    initGIS(cfg && cfg.clientId);
-  }).catch(function () {});
 
   function readSeed() {
     var el = document.getElementById("nanum-data");
@@ -2866,7 +2962,7 @@
   }
 
   submitBtn.addEventListener("click", function () {
-    if (!session) { setStatus("먼저 Google 로그인을 해주세요.", "error"); return; }
+    if (!session) { setStatus("먼저 로그인을 해주세요.", "error"); return; }
     var text = textInput.value.trim();
     if (!text) { setStatus("나눌 내용을 적어주세요.", "error"); return; }
 
