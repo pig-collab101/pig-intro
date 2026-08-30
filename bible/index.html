@@ -194,6 +194,66 @@
   .today-credit a{ color:var(--gold-strong); text-decoration:underline; }
   .today-error{ text-align:center; color:var(--ink-soft); padding:24px 0; }
 
+  /* ---- 1일 1선행 ---- */
+  .deed-wrap{ max-width:560px; margin:0 auto; }
+  .deed-head{ text-align:center; margin-bottom:22px; }
+  .deed-head h2{ font-family:"Noto Serif KR", serif; font-size:clamp(1.4rem, 2vw + 1rem, 1.9rem); color:var(--ink); margin:0 0 10px; }
+  .deed-banner{
+    font-family:"Noto Serif KR", serif; font-size:1rem; color:var(--gold-strong); font-weight:700;
+    background: color-mix(in srgb, var(--gold-soft) 24%, transparent);
+    border-radius:12px; padding:12px 16px; margin:0; line-height:1.6;
+  }
+  .deed-login-hint{
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+    background:var(--surface-alt); border:1.5px dashed var(--rule); border-radius:14px;
+    padding:16px; font-size:0.88rem; color:var(--ink-soft); margin-top:18px;
+  }
+  .deed-stats{ display:flex; gap:12px; margin:20px 0 16px; }
+  .deed-stat{
+    flex:1; background:var(--surface); border:1px solid var(--surface-border); border-radius:14px;
+    box-shadow:var(--shadow); padding:14px 10px; text-align:center;
+  }
+  .deed-num{ display:block; font-family:"Noto Serif KR", serif; font-size:1.7rem; font-weight:700; color:var(--gold-strong); line-height:1.1; }
+  .deed-lbl{ display:block; font-size:0.76rem; color:var(--ink-soft); margin-top:4px; }
+  .deed-editor{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:16px;
+    box-shadow:var(--shadow); padding:18px 20px; margin-bottom:22px;
+  }
+  .deed-editor-label{ font-size:0.92rem; font-weight:700; color:var(--ink); margin:0 0 10px; }
+  .deed-editor textarea{
+    width:100%; min-height:72px; resize:vertical; box-sizing:border-box;
+    border:1.5px solid var(--surface-border); border-radius:12px; padding:11px 13px;
+    font-family:"Noto Serif KR", serif; font-size:0.94rem; line-height:1.6; color:var(--ink);
+    background:var(--surface-alt);
+  }
+  .deed-editor textarea:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:1px; }
+  .deed-editor-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; flex-wrap:wrap; }
+  .deed-count{ font-size:0.78rem; color:var(--ink-soft); }
+  .deed-status{ font-size:0.82rem; min-height:1.1em; margin-top:8px; }
+  .deed-status.is-ok{ color:var(--sage); }
+  .deed-status.is-error{ color:#b5482f; }
+  .deed-cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .deed-cal-head span{ font-family:"Noto Serif KR", serif; font-weight:700; color:var(--ink); font-size:1rem; }
+  .deed-cal-head button{
+    border:1px solid var(--surface-border); background:var(--surface); color:var(--ink);
+    width:32px; height:32px; border-radius:9px; cursor:pointer; font-size:1rem; line-height:1;
+  }
+  .deed-cal-dow{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:4px; }
+  .deed-cal-dow span{ text-align:center; font-size:0.72rem; color:var(--ink-soft); padding:2px 0; }
+  .deed-cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .deed-day{
+    aspect-ratio:1/1; border:1px solid transparent; border-radius:10px; background:var(--surface-alt);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    font-size:0.82rem; color:var(--ink); cursor:pointer; padding:0;
+  }
+  .deed-day.is-empty{ background:transparent; cursor:default; }
+  .deed-day.is-future{ color:var(--ink-soft); opacity:0.45; cursor:not-allowed; }
+  .deed-day.is-done{ background:var(--sage); color:#fff; font-weight:700; }
+  .deed-day.is-today{ border-color:var(--gold-strong); }
+  .deed-day.is-sel{ box-shadow:0 0 0 2.5px var(--focus-ring); }
+  .deed-day .dot{ width:5px; height:5px; border-radius:999px; background:#fff; }
+  .deed-cal-note{ font-size:0.76rem; color:var(--ink-soft); text-align:center; margin:12px 0 0; }
+
   .nanum-admin{
     background:var(--surface); border:1.5px solid var(--gold-soft); border-radius:16px;
     padding:16px 18px; margin-bottom:24px;
@@ -1168,7 +1228,7 @@
     <a class="nav-item" href="#" data-goto="games">말씀 게임</a>
     <a class="nav-item" href="#" data-goto="nanum">나눔마당</a>
     <a class="nav-item" href="#" data-goto="today">오늘의 말씀</a>
-    <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">모임안내<span class="badge">준비중</span></a>
+    <a class="nav-item" href="#" data-goto="deed">1일 1선행</a>
     <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">사이트안내<span class="badge">준비중</span></a>
   </div>
 </nav>
@@ -1354,7 +1414,7 @@
       <div class="soon-box">
         <span class="soon-badge">준비 중</span>
         <h3>그 밖의 메뉴</h3>
-        <p>모임안내, 사이트안내는 차차 채워나갈 예정이에요.</p>
+        <p>사이트안내는 차차 채워나갈 예정이에요.</p>
       </div>
     </div>
   </section>
@@ -1608,6 +1668,56 @@
       매일미사에서 독서·복음 전문 읽기 →
     </a>
     <p class="today-credit">자료: 한국천주교주교회의 <a href="https://missa.cbck.or.kr/" target="_blank" rel="noopener">매일미사</a> · 이 페이지는 전례일과 독서·복음의 출처(장·절)만 안내합니다.</p>
+  </div>
+</div>
+</div>
+
+<div id="page-deed" hidden>
+<div class="stage">
+  <div class="deed-wrap">
+    <div class="deed-head">
+      <p class="section-eyebrow">One Good Deed</p>
+      <h2>1일 1선행</h2>
+      <p class="deed-banner">날마다 작은 선행이라도 하면 사람들이 행복해져요!</p>
+    </div>
+
+    <div class="deed-login-hint" id="deed-login-hint" hidden>
+      <span>선행 기록을 남기려면 <strong>로그인</strong>이 필요해요.</span>
+      <button type="button" class="btn btn-primary" id="login-open-btn-3">로그인 / 회원가입</button>
+    </div>
+
+    <div id="deed-main" hidden>
+      <div class="deed-stats">
+        <div class="deed-stat"><span class="deed-num" id="deed-streak">0</span><span class="deed-lbl">연속 기록</span></div>
+        <div class="deed-stat"><span class="deed-num" id="deed-total">0</span><span class="deed-lbl">전체 선행</span></div>
+      </div>
+
+      <div class="deed-editor" id="deed-editor">
+        <p class="deed-editor-label" id="deed-editor-label">오늘, 어떤 선행을 하셨나요?</p>
+        <textarea id="deed-note" maxlength="200" placeholder="예: 무거운 짐을 들어드렸어요 / 이야기를 끝까지 들어줬어요"></textarea>
+        <div class="deed-editor-foot">
+          <span class="deed-count"><span id="deed-note-count">0</span>/200</span>
+          <span>
+            <button type="button" class="btn-quiet" id="deed-clear" hidden>기록 지우기</button>
+            <button type="button" class="btn btn-primary" id="deed-save">선행 완료 ✓</button>
+          </span>
+        </div>
+        <div class="deed-status" id="deed-status"></div>
+      </div>
+
+      <div class="deed-cal">
+        <div class="deed-cal-head">
+          <button type="button" id="deed-prev" aria-label="이전 달">‹</button>
+          <span id="deed-cal-title"></span>
+          <button type="button" id="deed-next" aria-label="다음 달">›</button>
+        </div>
+        <div class="deed-cal-dow">
+          <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+        </div>
+        <div class="deed-cal-grid" id="deed-cal-grid"></div>
+        <p class="deed-cal-note">날짜를 눌러 그날의 선행을 적거나 고칠 수 있어요.</p>
+      </div>
+    </div>
   </div>
 </div>
 </div>
@@ -2800,7 +2910,7 @@
 (function(){
   "use strict";
   function goTo(page, anchor){
-    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today" };
+    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today", deed: "page-deed" };
     Object.keys(pages).forEach(function(key){
       var el = document.getElementById(pages[key]);
       if (el) el.hidden = key !== page;
@@ -2820,6 +2930,7 @@
     e.preventDefault();
     goTo(el.getAttribute("data-goto"), el.getAttribute("data-anchor"));
     if (el.getAttribute("data-goto") === "today" && window.__loadToday) window.__loadToday();
+    if (el.getAttribute("data-goto") === "deed" && window.__loadDeed) window.__loadDeed();
   });
 })();
 </script>
@@ -2883,6 +2994,204 @@
 })();
 </script>
 
+<script>
+(function(){
+  "use strict";
+  var SESSION_KEY = "bible-session-v1";
+  var hint = document.getElementById("deed-login-hint");
+  var main = document.getElementById("deed-main");
+  if (!main) return;
+
+  var streakEl = document.getElementById("deed-streak");
+  var totalEl = document.getElementById("deed-total");
+  var edLabel = document.getElementById("deed-editor-label");
+  var noteEl = document.getElementById("deed-note");
+  var noteCountEl = document.getElementById("deed-note-count");
+  var saveBtn = document.getElementById("deed-save");
+  var clearBtn = document.getElementById("deed-clear");
+  var statusEl = document.getElementById("deed-status");
+  var calTitle = document.getElementById("deed-cal-title");
+  var calGrid = document.getElementById("deed-cal-grid");
+  var prevBtn = document.getElementById("deed-prev");
+  var nextBtn = document.getElementById("deed-next");
+
+  var days = {};          // { "YYYY-MM-DD": {note} }
+  var today = "";         // KST today from server
+  var selDate = "";       // 편집 중인 날짜
+  var viewY = 0, viewM = 0; // 달력이 보고 있는 연/월(0-based)
+  var loadedFor = "";     // 어떤 토큰으로 불러왔는지
+  var busy = false;
+
+  function getSession(){
+    try {
+      var s = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+      if (s && s.token && s.exp && s.exp * 1000 > Date.now()) return s;
+    } catch (e) {}
+    return null;
+  }
+  function ymd(y, m, d){
+    return y + "-" + (m + 1 < 10 ? "0" : "") + (m + 1) + "-" + (d < 10 ? "0" : "") + d;
+  }
+  function addDays(dstr, n){
+    var t = new Date(dstr + "T00:00:00Z");
+    t.setUTCDate(t.getUTCDate() + n);
+    return t.toISOString().slice(0, 10);
+  }
+
+  function setStatus(msg, kind){
+    statusEl.textContent = msg || "";
+    statusEl.className = "deed-status" + (kind ? " is-" + kind : "");
+  }
+
+  function calcStreak(){
+    if (!today) return 0;
+    var cur = days[today] ? today : addDays(today, -1);
+    var n = 0;
+    while (days[cur]) { n++; cur = addDays(cur, -1); }
+    return n;
+  }
+
+  function selectDate(d){
+    selDate = d;
+    var isToday = (d === today);
+    edLabel.textContent = isToday ? "오늘, 어떤 선행을 하셨나요?" : (d + " 의 선행 기록");
+    noteEl.value = (days[d] && days[d].note) || "";
+    noteCountEl.textContent = String(noteEl.value.length);
+    saveBtn.textContent = days[d] ? "고쳐 쓰기" : "선행 완료 ✓";
+    clearBtn.hidden = !days[d];
+    setStatus("", null);
+    renderCal();
+  }
+
+  function renderStats(){
+    streakEl.textContent = String(calcStreak());
+    totalEl.textContent = String(Object.keys(days).length);
+  }
+
+  function renderCal(){
+    calTitle.textContent = viewY + "년 " + (viewM + 1) + "월";
+    calGrid.innerHTML = "";
+    var first = new Date(Date.UTC(viewY, viewM, 1));
+    var startDow = first.getUTCDay();
+    var daysInMonth = new Date(Date.UTC(viewY, viewM + 1, 0)).getUTCDate();
+    for (var i = 0; i < startDow; i++){
+      var blank = document.createElement("div");
+      blank.className = "deed-day is-empty";
+      calGrid.appendChild(blank);
+    }
+    for (var d = 1; d <= daysInMonth; d++){
+      var ds = ymd(viewY, viewM, d);
+      var cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "deed-day";
+      var future = ds > today;
+      if (future) cell.classList.add("is-future");
+      if (days[ds]) cell.classList.add("is-done");
+      if (ds === today) cell.classList.add("is-today");
+      if (ds === selDate) cell.classList.add("is-sel");
+      cell.textContent = String(d);
+      if (days[ds]){
+        var dot = document.createElement("span");
+        dot.className = "dot";
+        cell.appendChild(dot);
+      }
+      if (!future){
+        (function(dsv){ cell.addEventListener("click", function(){ selectDate(dsv); }); })(ds);
+      }
+      calGrid.appendChild(cell);
+    }
+  }
+
+  function renderAll(){
+    renderStats();
+    renderCal();
+  }
+
+  function applyData(data){
+    days = (data && data.days) || {};
+    today = (data && data.today) || new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+    var tp = today.split("-");
+    if (!selDate) { viewY = +tp[0]; viewM = +tp[1] - 1; selDate = today; }
+    selectDate(selDate || today);
+  }
+
+  noteEl.addEventListener("input", function(){
+    noteCountEl.textContent = String(noteEl.value.length);
+  });
+
+  saveBtn.addEventListener("click", function(){
+    var sess = getSession();
+    if (!sess) { setStatus("먼저 로그인해 주세요.", "error"); return; }
+    if (busy) return;
+    busy = true; saveBtn.disabled = true;
+    setStatus("저장 중…", null);
+    fetch("/api/deed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sess.token },
+      body: JSON.stringify({ date: selDate, note: noteEl.value })
+    }).then(function(r){ return r.json().then(function(j){ return { s: r.status, j: j }; }); })
+      .then(function(res){
+        busy = false; saveBtn.disabled = false;
+        if (res.s === 401) { setStatus("로그인이 만료됐어요. 다시 로그인해 주세요.", "error"); return; }
+        if (res.s !== 200 || !res.j || !res.j.ok) { setStatus("저장에 실패했어요.", "error"); return; }
+        applyData(res.j);
+        renderAll();
+        setStatus(selDate === today ? "오늘의 선행을 기록했어요. 고마워요!" : "기록했어요.", "ok");
+      }).catch(function(){
+        busy = false; saveBtn.disabled = false;
+        setStatus("저장에 실패했어요.", "error");
+      });
+  });
+
+  clearBtn.addEventListener("click", function(){
+    var sess = getSession();
+    if (!sess || busy) return;
+    if (!window.confirm(selDate + " 의 선행 기록을 지울까요?")) return;
+    busy = true;
+    fetch("/api/deed?date=" + encodeURIComponent(selDate), {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + sess.token }
+    }).then(function(r){ return r.json().then(function(j){ return { s: r.status, j: j }; }); })
+      .then(function(res){
+        busy = false;
+        if (res.s !== 200 || !res.j || !res.j.ok) { setStatus("삭제에 실패했어요.", "error"); return; }
+        applyData(res.j);
+        renderAll();
+        setStatus("기록을 지웠어요.", "ok");
+      }).catch(function(){ busy = false; setStatus("삭제에 실패했어요.", "error"); });
+  });
+
+  prevBtn.addEventListener("click", function(){
+    viewM--; if (viewM < 0) { viewM = 11; viewY--; }
+    renderCal();
+  });
+  nextBtn.addEventListener("click", function(){
+    var t = today.split("-");
+    if (viewY > +t[0] || (viewY === +t[0] && viewM >= +t[1] - 1)) return; // 미래 달 못 감
+    viewM++; if (viewM > 11) { viewM = 0; viewY++; }
+    renderCal();
+  });
+
+  window.__loadDeed = function(force){
+    var sess = getSession();
+    if (!sess) {
+      hint.hidden = false;
+      main.hidden = true;
+      loadedFor = "";
+      return;
+    }
+    hint.hidden = true;
+    main.hidden = false;
+    if (!force && loadedFor === sess.token) return;
+    loadedFor = sess.token;
+    fetch("/api/deed", { cache: "no-store", headers: { "Authorization": "Bearer " + sess.token } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){ if (data) { applyData(data); renderAll(); } })
+      .catch(function(){});
+  };
+})();
+</script>
+
 
 <script>
 (function(){
@@ -2898,7 +3207,7 @@
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
   }
 
-  var openBtns = [document.getElementById("login-open-btn"), document.getElementById("login-open-btn-2")].filter(Boolean);
+  var openBtns = [document.getElementById("login-open-btn"), document.getElementById("login-open-btn-2"), document.getElementById("login-open-btn-3")].filter(Boolean);
   var chip = document.getElementById("profile-chip");
   var nameEl = document.getElementById("profile-name");
   var logoutBtn = document.getElementById("logout-btn");
@@ -3226,6 +3535,7 @@
       if (adminBox) adminBox.hidden = true;
     }
     renderList(lastPosts);
+    if (window.__loadDeed) window.__loadDeed(true);
   }
 
   function saveSession(data) {
