@@ -370,35 +370,11 @@
   .hero-art{ position:relative; display:flex; align-items:center; justify-content:center; }
   .hero-art svg{ width:100%; max-width:380px; height:auto; }
 
-  /* verse-of-the-day floating card */
-  .verse-card{
-    position:absolute; left:-10px; bottom:-30px; width: min(320px, 88%);
-    background:var(--surface); border:1px solid var(--surface-border); border-radius:18px;
-    box-shadow:var(--shadow); padding:20px 22px;
-  }
-  .verse-card-top{
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
-  }
-  .verse-card-title{ font-size:0.78rem; font-weight:700; color:var(--gold-strong); letter-spacing:0.04em; }
-  .verse-card-count{ font-size:0.72rem; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
-  .verse-card-text{
-    font-family:"Noto Serif KR", serif; font-size:0.96rem; line-height:1.65; color:var(--ink);
-    min-height: 4.6em; margin:0 0 6px;
-  }
-  .verse-card-ref{ font-size:0.8rem; color:var(--gold-strong); font-weight:700; margin:0 0 14px; }
-  .verse-card-controls{ display:flex; align-items:center; gap:8px; }
-  .vc-btn{
-    width:30px; height:30px; border-radius:999px; border:1.5px solid var(--surface-border);
-    background:var(--surface-alt); color:var(--ink); cursor:pointer; display:flex; align-items:center;
-    justify-content:center; font-size:0.85rem; transition: border-color .15s ease;
-  }
-  .vc-btn:hover{ border-color:var(--gold); }
-  .vc-btn:focus-visible, .nav-item:focus-visible, .btn:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:2px; }
+  .nav-item:focus-visible, .btn:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:2px; }
 
   @media (max-width: 860px){
     .hero-inner{ grid-template-columns: 1fr; }
     .hero-art{ order:-1; }
-    .verse-card{ position:static; width:100%; margin-top:24px; }
   }
 
   /* ---------- section shared ---------- */
@@ -1273,19 +1249,6 @@
           <circle cx="70" cy="170" r="2" fill="var(--gold)" opacity="0.5"/>
         </svg>
 
-        <div class="verse-card" id="verse-card">
-          <div class="verse-card-top">
-            <span class="verse-card-title">오늘의 말씀</span>
-            <span class="verse-card-count" id="vc-count">1 / 31</span>
-          </div>
-          <p class="verse-card-text" id="vc-text"></p>
-          <p class="verse-card-ref" id="vc-ref"></p>
-          <div class="verse-card-controls">
-            <button type="button" class="vc-btn" id="vc-prev" aria-label="이전 말씀">‹</button>
-            <button type="button" class="vc-btn" id="vc-pause" aria-label="자동 재생 멈춤/재생">❚❚</button>
-            <button type="button" class="vc-btn" id="vc-next" aria-label="다음 말씀">›</button>
-          </div>
-        </div>
       </div>
     </div>
   </section>
@@ -1810,83 +1773,6 @@
 <footer>
   <div class="wrap"><strong>BIBLE</strong> Web Site · 계속 자라나는 중입니다</div>
 
-
-<script>
-
-(function(){
-  "use strict";
-  var VERSES = [
-    { ref: "마태오 1, 23", text: "보아라, 동정녀가 잉태하여 아들을 낳으리니 그 이름을 임마누엘이라고 하리라." },
-    { ref: "마태오 28, 19-20", text: "너희는 가서 모든 민족들을 제자로 삼아, 아버지와 아들과 성령의 이름으로 세례를 주어라." },
-    { ref: "요한 3, 16", text: "하느님께서는 세상을 너무나 사랑하신 나머지 외아들을 내주시어, 그를 믿는 사람은 영원한 생명을 얻게 하셨다." },
-    { ref: "요한 6, 35", text: "내가 생명의 빵이다. 나에게 오는 사람은 결코 배고프지 않을 것이다." },
-    { ref: "요한 20, 28-29", text: "보지 않고도 믿는 사람은 행복하다." },
-    { ref: "루카 6, 36", text: "너희 아버지께서 자비하신 것처럼 너희도 자비로운 사람이 되어라." },
-    { ref: "루카 14, 11", text: "누구든지 자신을 높이는 이는 낮아지고 자신을 낮추는 이는 높아질 것이다." },
-    { ref: "마태오 25, 40", text: "이 가장 작은 이들 가운데 한 사람에게 해 준 것이 바로 나에게 해 준 것이다." },
-    { ref: "마태오 28, 20", text: "내가 세상 끝 날까지 언제나 너희와 함께 있겠다." },
-    { ref: "마르코 8, 29", text: "스승님은 그리스도이십니다." },
-    { ref: "마태오 4, 4", text: "사람은 빵만으로 살지 않고 하느님의 입에서 나오는 모든 말씀으로 산다." },
-    { ref: "마태오 4, 19", text: "나를 따라오너라. 내가 너희를 사람 낚는 어부로 만들겠다." },
-    { ref: "마태오 11, 29", text: "나는 마음이 온유하고 겸손하니 내 멍에를 메고 나에게 배워라." },
-    { ref: "마태오 14, 27", text: "용기를 내어라. 나다. 두려워하지 마라." },
-    { ref: "마르코 16, 15", text: "너희는 온세상에 가서 모든 피조물에게 복음을 선포하여라." },
-    { ref: "루카 11, 10", text: "누구든지 청하는 이는 받고, 찾는 이는 얻는다." },
-    { ref: "요한 6, 68", text: "주님께는 영원한 생명의 말씀이 있습니다." },
-    { ref: "요한 8, 12", text: "나는 세상의 빛이다. 나를 따르는 이는 어둠 속을 걷지 않을 것이다." },
-    { ref: "마르코 1, 15", text: "때가 차서 하느님의 나라가 가까이 왔다. 회개하고 복음을 믿어라." },
-    { ref: "마르코 5, 34", text: "딸아, 네 믿음이 너를 구원하였다. 평안히 가거라." },
-    { ref: "마르코 12, 30", text: "너는 마음을 다하고 목숨을 다하고 정신을 다하고 힘을 다하여 주 너의 하느님을 사랑해야 한다." },
-    { ref: "마르코 13, 13", text: "끝까지 견디어 내는 이는 구원을 받을 것이다." },
-    { ref: "요한 10, 9", text: "나는 문이다. 누구든지 나를 통하여 들어오면 구원을 받을 것이다." },
-    { ref: "요한 13, 14-15", text: "내가 너희에게 한 것처럼 너희도 서로 발을 씻어 주어야 한다." },
-    { ref: "루카 2, 14", text: "지극히 높은 곳에서는 하느님께 영광, 땅에서는 평화!" },
-    { ref: "마태오 5, 48", text: "하늘의 너희 아버지께서 완전하신 것처럼 너희도 완전한 사람이 되어야 한다." },
-    { ref: "마태오 11, 6", text: "나에게 의심을 품지 않는 이는 행복하다." },
-    { ref: "마태오 16, 19", text: "네가 땅에서 매면 하늘에서도 매일 것이고, 땅에서 풀면 하늘에서도 풀릴 것이다." },
-    { ref: "요한 15, 5", text: "나는 포도나무요 너희는 가지다. 내 안에 머무르는 사람은 많은 열매를 맺는다." },
-    { ref: "요한 14, 6", text: "나는 길이요 진리요 생명이다. 나를 통하지 않고서는 아무도 아버지께 갈 수 없다." },
-    { ref: "요한 15, 9", text: "너희는 내 사랑 안에 머물러라." }
-  ];
-
-  var idx = 0, timer = null, paused = false;
-  var vcText = document.getElementById("vc-text");
-  var vcRef = document.getElementById("vc-ref");
-  var vcCount = document.getElementById("vc-count");
-  var btnPrev = document.getElementById("vc-prev");
-  var btnNext = document.getElementById("vc-next");
-  var btnPause = document.getElementById("vc-pause");
-
-  function render(){
-    var v = VERSES[idx];
-    vcText.textContent = v.text;
-    vcRef.textContent = v.ref;
-    vcCount.textContent = (idx + 1) + " / " + VERSES.length;
-  }
-  function go(delta){
-    idx = (idx + delta + VERSES.length) % VERSES.length;
-    render();
-  }
-  function startTimer(){
-    stopTimer();
-    timer = setInterval(function(){ go(1); }, 6000);
-  }
-  function stopTimer(){ if (timer) clearInterval(timer); timer = null; }
-
-  btnPrev.addEventListener("click", function(){ go(-1); if (!paused) startTimer(); });
-  btnNext.addEventListener("click", function(){ go(1); if (!paused) startTimer(); });
-  btnPause.addEventListener("click", function(){
-    paused = !paused;
-    btnPause.textContent = paused ? "►" : "❚❚";
-    btnPause.setAttribute("aria-label", paused ? "자동 재생 시작" : "자동 재생 멈춤");
-    if (paused) stopTimer(); else startTimer();
-  });
-
-  render();
-  startTimer();
-})();
-
-</script>
 
 <script>
 
