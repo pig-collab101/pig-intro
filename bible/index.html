@@ -1086,6 +1086,63 @@
 
   .action-row{ display:flex; flex-wrap:wrap; gap:10px; }
 
+  /* ===== 새 말씀 게임들 ===== */
+  .mg-prompt{ font-family:"Noto Serif KR", serif; font-size:1.05rem; line-height:1.75; color:var(--ink); margin:0 0 16px; }
+  .mg-hint{ font-size:0.82rem; color:var(--gold-strong); font-weight:700; margin:0 0 12px; }
+  .mg-cho{
+    font-family:"Noto Sans KR", sans-serif; font-size:1.35rem; letter-spacing:0.12em; line-height:1.9;
+    color:var(--ink); background:var(--tile-bg, var(--surface-alt)); border:1.5px solid var(--surface-border);
+    border-radius:14px; padding:16px 18px; margin:0 0 14px; word-break:keep-all;
+  }
+  .mg-input{
+    width:100%; box-sizing:border-box; border:1.5px solid var(--surface-border); border-radius:12px;
+    padding:11px 13px; font-family:"Noto Serif KR", serif; font-size:0.98rem; color:var(--ink);
+    background:var(--surface-alt); margin-bottom:12px;
+  }
+  .mg-input:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:1px; }
+
+  .mg-mem-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:18px; }
+  .mg-mem-card{
+    aspect-ratio:3/4; border-radius:12px; border:1.5px solid var(--surface-border); background:var(--gold-soft);
+    cursor:pointer; display:flex; align-items:center; justify-content:center; padding:6px;
+    font-size:0.72rem; line-height:1.4; text-align:center; color:var(--ink); word-break:keep-all;
+  }
+  .mg-mem-card.up{ background:var(--surface); }
+  .mg-mem-card.done{ background:var(--sage-soft); border-color:var(--sage); cursor:default; }
+  .mg-mem-card .face{ display:none; }
+  .mg-mem-card.up .face, .mg-mem-card.done .face{ display:block; }
+  .mg-mem-card .back{ font-size:1.2rem; color:var(--gold-strong); }
+  .mg-mem-card.up .back, .mg-mem-card.done .back{ display:none; }
+
+  .mg-ox{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }
+  .mg-ox button{
+    padding:20px 0; border-radius:16px; border:2px solid var(--surface-border); background:var(--surface-alt);
+    font-size:1.6rem; font-weight:800; cursor:pointer; color:var(--ink);
+  }
+  .mg-ox button:hover{ border-color:var(--gold); }
+  .mg-ox .mg-o{ color:var(--sage); }
+  .mg-ox .mg-x{ color:var(--ember); }
+  .mg-timerbar{ height:8px; border-radius:999px; background:var(--surface-border); overflow:hidden; margin-bottom:16px; }
+  .mg-timerbar > i{ display:block; height:100%; background:var(--gold); transition:width .95s linear; }
+
+  .mg-order-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .mg-order-item{
+    display:flex; align-items:center; gap:10px; border:1.5px solid var(--surface-border);
+    border-radius:12px; padding:10px 12px; background:var(--surface-alt);
+  }
+  .mg-order-item .idx{ font-weight:800; color:var(--gold-strong); width:1.4em; text-align:center; }
+  .mg-order-item .nm{ flex:1; font-weight:700; color:var(--ink); }
+  .mg-order-item button{
+    border:1px solid var(--surface-border); background:var(--surface); border-radius:8px; width:30px; height:30px;
+    cursor:pointer; font-size:0.95rem; color:var(--ink);
+  }
+  .mg-order-item button:disabled{ opacity:0.3; cursor:default; }
+  .mg-order-item.ok{ border-color:var(--sage); background:var(--sage-soft); }
+  .mg-order-item.no{ border-color:var(--ember); background:var(--ember-soft); }
+
+  .mg-score{ text-align:center; font-family:"Noto Serif KR", serif; }
+  .mg-score .big{ font-size:2.2rem; font-weight:800; color:var(--gold-strong); display:block; }
+
   @media (prefers-reduced-motion: reduce){ *{ transition-duration:0.001ms !important; animation-duration:0.001ms !important; } }
 
 
@@ -1550,7 +1607,7 @@
         <p class="eyebrow">성구 암송 게임마당</p>
         <h1>말씀 게임마당</h1>
         <div class="rule" aria-hidden="true"></div>
-        <p class="lede">말씀 모자이크에 이어, 두 가지 게임을 더 준비했어요. 하나를 골라 시작해 보세요.</p>
+        <p class="lede">여러 가지 말씀 게임을 준비했어요. 하나를 골라 시작해 보세요.</p>
 
         <div class="game-picker">
           <button type="button" class="game-option" id="pick-bingo">
@@ -1567,6 +1624,81 @@
               <span class="desc">구절 문제를 맞혀야 칸에 표시를 놓을 수 있어요. 컴퓨터와 겨뤄 3줄을 먼저 만들어 보세요.</span>
             </span>
           </button>
+          <button type="button" class="game-option" data-mg="cho">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><path d="M4 7h16M4 12h10M4 17h7"/></svg></span>
+            <span class="body">
+              <span class="title">초성 퀴즈</span>
+              <span class="desc">초성만 보이는 구절을 보고 원래 말씀을 맞혀보세요.</span>
+            </span>
+          </button>
+          <button type="button" class="game-option" data-mg="memory">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/></svg></span>
+            <span class="body">
+              <span class="title">말씀 메모리</span>
+              <span class="desc">카드를 뒤집어 출처와 구절의 짝을 찾는 신경쇠약 게임이에요.</span>
+            </span>
+          </button>
+          <button type="button" class="game-option" data-mg="speed">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><circle cx="12" cy="13" r="8"/><path d="M12 13V9M12 2h4"/></svg></span>
+            <span class="body">
+              <span class="title">60초 스피드 O·X</span>
+              <span class="desc">출처와 구절이 맞는 짝인지 1분 안에 최대한 많이 맞혀보세요.</span>
+            </span>
+          </button>
+          <button type="button" class="game-option" data-mg="order">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></span>
+            <span class="body">
+              <span class="title">성경 책 순서</span>
+              <span class="desc">뒤섞인 성경 책 이름을 성경에 나오는 순서대로 정렬해보세요.</span>
+            </span>
+          </button>
+          <button type="button" class="game-option" data-mg="who">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/></svg></span>
+            <span class="body">
+              <span class="title">인물 맞히기</span>
+              <span class="desc">이 말을 한 사람은 누구일까요? 네 명 중에 골라보세요.</span>
+            </span>
+          </button>
+          <button type="button" class="game-option" data-mg="parable">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><path d="M4 5h16v12H8l-4 4z"/></svg></span>
+            <span class="body">
+              <span class="title">비유 맞히기</span>
+              <span class="desc">예수님의 비유 이야기를 읽고 어떤 비유인지 맞혀보세요.</span>
+            </span>
+          </button>
+          <button type="button" class="game-option" data-mg="number">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><path d="M6 4v16M14 4v16M4 9h16M4 15h16"/></svg></span>
+            <span class="body">
+              <span class="title">숫자 성경</span>
+              <span class="desc">성경 속 숫자를 얼마나 알고 있나요? 제자는 몇 명, 빵은 몇 개…</span>
+            </span>
+          </button>
+          <button type="button" class="game-option" data-mg="prayer">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold-strong)" stroke-width="1.6"><path d="M12 3v7M8 21c0-5 2-8 4-8s4 3 4 8M9 7h6"/></svg></span>
+            <span class="body">
+              <span class="title">기도문 빈칸</span>
+              <span class="desc">주님의 기도·성모송·영광송의 빈칸을 채워보세요.</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ===== 새 말씀 게임: 공용 화면 ===== -->
+      <section class="screen" id="screen-mg" hidden>
+        <div class="game-top">
+          <div>
+            <p class="eyebrow" id="mg-eyebrow">말씀 게임</p>
+            <h1 style="font-size:1.4rem; margin-bottom:0;" id="mg-heading"></h1>
+          </div>
+          <div class="game-stats" id="mg-stats"></div>
+        </div>
+        <div class="banner" id="mg-banner"></div>
+        <div id="mg-body"></div>
+        <div class="feedback" id="mg-feedback"></div>
+        <div class="action-row">
+          <button type="button" class="btn btn-primary" id="mg-next" hidden>다음 →</button>
+          <button type="button" class="btn btn-ghost" id="mg-again" hidden>다시 하기</button>
+          <button type="button" class="btn-quiet" id="mg-to-menu">메뉴로</button>
         </div>
       </section>
 
@@ -2504,15 +2636,12 @@
     [0,4,8],[2,4,6]
   ];
 
-  var screenMenu = document.getElementById("screen-menu");
-  var screenBingo = document.getElementById("screen-bingo");
-  var screenTtt = document.getElementById("screen-ttt");
-
   function showScreen(name){
-    screenMenu.hidden = name !== "menu";
-    screenBingo.hidden = name !== "bingo";
-    screenTtt.hidden = name !== "ttt";
+    var wrap = document.getElementById("page-games");
+    var scr = wrap.querySelectorAll("section.screen");
+    for (var i = 0; i < scr.length; i++){ scr[i].hidden = (scr[i].id !== "screen-" + name); }
   }
+  window.__gamesShow = showScreen;
 
   document.getElementById("pick-bingo").addEventListener("click", function(){ showScreen("bingo"); startBingo(); });
   document.getElementById("pick-ttt").addEventListener("click", function(){ showScreen("ttt"); startTtt(); });
@@ -2814,6 +2943,446 @@
   showScreen("menu");
 })();
 
+</script>
+
+<script>
+/* ========================= 새 말씀 게임들 ========================= */
+(function(){
+  "use strict";
+  var show = window.__gamesShow;
+  if (!show || !document.getElementById("screen-mg")) return;
+
+  /* ---------- 데이터 ---------- */
+  var V = [
+    { r:"마태오 1, 23", t:"보아라, 동정녀가 잉태하여 아들을 낳으리니 그 이름을 임마누엘이라고 하리라." },
+    { r:"마태오 4, 4", t:"사람은 빵만으로 살지 않고 하느님의 입에서 나오는 모든 말씀으로 산다." },
+    { r:"마태오 4, 19", t:"나를 따라오너라. 내가 너희를 사람 낚는 어부로 만들겠다." },
+    { r:"마태오 5, 48", t:"하늘의 너희 아버지께서 완전하신 것처럼 너희도 완전한 사람이 되어야 한다." },
+    { r:"마태오 11, 29", t:"나는 마음이 온유하고 겸손하니 내 멍에를 메고 나에게 배워라." },
+    { r:"마태오 14, 27", t:"용기를 내어라. 나다. 두려워하지 마라." },
+    { r:"마태오 25, 40", t:"이 가장 작은 이들 가운데 한 사람에게 해 준 것이 바로 나에게 해 준 것이다." },
+    { r:"마태오 28, 20", t:"내가 세상 끝 날까지 언제나 너희와 함께 있겠다." },
+    { r:"마르코 1, 15", t:"때가 차서 하느님의 나라가 가까이 왔다. 회개하고 복음을 믿어라." },
+    { r:"마르코 8, 29", t:"스승님은 그리스도이십니다." },
+    { r:"마르코 12, 30", t:"너는 마음을 다하고 목숨을 다하고 정신을 다하고 힘을 다하여 주 너의 하느님을 사랑해야 한다." },
+    { r:"마르코 16, 15", t:"너희는 온 세상에 가서 모든 피조물에게 복음을 선포하여라." },
+    { r:"루카 2, 14", t:"지극히 높은 곳에서는 하느님께 영광, 땅에서는 그분 마음에 드는 사람들에게 평화!" },
+    { r:"루카 6, 36", t:"너희 아버지께서 자비하신 것처럼 너희도 자비로운 사람이 되어라." },
+    { r:"루카 11, 10", t:"누구든지 청하는 이는 받고 찾는 이는 얻으며 문을 두드리는 이에게는 열릴 것이다." },
+    { r:"루카 14, 11", t:"누구든지 자신을 높이는 이는 낮아지고 자신을 낮추는 이는 높아질 것이다." },
+    { r:"요한 3, 16", t:"하느님께서는 세상을 너무나 사랑하신 나머지 외아들을 내주시어, 그를 믿는 사람은 영원한 생명을 얻게 하셨다." },
+    { r:"요한 6, 35", t:"내가 생명의 빵이다. 나에게 오는 사람은 결코 배고프지 않을 것이다." },
+    { r:"요한 8, 12", t:"나는 세상의 빛이다. 나를 따르는 이는 어둠 속을 걷지 않고 생명의 빛을 얻을 것이다." },
+    { r:"요한 10, 9", t:"나는 문이다. 누구든지 나를 통하여 들어오면 구원을 받을 것이다." },
+    { r:"요한 13, 34", t:"내가 너희를 사랑한 것처럼 너희도 서로 사랑하여라." },
+    { r:"요한 14, 6", t:"나는 길이요 진리요 생명이다. 나를 통하지 않고서는 아무도 아버지께 갈 수 없다." },
+    { r:"요한 15, 5", t:"나는 포도나무요 너희는 가지다. 내 안에 머무르는 사람은 많은 열매를 맺는다." },
+    { r:"요한 20, 29", t:"보지 않고도 믿는 사람은 행복하다." }
+  ];
+
+  var CANON = [
+    {n:"창세기",i:1},{n:"탈출기",i:2},{n:"레위기",i:3},{n:"민수기",i:4},{n:"신명기",i:5},
+    {n:"여호수아기",i:6},{n:"판관기",i:7},{n:"룻기",i:8},{n:"사무엘기",i:9},{n:"열왕기",i:11},
+    {n:"토빗기",i:17},{n:"욥기",i:22},{n:"시편",i:23},{n:"잠언",i:24},{n:"코헬렛",i:25},
+    {n:"지혜서",i:27},{n:"이사야서",i:29},{n:"예레미야서",i:30},{n:"에제키엘서",i:33},{n:"다니엘서",i:34},
+    {n:"요나서",i:39},{n:"마카베오기",i:20},
+    {n:"마태오 복음",i:47},{n:"마르코 복음",i:48},{n:"루카 복음",i:49},{n:"요한 복음",i:50},
+    {n:"사도행전",i:51},{n:"로마서",i:52},{n:"코린토 1서",i:53},{n:"갈라티아서",i:55},
+    {n:"필리피서",i:57},{n:"히브리서",i:65},{n:"야고보서",i:66},{n:"베드로 1서",i:67},
+    {n:"요한 1서",i:69},{n:"요한 묵시록",i:73}
+  ];
+
+  var WHO = [
+    { q:"저는 주님의 종입니다. 말씀하신 대로 저에게 이루어지기를 바랍니다.", a:"마리아", d:["엘리사벳","한나","마르타"] },
+    { q:"저의 주님, 저의 하느님!", a:"토마스 사도", d:["베드로","필립보","나타나엘"] },
+    { q:"보라, 하느님의 어린양이시다. 세상의 죄를 없애시는 분이시다.", a:"세례자 요한", d:["이사야 예언자","시메온","베드로"] },
+    { q:"은과 금은 나에게 없지만 내가 가진 것을 그대에게 주니, 나자렛 사람 예수 그리스도의 이름으로 걸어가시오.", a:"베드로", d:["바오로","요한","스테파노"] },
+    { q:"이 사람은 정말 하느님의 아드님이셨다.", a:"백인대장", d:["빌라도","니코데모","아리마태아 요셉"] },
+    { q:"그분은 더 커지셔야 하고 나는 작아져야 한다.", a:"세례자 요한", d:["예수님","베드로","안드레아"] },
+    { q:"주님, 이제야 이 종을 평화로이 떠나게 해 주셨습니다. 제 눈이 주님의 구원을 보았습니다.", a:"시메온", d:["즈카르야","세례자 요한","아브라함"] },
+    { q:"행복하십니다, 믿으신 분! 주님께서 하신 말씀이 이루어지리라고 믿으셨으니.", a:"엘리사벳", d:["안나","마리아","룻"] },
+    { q:"사울아, 사울아, 왜 나를 박해하느냐?", a:"예수님", d:["스테파노","가믈리엘","아나니아스"] },
+    { q:"우리가 누구에게 가겠습니까? 주님께는 영원한 생명의 말씀이 있습니다.", a:"베드로", d:["요한","토마스","안드레아"] },
+    { q:"주님이시라면 저에게 물 위를 걸어오라고 명령하십시오.", a:"베드로", d:["야고보","요한","안드레아"] },
+    { q:"저는 믿습니다. 믿음이 부족한 저를 도와주십시오.", a:"어떤 아이의 아버지", d:["회당장 야이로","백인대장","눈먼 이"] },
+    { q:"너는 베드로이다. 나는 이 반석 위에 내 교회를 세우겠다.", a:"예수님", d:["세례자 요한","바오로","안드레아"] },
+    { q:"당신은 유다 사람이면서 어떻게 사마리아 여자인 저에게 마실 물을 청하십니까?", a:"사마리아 여인", d:["마르타","막달레나 마리아","베타니아의 마리아"] },
+    { q:"내 영혼이 주님을 찬송하고 내 마음이 나의 구원자 하느님 안에서 기뻐 뛰니.", a:"마리아", d:["한나","미리암","드보라"] },
+    { q:"주님, 저의 지붕 아래로 오시기를 저는 합당하지 않습니다. 그저 한 말씀만 해 주십시오.", a:"백인대장", d:["회당장","세리 자캐오","나병 환자"] }
+  ];
+
+  var PARABLE = [
+    { q:"강도를 만나 쓰러진 사람을 사제와 레위인은 피해 지나갔지만, 한 나그네가 상처를 싸매고 여관으로 데려가 돌보아 주었다.", a:"착한 사마리아인", d:["되찾은 아들","무자비한 종","포도밭 일꾼"] },
+    { q:"작은아들이 유산을 미리 받아 먼 고장에서 다 탕진하고 돌아오자, 아버지가 멀리서부터 달려가 끌어안고 잔치를 벌였다.", a:"되찾은 아들", d:["착한 사마리아인","탈렌트","열 처녀"] },
+    { q:"양 백 마리 가운데 한 마리를 잃자, 아흔아홉 마리를 들에 두고 잃은 양을 찾을 때까지 뒤쫓아 갔다.", a:"되찾은 양", d:["되찾은 은전","그물","씨 뿌리는 사람"] },
+    { q:"씨가 더러는 길에, 더러는 돌밭에, 더러는 가시덤불에, 더러는 좋은 땅에 떨어졌다.", a:"씨 뿌리는 사람", d:["가라지","겨자씨","누룩"] },
+    { q:"어떤 씨앗은 모든 씨앗 가운데 가장 작지만 자라면 어떤 풀보다 커져 새들이 깃들일 정도가 된다.", a:"겨자씨", d:["누룩","포도나무","무화과나무"] },
+    { q:"어떤 여자가 누룩을 밀가루 서 말 속에 집어넣었더니 마침내 온통 부풀어 올랐다.", a:"누룩", d:["겨자씨","그물","보물"] },
+    { q:"밭에 숨겨진 보물을 발견한 사람이 그것을 다시 숨겨 두고, 기뻐하며 돌아가 가진 것을 다 팔아 그 밭을 샀다.", a:"밭에 묻힌 보물", d:["값진 진주","탈렌트","되찾은 은전"] },
+    { q:"많은 빚을 탕감받은 종이 나가서, 자기에게 적은 빚을 진 동료의 멱살을 잡고 감옥에 가두었다.", a:"무자비한 종", d:["포도밭 일꾼","되찾은 아들","열 처녀"] },
+    { q:"이른 아침에 온 일꾼이나 오후 다섯 시에 온 일꾼이나 똑같이 한 데나리온을 받았다.", a:"포도밭 일꾼", d:["탈렌트","무자비한 종","혼인 잔치"] },
+    { q:"신랑을 기다리던 처녀 열 사람 가운데 슬기로운 다섯은 기름을 준비했고 어리석은 다섯은 준비하지 못했다.", a:"열 처녀", d:["탈렌트","혼인 잔치","포도밭 일꾼"] },
+    { q:"주인이 종들에게 각각 다섯, 둘, 한 자루의 돈을 맡기고 떠났다가 돌아와 셈을 하였다.", a:"탈렌트", d:["열 처녀","포도밭 소작인","되찾은 은전"] },
+    { q:"부자는 날마다 즐겁게 지냈고, 그의 대문 앞에 종기투성이 거지가 부스러기로라도 배를 채우기를 바랐다.", a:"부자와 라자로", d:["탕자","무자비한 종","바리사이와 세리"] },
+    { q:"바리사이는 서서 자기 의로움을 늘어놓았고, 세리는 멀찍이 서서 가슴을 치며 '저는 죄인입니다' 하고 기도하였다.", a:"바리사이와 세리", d:["부자와 라자로","되찾은 아들","포도밭 일꾼"] },
+    { q:"주인이 없는 사이 포도밭을 맡은 소작인들이 소출을 받으러 온 종들을 때리고, 마지막에 보낸 아들까지 죽였다.", a:"포도밭 소작인", d:["탈렌트","혼인 잔치","무자비한 종"] }
+  ];
+
+  var NUMBER = [
+    { q:"예수님께서 뽑으신 제자(사도)는 몇 명일까요?", a:12, opt:[7,10,12,40] },
+    { q:"하느님께서 모세에게 주신 계명은 몇 개일까요?", a:10, opt:[7,10,12,40] },
+    { q:"오천 명을 먹이실 때 아이가 가지고 있던 빵은 몇 개?", a:5, opt:[2,5,7,12] },
+    { q:"오천 명을 먹이실 때 물고기는 몇 마리?", a:2, opt:[2,5,7,12] },
+    { q:"예수님께서 광야에서 단식하신 날은?", a:40, opt:[3,7,40,50] },
+    { q:"이스라엘 백성이 광야에서 지낸 햇수는?", a:40, opt:[7,12,40,70] },
+    { q:"예수님께서 며칠 만에 부활하셨나요?", a:3, opt:[3,7,40,50] },
+    { q:"부활하신 뒤 승천하시기까지 제자들에게 나타나신 기간은?", a:40, opt:[3,7,40,50] },
+    { q:"성령 강림(성령 강림 대축일)은 부활 후 며칠째일까요?", a:50, opt:[3,10,40,50] },
+    { q:"노아의 홍수 때 비가 내린 날은?", a:40, opt:[7,40,100,150] },
+    { q:"되찾은 양의 비유에서 들에 남겨 둔 양은 몇 마리?", a:99, opt:[10,50,99,100] },
+    { q:"'일곱 번이 아니라 일흔 번을 일곱 번이라도' — 여기서 큰 수는?", a:70, opt:[7,49,70,77] },
+    { q:"카나의 혼인 잔치에 놓여 있던 돌 항아리는 몇 개?", a:6, opt:[3,6,7,12] },
+    { q:"라자로가 무덤에 있은 지 며칠 만에 예수님께서 오셨나요?", a:4, opt:[2,3,4,7] },
+    { q:"유다가 예수님을 넘기고 받은 은돈은?", a:30, opt:[3,12,30,100] },
+    { q:"오병이어의 기적 뒤 남은 빵 조각을 담은 광주리는 몇 개?", a:12, opt:[5,7,12,70] }
+  ];
+
+  var PRAYERS = [
+    { title:"주님의 기도", segs:[
+      { pre:"하늘에 계신 우리 아버지, 아버지의 이름이 ", ans:"거룩히", post:" 빛나시며", opt:["거룩히","영원히","높이"] },
+      { pre:"아버지의 ", ans:"나라", post:"가 오시며", opt:["나라","뜻","영광"] },
+      { pre:"아버지의 뜻이 하늘에서와 같이 ", ans:"땅", post:"에서도 이루어지소서", opt:["땅","세상","우리"] },
+      { pre:"오늘 저희에게 ", ans:"일용할 양식", post:"을 주시고", opt:["일용할 양식","넘치는 은총","평화"] },
+      { pre:"저희에게 잘못한 이를 저희가 ", ans:"용서", post:"하오니 저희 죄를 ", opt:["용서","사랑","기억"] },
+      { pre:"저희를 ", ans:"유혹", post:"에 빠지지 않게 하시고 악에서 구하소서", opt:["유혹","시련","죄"] }
+    ]},
+    { title:"성모송", segs:[
+      { pre:"", ans:"은총", post:"이 가득하신 마리아님, 기뻐하소서", opt:["은총","사랑","기쁨"] },
+      { pre:"주님께서 함께 계시니 ", ans:"여인", post:" 중에 복되시며", opt:["여인","모든 이","백성"] },
+      { pre:"태중의 아드님 ", ans:"예수님", post:" 또한 복되시나이다", opt:["예수님","성자","아기"] },
+      { pre:"천주의 ", ans:"성모", post:" 마리아님, 이제와 저희 죽을 때에", opt:["성모","동정","어머니"] },
+      { pre:"저희 ", ans:"죄인", post:"을 위하여 빌어 주소서", opt:["죄인","가족","자녀"] }
+    ]},
+    { title:"영광송", segs:[
+      { pre:"영광이 ", ans:"성부와 성자와 성령", post:"께", opt:["성부와 성자와 성령","하느님","주님"] },
+      { pre:"처음과 같이 이제와 ", ans:"항상", post:" 영원히", opt:["항상","늘","언제나"] }
+    ]}
+  ];
+
+  var CHO_L = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+  function toChoseong(s){
+    var out = "";
+    for (var i = 0; i < s.length; i++){
+      var c = s.charCodeAt(i);
+      if (c >= 0xAC00 && c <= 0xD7A3){ out += CHO_L[Math.floor((c - 0xAC00) / 588)]; }
+      else if (/\s/.test(s[i])){ out += " "; }
+      else { out += s[i]; }
+    }
+    return out;
+  }
+  function norm(s){ return String(s || "").replace(/[\s.,!?"'’‘“”·…()~-]/g, ""); }
+  function shuffle(a){ a = a.slice(); for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function pick(a, n){ return shuffle(a).slice(0, n); }
+
+  /* ---------- 공용 화면 ---------- */
+  var eyebrow = document.getElementById("mg-eyebrow");
+  var heading = document.getElementById("mg-heading");
+  var statsEl = document.getElementById("mg-stats");
+  var bannerEl = document.getElementById("mg-banner");
+  var bodyEl = document.getElementById("mg-body");
+  var fbEl = document.getElementById("mg-feedback");
+  var nextBtn = document.getElementById("mg-next");
+  var againBtn = document.getElementById("mg-again");
+  var toMenuBtn = document.getElementById("mg-to-menu");
+
+  var TITLES = {
+    cho:"초성 퀴즈", memory:"말씀 메모리", speed:"60초 스피드 O·X",
+    order:"성경 책 순서", who:"인물 맞히기", parable:"비유 맞히기",
+    number:"숫자 성경", prayer:"기도문 빈칸"
+  };
+
+  var cur = null;   // 현재 게임 상태
+  var TICK = null;
+
+  function setFb(msg, kind){
+    fbEl.textContent = msg || "";
+    fbEl.className = "feedback" + (msg ? " show " + (kind || "info") : "");
+  }
+  function setBanner(msg, kind){
+    bannerEl.textContent = msg || "";
+    bannerEl.className = "banner" + (msg ? " show " + (kind || "win") : "");
+  }
+  function stopTick(){ if (TICK){ clearInterval(TICK); TICK = null; } }
+
+  toMenuBtn.addEventListener("click", function(){ stopTick(); show("menu"); });
+  againBtn.addEventListener("click", function(){ if (cur) startGame(cur.key); });
+
+  var picker = document.getElementById("screen-menu");
+  picker.addEventListener("click", function(e){
+    var b = e.target.closest("[data-mg]");
+    if (!b) return;
+    startGame(b.getAttribute("data-mg"));
+  });
+
+  function startGame(key){
+    stopTick();
+    cur = { key: key };
+    show("mg");
+    eyebrow.textContent = "말씀 게임";
+    heading.textContent = TITLES[key] || "말씀 게임";
+    statsEl.textContent = "";
+    setBanner("", "");
+    setFb("", "");
+    nextBtn.hidden = true; againBtn.hidden = true;
+    bodyEl.innerHTML = "";
+    ({ cho:gCho, memory:gMemory, speed:gSpeed, order:gOrder,
+       who:gMcq, parable:gMcq, number:gMcq, prayer:gPrayer }[key] || function(){})();
+  }
+
+  /* ---------- 1. 초성 퀴즈 ---------- */
+  function gCho(){
+    cur.pool = pick(V, 8); cur.i = 0; cur.score = 0;
+    nextBtn.textContent = "다음 →";
+    renderCho();
+    nextBtn.onclick = function(){ cur.i++; if (cur.i >= cur.pool.length) return finishScore(cur.score, cur.pool.length); renderCho(); };
+  }
+  function renderCho(){
+    setFb("", ""); nextBtn.hidden = true;
+    statsEl.innerHTML = "<span>" + (cur.i + 1) + " / " + cur.pool.length + "</span><span>맞힘 <strong>" + cur.score + "</strong></span>";
+    var v = cur.pool[cur.i];
+    bodyEl.innerHTML =
+      '<p class="mg-hint">' + v.r + '</p>' +
+      '<div class="mg-cho">' + toChoseong(v.t) + '</div>' +
+      '<input type="text" class="mg-input" id="mg-cho-in" placeholder="원래 말씀을 적어보세요" autocomplete="off">' +
+      '<div class="action-row"><button type="button" class="btn btn-primary" id="mg-cho-ck">확인</button>' +
+      '<button type="button" class="btn btn-ghost" id="mg-cho-rv">정답 보기</button></div>';
+    var input = document.getElementById("mg-cho-in");
+    input.focus();
+    function judge(){
+      var u = norm(input.value), ans = norm(v.t);
+      var ok = u.length >= 4 && (u === ans || (ans.indexOf(u) === 0 && u.length >= ans.length * 0.8) || (u.indexOf(ans) === 0));
+      if (ok){ cur.score++; setFb("정답이에요! ‘" + v.t + "’", "ok"); }
+      else { setFb("아쉬워요. 정답: " + v.t, "bad"); }
+      input.disabled = true;
+      document.getElementById("mg-cho-ck").disabled = true;
+      nextBtn.hidden = false; nextBtn.focus();
+    }
+    document.getElementById("mg-cho-ck").onclick = judge;
+    document.getElementById("mg-cho-rv").onclick = function(){ setFb("정답: " + v.t, "info"); input.disabled = true; nextBtn.hidden = false; };
+    input.addEventListener("keydown", function(e){ if (e.key === "Enter" && !input.disabled) judge(); });
+  }
+
+  /* ---------- 3. 말씀 메모리 ---------- */
+  function gMemory(){
+    var picks = pick(V, 8);
+    var cards = [];
+    picks.forEach(function(v, k){
+      cards.push({ k:k, kind:"ref", label:v.r });
+      cards.push({ k:k, kind:"txt", label:(v.t.length > 26 ? v.t.slice(0, 25) + "…" : v.t) });
+    });
+    cur.cards = shuffle(cards); cur.open = []; cur.done = 0; cur.moves = 0; cur.lock = false;
+    statsEl.innerHTML = '<span>맞춘 짝 <strong id="mg-m-done">0</strong>/8</span><span>뒤집기 <strong id="mg-m-mv">0</strong></span>';
+    var g = document.createElement("div"); g.className = "mg-mem-grid";
+    cur.cards.forEach(function(c, idx){
+      var el = document.createElement("button");
+      el.type = "button"; el.className = "mg-mem-card";
+      el.innerHTML = '<span class="back">✦</span><span class="face">' + c.label.replace(/</g, "&lt;") + '</span>';
+      el.addEventListener("click", function(){ flip(idx, el); });
+      c.el = el; g.appendChild(el);
+    });
+    bodyEl.appendChild(g);
+    function flip(idx, el){
+      if (cur.lock || el.classList.contains("up") || el.classList.contains("done")) return;
+      el.classList.add("up"); cur.open.push(idx);
+      if (cur.open.length === 2){
+        cur.moves++; document.getElementById("mg-m-mv").textContent = cur.moves;
+        var a = cur.cards[cur.open[0]], b = cur.cards[cur.open[1]];
+        if (a.k === b.k && a.kind !== b.kind){
+          a.el.classList.add("done"); b.el.classList.add("done");
+          cur.done++; document.getElementById("mg-m-done").textContent = cur.done;
+          cur.open = [];
+          if (cur.done === 8){
+            setBanner("완성! 뒤집기 " + cur.moves + "번 만에 다 맞췄어요 🎉", "win");
+            againBtn.hidden = false; againBtn.focus();
+          }
+        } else {
+          cur.lock = true;
+          setTimeout(function(){ a.el.classList.remove("up"); b.el.classList.remove("up"); cur.open = []; cur.lock = false; }, 750);
+        }
+      }
+    }
+  }
+
+  /* ---------- 7. 60초 스피드 O·X ---------- */
+  function gSpeed(){
+    cur.left = 60; cur.score = 0; cur.done = false;
+    var best = 0;
+    try { best = +localStorage.getItem("bible-speed-best") || 0; } catch (e) {}
+    cur.best = best;
+    bodyEl.innerHTML =
+      '<div class="mg-timerbar"><i id="mg-sp-bar" style="width:100%"></i></div>' +
+      '<p class="mg-hint" id="mg-sp-ref"></p>' +
+      '<p class="mg-prompt" id="mg-sp-txt"></p>' +
+      '<div class="mg-ox"><button type="button" class="mg-o" id="mg-sp-o">O<br><small style="font-size:0.7rem;font-weight:600">맞는 짝</small></button>' +
+      '<button type="button" class="mg-x" id="mg-sp-x">X<br><small style="font-size:0.7rem;font-weight:600">틀린 짝</small></button></div>';
+    statsEl.innerHTML = '<span>남은 시간 <strong id="mg-sp-t">60</strong>s</span><span>점수 <strong id="mg-sp-s">0</strong></span><span>최고 <strong>' + best + '</strong></span>';
+    function nextQ(){
+      var v = V[Math.floor(Math.random() * V.length)];
+      var same = Math.random() < 0.55;
+      var shownText = v.t;
+      if (!same){
+        var o; do { o = V[Math.floor(Math.random() * V.length)]; } while (o === v);
+        shownText = o.t;
+      }
+      cur.match = same;
+      document.getElementById("mg-sp-ref").textContent = v.r;
+      document.getElementById("mg-sp-txt").textContent = shownText.length > 60 ? shownText.slice(0, 59) + "…" : shownText;
+    }
+    function answer(said){
+      if (cur.done) return;
+      if (said === cur.match){ cur.score++; document.getElementById("mg-sp-s").textContent = cur.score; setFb("정답 +1", "ok"); }
+      else { setFb("땡", "bad"); }
+      nextQ();
+    }
+    document.getElementById("mg-sp-o").onclick = function(){ answer(true); };
+    document.getElementById("mg-sp-x").onclick = function(){ answer(false); };
+    nextQ();
+    TICK = setInterval(function(){
+      cur.left--;
+      document.getElementById("mg-sp-t").textContent = cur.left;
+      document.getElementById("mg-sp-bar").style.width = (cur.left / 60 * 100) + "%";
+      if (cur.left <= 0){
+        stopTick(); cur.done = true;
+        var rec = cur.score > cur.best;
+        if (rec){ try { localStorage.setItem("bible-speed-best", String(cur.score)); } catch (e) {} }
+        bodyEl.innerHTML = '<div class="mg-score"><span class="big">' + cur.score + '점</span>' + (rec ? "새 최고 기록이에요! 🎉" : "최고 기록은 " + cur.best + "점") + '</div>';
+        setFb("", ""); statsEl.textContent = "";
+        againBtn.hidden = false; againBtn.focus();
+      }
+    }, 1000);
+  }
+
+  /* ---------- 13. 성경 책 순서 ---------- */
+  function gOrder(){
+    cur.round = 0; cur.score = 0;
+    nextBtn.textContent = "다음 →";
+    renderOrder();
+    nextBtn.onclick = function(){ cur.round++; if (cur.round >= 5) return finishScore(cur.score, 5); renderOrder(); };
+  }
+  function renderOrder(){
+    setFb("", ""); nextBtn.hidden = true;
+    statsEl.innerHTML = "<span>" + (cur.round + 1) + " / 5</span><span>맞힘 <strong>" + cur.score + "</strong></span>";
+    var chosen = pick(CANON, 4);
+    var goal = chosen.slice().sort(function(a, b){ return a.i - b.i; });
+    var order = shuffle(chosen);
+    bodyEl.innerHTML = '<p class="mg-hint">성경에 나오는 순서(앞 → 뒤)대로 맞춰 보세요</p><div class="mg-order-list" id="mg-ord"></div>' +
+      '<div class="action-row"><button type="button" class="btn btn-primary" id="mg-ord-ck">확인</button></div>';
+    var listEl = document.getElementById("mg-ord");
+    function draw(){
+      listEl.innerHTML = "";
+      order.forEach(function(item, idx){
+        var row = document.createElement("div"); row.className = "mg-order-item";
+        row.innerHTML = '<span class="idx">' + (idx + 1) + '</span><span class="nm">' + item.n + '</span>' +
+          '<button type="button" data-u="' + idx + '">▲</button><button type="button" data-d="' + idx + '">▼</button>';
+        listEl.appendChild(row);
+      });
+      listEl.querySelectorAll("[data-u]").forEach(function(b){ b.onclick = function(){ var i = +b.dataset.u; if (i > 0){ var t = order[i]; order[i] = order[i - 1]; order[i - 1] = t; draw(); } }; });
+      listEl.querySelectorAll("[data-d]").forEach(function(b){ b.onclick = function(){ var i = +b.dataset.d; if (i < order.length - 1){ var t = order[i]; order[i] = order[i + 1]; order[i + 1] = t; draw(); } }; });
+    }
+    draw();
+    document.getElementById("mg-ord-ck").onclick = function(){
+      var ok = order.every(function(it, idx){ return it.i === goal[idx].i; });
+      var rows = listEl.querySelectorAll(".mg-order-item");
+      order.forEach(function(it, idx){ rows[idx].classList.add(it.i === goal[idx].i ? "ok" : "no"); });
+      listEl.querySelectorAll("button").forEach(function(b){ b.disabled = true; });
+      document.getElementById("mg-ord-ck").disabled = true;
+      if (ok){ cur.score++; setFb("정확해요!", "ok"); }
+      else { setFb("정답 순서: " + goal.map(function(g){ return g.n; }).join(" → "), "bad"); }
+      nextBtn.hidden = false; nextBtn.focus();
+    };
+  }
+
+  /* ---------- 14/15/16. 객관식 공용 ---------- */
+  function gMcq(){
+    var src = { who:WHO, parable:PARABLE, number:NUMBER }[cur.key];
+    cur.pool = pick(src, 10); cur.i = 0; cur.score = 0;
+    nextBtn.textContent = "다음 →";
+    renderMcq();
+    nextBtn.onclick = function(){ cur.i++; if (cur.i >= cur.pool.length) return finishScore(cur.score, cur.pool.length); renderMcq(); };
+  }
+  function renderMcq(){
+    setFb("", ""); nextBtn.hidden = true;
+    statsEl.innerHTML = "<span>" + (cur.i + 1) + " / " + cur.pool.length + "</span><span>맞힘 <strong>" + cur.score + "</strong></span>";
+    var it = cur.pool[cur.i];
+    var isNum = (cur.key === "number");
+    var correct = isNum ? String(it.a) : it.a;
+    var choices = isNum ? shuffle(it.opt.map(String)) : shuffle([it.a].concat(it.d));
+    var lead = cur.key === "parable" ? "이 이야기는 어떤 비유일까요?" : cur.key === "who" ? "이 말을 한 사람은 누구일까요?" : "";
+    bodyEl.innerHTML =
+      (lead ? '<p class="mg-hint">' + lead + '</p>' : "") +
+      '<p class="mg-prompt">' + (isNum ? it.q : "“" + it.q + "”") + '</p>' +
+      '<div class="choice-grid" id="mg-ch"></div>';
+    var box = document.getElementById("mg-ch");
+    choices.forEach(function(c){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "choice-btn"; b.textContent = isNum ? (c + " ") : c;
+      b.onclick = function(){
+        box.querySelectorAll("button").forEach(function(x){ x.disabled = true; });
+        if (c === correct){ b.classList.add("correct"); cur.score++; setFb("정답이에요!", "ok"); }
+        else {
+          b.classList.add("wrong");
+          box.querySelectorAll("button").forEach(function(x){ if (x.textContent.trim() === String(correct)) x.classList.add("correct"); });
+          setFb("정답: " + correct, "bad");
+        }
+        nextBtn.hidden = false; nextBtn.focus();
+      };
+      box.appendChild(b);
+    });
+  }
+
+  /* ---------- 18. 기도문 빈칸 ---------- */
+  function gPrayer(){
+    cur.p = PRAYERS[Math.floor(Math.random() * PRAYERS.length)];
+    cur.i = 0; cur.score = 0;
+    eyebrow.textContent = cur.p.title;
+    nextBtn.textContent = "다음 →";
+    renderPrayer();
+    nextBtn.onclick = function(){ cur.i++; if (cur.i >= cur.p.segs.length) return finishScore(cur.score, cur.p.segs.length, cur.p.title); renderPrayer(); };
+  }
+  function renderPrayer(){
+    setFb("", ""); nextBtn.hidden = true;
+    var seg = cur.p.segs[cur.i];
+    statsEl.innerHTML = "<span>" + (cur.i + 1) + " / " + cur.p.segs.length + "</span><span>맞힘 <strong>" + cur.score + "</strong></span>";
+    bodyEl.innerHTML =
+      '<p class="mg-hint">' + cur.p.title + ' — 빈칸에 들어갈 말은?</p>' +
+      '<p class="mg-prompt">' + seg.pre.replace(/</g, "&lt;") + '<span style="color:var(--gold-strong);font-weight:800">＿＿＿</span>' + seg.post.replace(/</g, "&lt;") + '</p>' +
+      '<div class="choice-grid" id="mg-pr"></div>';
+    var box = document.getElementById("mg-pr");
+    shuffle(seg.opt).forEach(function(c){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "choice-btn"; b.textContent = c;
+      b.onclick = function(){
+        box.querySelectorAll("button").forEach(function(x){ x.disabled = true; });
+        if (c === seg.ans){ b.classList.add("correct"); cur.score++; setFb("맞아요!", "ok"); }
+        else {
+          b.classList.add("wrong");
+          box.querySelectorAll("button").forEach(function(x){ if (x.textContent === seg.ans) x.classList.add("correct"); });
+          setFb("정답: " + seg.ans, "bad");
+        }
+        nextBtn.hidden = false; nextBtn.focus();
+      };
+      box.appendChild(b);
+    });
+  }
+
+  /* ---------- 점수 마무리 ---------- */
+  function finishScore(score, total, label){
+    bodyEl.innerHTML = '<div class="mg-score"><span class="big">' + score + ' / ' + total + '</span>' +
+      (score === total ? "완벽해요! 🎉" : score >= total * 0.7 ? "훌륭해요!" : score >= total * 0.4 ? "좋아요, 조금만 더!" : "다시 도전해 보세요!") + '</div>';
+    setFb("", ""); statsEl.textContent = "";
+    nextBtn.hidden = true; againBtn.hidden = false; againBtn.focus();
+  }
+})();
 </script>
 
 <script>
