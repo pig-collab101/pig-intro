@@ -2792,6 +2792,7 @@
   }
 
   function resolveBingoCell(state){
+    if (bingo.activeIndex === -1 || !bingo.cells[bingo.activeIndex]) return;
     bingo.cells[bingo.activeIndex].state = state;
     bingoQpanel.hidden = true;
     bingo.activeIndex = -1;
@@ -2827,7 +2828,17 @@
   });
   bingoReveal.addEventListener("click", function(){
     if (bingo.activeIndex === -1) return;
-    resolveBingoCell("revealed");
+    var v = VERSES[bingo.cells[bingo.activeIndex].verseIndex];
+    bingoInput.value = v.text;
+    bingoFeedback.className = "feedback info show";
+    bingoFeedback.textContent = "정답: " + v.text;
+    bingoCheck.disabled = true;
+    bingoReveal.disabled = true;
+    setTimeout(function(){
+      bingoCheck.disabled = false;
+      bingoReveal.disabled = false;
+      resolveBingoCell("revealed");
+    }, 2200);
   });
   bingoClose.addEventListener("click", function(){
     bingoQpanel.hidden = true;
