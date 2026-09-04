@@ -4036,7 +4036,7 @@
         cwrap.className = "nanum-cmt-wrap";
         cwrap.hidden = true;
         cmtBtn.addEventListener("click", function () {
-          if (cwrap.hidden) { cwrap.hidden = false; openComments(post.id, cwrap); }
+          if (cwrap.hidden) { cwrap.hidden = false; openComments(post.id, cwrap, cmtBtn); }
           else { cwrap.hidden = true; }
         });
         react.appendChild(cmtBtn);
@@ -4436,11 +4436,12 @@
         meta.likes[id] = res.j.count;
         if (res.j.liked) { if (meta.mine.indexOf(id) < 0) meta.mine.push(id); }
         else { meta.mine = meta.mine.filter(function (x) { return x !== id; }); }
-        renderList(lastPosts);
+        btn.className = res.j.liked ? "liked" : "";
+        btn.innerHTML = (res.j.liked ? "♥" : "♡") + ' <span>' + res.j.count + '</span>';
       }).catch(function () { btn.disabled = false; });
   }
 
-  function renderComments(id, wrap, list) {
+  function renderComments(id, wrap, list, cmtBtn) {
     wrap.innerHTML = "";
     if (!list.length) {
       var e = document.createElement("div");
@@ -4465,8 +4466,8 @@
               .then(function (res) {
                 if (res.s !== 200 || !res.j || !res.j.ok) return;
                 meta.comments[id] = res.j.comments.length;
-                renderComments(id, wrap, res.j.comments);
-                renderList(lastPosts);
+                if (cmtBtn) cmtBtn.innerHTML = '💬 <span>' + res.j.comments.length + '</span>';
+                renderComments(id, wrap, res.j.comments, cmtBtn);
               });
           });
           row.appendChild(xb);
@@ -4496,8 +4497,8 @@
             if (res.s !== 200 || !res.j || !res.j.ok) return;
             input.value = "";
             meta.comments[id] = res.j.comments.length;
-            renderComments(id, wrap, res.j.comments);
-            renderList(lastPosts);
+            if (cmtBtn) cmtBtn.innerHTML = '💬 <span>' + res.j.comments.length + '</span>';
+            renderComments(id, wrap, res.j.comments, cmtBtn);
           }).catch(function () { send.disabled = false; input.disabled = false; });
       }
       send.addEventListener("click", post);
@@ -4512,11 +4513,11 @@
     }
   }
 
-  function openComments(id, wrap) {
+  function openComments(id, wrap, cmtBtn) {
     wrap.innerHTML = '<p class="nanum-cmt-empty">불러오는 중…</p>';
     fetch("/api/nanum?comments=" + encodeURIComponent(id), { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) { renderComments(id, wrap, (data && data.comments) || []); })
+      .then(function (data) { renderComments(id, wrap, (data && data.comments) || [], cmtBtn); })
       .catch(function () { wrap.innerHTML = '<p class="nanum-cmt-empty">댓글을 불러오지 못했어요.</p>'; });
   }
 
