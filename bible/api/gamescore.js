@@ -2,13 +2,14 @@
 // POST {game, score}  (로그인 필요) → 그 게임의 개인 최고점 갱신 + 랭킹 집계 재생성
 // GET  ?game=<키>     → 그 게임 상위 20명 [{name, score}]  (누구나 조회)
 // GET                 → 전체 게임 랭킹 { game: [...] }
+// DELETE ?name=<아이디> (관리자 전용) → 그 계정의 랭킹 기록 삭제 (테스트 데이터 정리용)
 //
 // 유저별 파일 bible/gs/<sub해시>.json = { name, scores: { game: best } }
 // 읽기용 집계 bible/ranking.json = { game: [ {name, score} ... 상위 20 ] }
 
 const crypto = require('crypto');
-const { put, list } = require('@vercel/blob');
-const { verifySession, blobBase, blobStoreId } = require('./auth');
+const { put, list, del } = require('@vercel/blob');
+const { verifySession, isAdmin, blobBase, blobStoreId } = require('./auth');
 
 const DIR = 'bible/gs/';
 const RANK_PATH = 'bible/ranking.json';
@@ -78,10 +79,21 @@ module.exports = async (req, res) => {
       return;
     }
 
-    if (req.method !== 'POST') { res.status(405).json({ error: 'method-not-allowed' }); return; }
-
     const sess = verifySession(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
     if (!sess) { res.status(401).json({ error: 'unauthorized' }); return; }
+
+    // 관리자: 특정 계정의 랭킹 기록 삭제 (테스트 데이터 정리용)
+    if (req.method === 'DELETE') {
+      if (!isAdmin(sess)) { res.status(403).json({ error: 'not-admin' }); return; }
+      const name = String((req.query && req.query.name) || '').trim().toLowerCase();
+      if (!name) { res.status(400).json({ error: 'no-name' }); return; }
+      try { await del(fileFor('local:' + name)); } catch (e) { /* 없어도 진행 */ }
+      const rank = await rebuildRanking();
+      res.status(200).json({ ok: true, ranking: rank });
+      return;
+    }
+
+    if (req.method !== 'POST') { res.status(405).json({ error: 'method-not-allowed' }); return; }
 
     const body = req.body || {};
     const game = String(body.game || '');
