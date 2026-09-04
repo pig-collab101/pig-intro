@@ -291,6 +291,46 @@
   .deed-feed-item .t{ font-size:0.72rem; color:var(--ink-soft); margin-left:6px; }
   .deed-feed-empty{ font-size:0.84rem; color:var(--ink-soft); text-align:center; padding:16px 0; }
 
+  /* ---- 묵주기도 ---- */
+  .rosary-wrap{ max-width:560px; margin:0 auto; }
+  .rosary-head{ text-align:center; margin-bottom:18px; }
+  .rosary-head h2{ font-family:"Noto Serif KR", serif; font-size:clamp(1.4rem, 2vw + 1rem, 1.9rem); color:var(--ink); margin:0 0 8px; }
+  .rosary-today{ font-size:0.92rem; color:var(--gold-strong); font-weight:700; margin:0; }
+  .rosary-tabs{ display:flex; justify-content:center; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+  .rosary-tabs button{
+    border:1.5px solid var(--surface-border); background:var(--surface-alt); color:var(--ink-soft);
+    font-family:inherit; font-size:0.8rem; font-weight:700; padding:7px 14px; border-radius:999px; cursor:pointer;
+  }
+  .rosary-tabs button.on{ background:var(--gold); color:#241a06; border-color:var(--gold); }
+  .rosary-items{ list-style:none; counter-reset:rosary; margin:0 0 22px; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .rosary-items li{
+    counter-increment:rosary; display:flex; gap:12px; align-items:baseline;
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:12px; padding:12px 16px;
+    font-family:"Noto Serif KR", serif; font-size:0.94rem; color:var(--ink); line-height:1.6;
+  }
+  .rosary-items li::before{
+    content:counter(rosary); flex-shrink:0; width:24px; height:24px; border-radius:999px; background:var(--gold-soft);
+    color:#241a06; font-family:"Noto Sans KR", sans-serif; font-weight:800; font-size:0.78rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .rosary-progress{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .rosary-bar{ flex:1; height:7px; border-radius:999px; background:var(--surface-border); overflow:hidden; }
+  .rosary-bar > i{ display:block; height:100%; background:var(--gold); }
+  .rosary-progress span{ font-size:0.76rem; color:var(--ink-soft); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .rosary-dots{ display:flex; justify-content:center; flex-wrap:wrap; gap:5px; margin-bottom:16px; }
+  .rosary-dots span{ width:9px; height:9px; border-radius:999px; background:var(--surface-border); }
+  .rosary-dots span.on{ background:var(--gold); }
+  .rosary-dots span.cur{ background:var(--gold-strong); box-shadow:0 0 0 3px color-mix(in srgb, var(--gold-soft) 60%, transparent); }
+  .rosary-card{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:18px;
+    box-shadow:var(--shadow); padding:26px 24px; text-align:center; min-height:180px;
+    display:flex; flex-direction:column; justify-content:center; gap:10px;
+  }
+  .rosary-label{ font-size:0.78rem; font-weight:700; letter-spacing:0.04em; color:var(--gold-strong); margin:0; }
+  .rosary-mystery{ font-family:"Noto Serif KR", serif; font-size:1.05rem; color:var(--ink); font-weight:700; margin:0; }
+  .rosary-text{ font-family:"Noto Serif KR", serif; font-size:1rem; color:var(--ink); line-height:1.85; white-space:pre-line; margin:0; }
+  .rosary-done-msg{ text-align:center; font-family:"Noto Serif KR", serif; font-size:1.05rem; color:var(--ink); line-height:1.8; padding:30px 10px; }
+
   .nanum-admin{
     background:var(--surface); border:1.5px solid var(--gold-soft); border-radius:16px;
     padding:16px 18px; margin-bottom:24px;
@@ -1316,6 +1356,7 @@
     <a class="nav-item" href="#" data-goto="games">말씀 게임</a>
     <a class="nav-item" href="#" data-goto="nanum">나눔마당</a>
     <a class="nav-item" href="#" data-goto="today">오늘의 말씀</a>
+    <a class="nav-item" href="#" data-goto="rosary">묵주기도</a>
     <a class="nav-item" href="#" data-goto="deed">1일 1선행</a>
     <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">사이트안내<span class="badge">준비중</span></a>
   </div>
@@ -1920,6 +1961,50 @@
           <button type="button" class="admin-mini" id="deed-feed-refresh">새로고침</button>
         </div>
         <div class="deed-feed-list" id="deed-feed-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="page-rosary" hidden>
+<div class="stage">
+  <div class="rosary-wrap">
+    <div class="rosary-head">
+      <p class="section-eyebrow">Holy Rosary</p>
+      <h2>묵주기도</h2>
+      <p class="rosary-today" id="rosary-today"></p>
+    </div>
+
+    <div class="rosary-tabs" id="rosary-tabs"></div>
+
+    <div id="rosary-intro">
+      <ol class="rosary-items" id="rosary-items"></ol>
+      <button type="button" class="btn btn-primary" id="rosary-start">묵주기도 시작하기 →</button>
+    </div>
+
+    <div id="rosary-pray" hidden>
+      <div class="rosary-progress">
+        <div class="rosary-bar"><i id="rosary-bar-fill"></i></div>
+        <span id="rosary-progress-text"></span>
+      </div>
+      <div class="rosary-dots" id="rosary-dots"></div>
+      <div class="rosary-card">
+        <p class="rosary-label" id="rosary-label"></p>
+        <p class="rosary-mystery" id="rosary-mystery" hidden></p>
+        <p class="rosary-text" id="rosary-text"></p>
+      </div>
+      <div class="action-row">
+        <button type="button" class="btn-quiet" id="rosary-prev">← 이전</button>
+        <button type="button" class="btn btn-primary" id="rosary-next">다음 →</button>
+        <button type="button" class="btn-quiet" id="rosary-quit">그만하기</button>
+      </div>
+    </div>
+
+    <div id="rosary-done" hidden>
+      <p class="rosary-done-msg">묵주기도를 다 바쳤어요. 오늘도 평화가 함께하시길 바랍니다. 🙏</p>
+      <div class="action-row" style="justify-content:center;">
+        <button type="button" class="btn btn-ghost" id="rosary-restart">다시 바치기</button>
       </div>
     </div>
   </div>
@@ -3557,7 +3642,7 @@
 (function(){
   "use strict";
   function goTo(page, anchor){
-    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today", deed: "page-deed" };
+    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today", deed: "page-deed", rosary: "page-rosary" };
     Object.keys(pages).forEach(function(key){
       var el = document.getElementById(pages[key]);
       if (el) el.hidden = key !== page;
@@ -3878,6 +3963,181 @@
       .catch(function(){});
     loadFeed();
   };
+})();
+</script>
+
+<script>
+(function(){
+  "use strict";
+  var introEl = document.getElementById("rosary-intro");
+  if (!introEl) return;
+
+  var PR = {
+    sign: "성부와 성자와 성령의 이름으로. 아멘.",
+    creed: "전능하신 천주 성부, 천지의 창조주를 저는 믿나이다.\n그 외아들 우리 주 예수 그리스도님, 성령으로 잉태되어 동정 마리아께 나시고,\n본시오 빌라도 통치 아래서 고난을 받으시고 십자가에 못박혀 돌아가시고 묻히셨으며,\n저승에 가시어 사흗날에 죽은 이들 가운데서 부활하시고,\n하늘에 올라 전능하신 천주 성부 오른편에 앉아 계시다가,\n그리로부터 산 이와 죽은 이를 심판하러 오시리라 믿나이다.\n성령을 믿으며, 거룩하고 보편된 교회와 모든 성인의 통공을 믿으며,\n죄의 용서와 육신의 부활을 믿으며, 영원한 삶을 믿나이다. 아멘.",
+    our_father: "하늘에 계신 우리 아버지,\n아버지의 이름이 거룩히 빛나시며 아버지의 나라가 오시며\n아버지의 뜻이 하늘에서와 같이 땅에서도 이루어지소서.\n오늘 저희에게 일용할 양식을 주시고\n저희에게 잘못한 이를 저희가 용서하오니 저희 죄를 용서하시고\n저희를 유혹에 빠지지 않게 하시고 악에서 구하소서. 아멘.",
+    hail_mary: "은총이 가득하신 마리아님, 기뻐하소서.\n주님께서 함께 계시니 여인 중에 복되시며\n태중의 아드님 예수님 또한 복되시나이다.\n천주의 성모 마리아님,\n이제와 저희 죽을 때에 저희 죄인을 위하여 빌어 주소서. 아멘.",
+    glory_be: "영광이 성부와 성자와 성령께\n처음과 같이 이제와 항상 영원히. 아멘.",
+    fatima: "오 나의 예수님, 저희 죄를 용서하시며 저희를 지옥불에서 구하시고\n모든 영혼들을, 특히 주님의 자비가 가장 필요한 영혼을 천국으로 이끌어 주소서.",
+    salve: "자비로우신 어머니, 저희의 생명, 저희의 기쁨, 저희의 희망이신 여왕이여, 만세!\n하와의 자손인 저희가 유배 생활하며 슬퍼 울며 이 눈물의 골짜기에서 어머니께 부르짖나이다.\n저희의 지지자시여, 어머니의 그 자비로우신 눈을 저희에게 돌리소서.\n이 유배 생활 후에 어머니 태중의 복되신 아들 예수를 저희에게 보여 주소서.\n오, 관대하시고 인자하시며 사랑이 넘치신 동정 마리아여!",
+    closing: "천주의 성모님, 저희를 위하여 빌어 주소서.\n그리스도께서 약속하신 것을 저희가 얻을 수 있게 하소서. 아멘."
+  };
+
+  var MYSTERIES = {
+    joy: { label: "환희의 신비", days: [1, 6], items: [
+      "마리아께서 성령으로 잉태하심을 묵상합시다",
+      "마리아께서 엘리사벳을 찾아보심을 묵상합시다",
+      "예수님을 베들레헴에서 낳으심을 묵상합시다",
+      "예수님을 성전에서 봉헌하심을 묵상합시다",
+      "예수님을 성전에서 찾으심을 묵상합시다"
+    ]},
+    light: { label: "빛의 신비", days: [4], items: [
+      "예수님께서 요르단 강에서 세례받으심을 묵상합시다",
+      "예수님께서 카나의 혼인 잔치에서 첫 기적을 보이심을 묵상합시다",
+      "예수님께서 하느님 나라를 선포하심을 묵상합시다",
+      "예수님께서 거룩하게 변모하심을 묵상합시다",
+      "예수님께서 성체성사를 세우심을 묵상합시다"
+    ]},
+    sorrow: { label: "고통의 신비", days: [2, 5], items: [
+      "예수님께서 우리를 위하여 피땀 흘리심을 묵상합시다",
+      "예수님께서 우리를 위하여 매맞으심을 묵상합시다",
+      "예수님께서 우리를 위하여 가시관 쓰심을 묵상합시다",
+      "예수님께서 우리를 위하여 십자가 지심을 묵상합시다",
+      "예수님께서 우리를 위하여 십자가에 못박히심을 묵상합시다"
+    ]},
+    glory: { label: "영광의 신비", days: [0, 3], items: [
+      "예수님께서 부활하심을 묵상합시다",
+      "예수님께서 승천하심을 묵상합시다",
+      "성령께서 강림하심을 묵상합시다",
+      "마리아께서 하늘에 오르심을 묵상합시다",
+      "마리아께서 천상 모후로 관 받으심을 묵상합시다"
+    ]}
+  };
+  var ORDER = ["joy", "light", "sorrow", "glory"];
+  var DOW = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+
+  function todayKey(){
+    var d = new Date().getDay();
+    for (var i = 0; i < ORDER.length; i++){ if (MYSTERIES[ORDER[i]].days.indexOf(d) >= 0) return ORDER[i]; }
+    return "joy";
+  }
+
+  var todayEl = document.getElementById("rosary-today");
+  var tabsEl = document.getElementById("rosary-tabs");
+  var itemsEl = document.getElementById("rosary-items");
+  var startBtn = document.getElementById("rosary-start");
+  var prayEl = document.getElementById("rosary-pray");
+  var doneEl = document.getElementById("rosary-done");
+  var barFill = document.getElementById("rosary-bar-fill");
+  var progressText = document.getElementById("rosary-progress-text");
+  var dotsEl = document.getElementById("rosary-dots");
+  var labelEl = document.getElementById("rosary-label");
+  var mysteryEl = document.getElementById("rosary-mystery");
+  var textEl = document.getElementById("rosary-text");
+  var prevBtn = document.getElementById("rosary-prev");
+  var nextBtn = document.getElementById("rosary-next");
+  var quitBtn = document.getElementById("rosary-quit");
+  var restartBtn = document.getElementById("rosary-restart");
+
+  var curSet = todayKey();
+  var beads = [];
+  var pos = 0;
+
+  function renderTabs(){
+    tabsEl.innerHTML = "";
+    ORDER.forEach(function(k){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = MYSTERIES[k].label + (MYSTERIES[k].days.indexOf(new Date().getDay()) >= 0 ? " · 오늘" : "");
+      if (k === curSet) b.className = "on";
+      b.addEventListener("click", function(){ curSet = k; renderIntro(); });
+      tabsEl.appendChild(b);
+    });
+  }
+
+  function renderIntro(){
+    renderTabs();
+    todayEl.textContent = "오늘은 " + DOW[new Date().getDay()] + ", " + MYSTERIES[todayKey()].label + "를 바치는 날이에요.";
+    itemsEl.innerHTML = "";
+    MYSTERIES[curSet].items.forEach(function(t){
+      var li = document.createElement("li");
+      li.textContent = t;
+      itemsEl.appendChild(li);
+    });
+  }
+
+  function buildBeads(setKey){
+    var m = MYSTERIES[setKey];
+    var list = [];
+    list.push({ label: "시작 기도", text: PR.sign });
+    list.push({ label: "사도신경", text: PR.creed });
+    list.push({ label: "주님의 기도", text: PR.our_father });
+    for (var i = 0; i < 3; i++) list.push({ label: "성모송 (믿음·소망·사랑을 위하여)", text: PR.hail_mary });
+    list.push({ label: "영광송", text: PR.glory_be });
+    m.items.forEach(function(title, idx){
+      list.push({ label: "제" + (idx + 1) + "단", mystery: title, decade: idx, text: PR.our_father });
+      for (var j = 0; j < 10; j++) list.push({ label: "성모송", text: PR.hail_mary, decade: idx, bead: j });
+      list.push({ label: "영광송", text: PR.glory_be, decade: idx });
+      list.push({ label: "구원을 비는 기도", text: PR.fatima, decade: idx });
+    });
+    list.push({ label: "성모찬송", text: PR.salve });
+    list.push({ label: "끝기도", text: PR.closing });
+    return list;
+  }
+
+  function renderPray(){
+    var b = beads[pos];
+    progressText.textContent = (pos + 1) + " / " + beads.length;
+    barFill.style.width = ((pos + 1) / beads.length * 100) + "%";
+    labelEl.textContent = b.label;
+    if (b.mystery){ mysteryEl.hidden = false; mysteryEl.textContent = b.mystery; }
+    else { mysteryEl.hidden = true; mysteryEl.textContent = ""; }
+    textEl.textContent = b.text;
+    prevBtn.disabled = pos === 0;
+    nextBtn.textContent = pos === beads.length - 1 ? "마치기 ✓" : "다음 →";
+
+    dotsEl.innerHTML = "";
+    if (typeof b.decade === "number"){
+      for (var i = 0; i < 10; i++){
+        var s = document.createElement("span");
+        if (b.bead !== undefined && i < b.bead) s.className = "on";
+        if (b.bead !== undefined && i === b.bead) s.className = "on cur";
+        dotsEl.appendChild(s);
+      }
+    }
+  }
+
+  startBtn.addEventListener("click", function(){
+    beads = buildBeads(curSet);
+    pos = 0;
+    introEl.hidden = true;
+    doneEl.hidden = true;
+    prayEl.hidden = false;
+    renderPray();
+  });
+
+  nextBtn.addEventListener("click", function(){
+    if (pos >= beads.length - 1){
+      prayEl.hidden = true;
+      doneEl.hidden = false;
+      return;
+    }
+    pos++;
+    renderPray();
+  });
+  prevBtn.addEventListener("click", function(){
+    if (pos > 0){ pos--; renderPray(); }
+  });
+  quitBtn.addEventListener("click", function(){
+    prayEl.hidden = true;
+    introEl.hidden = false;
+  });
+  restartBtn.addEventListener("click", function(){
+    doneEl.hidden = true;
+    introEl.hidden = false;
+  });
+
+  renderIntro();
 })();
 </script>
 
