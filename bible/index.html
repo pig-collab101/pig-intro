@@ -159,6 +159,30 @@
   }
   .nanum-post-actions button:hover{ color:#b5482f; border-color:#b5482f; }
 
+  .nanum-react{ display:flex; gap:8px; margin-top:12px; }
+  .nanum-react button{
+    display:inline-flex; align-items:center; gap:5px; border:1px solid var(--surface-border);
+    background:var(--surface-alt); color:var(--ink-soft); font-family:inherit; font-size:0.8rem; font-weight:600;
+    padding:5px 12px; border-radius:999px; cursor:pointer;
+  }
+  .nanum-react button:hover{ border-color:var(--gold); }
+  .nanum-react .liked{ color:#d1477a; border-color:#e6a9c2; background:color-mix(in srgb, #f6cfe0 30%, transparent); }
+  .nanum-cmt-wrap{ margin-top:12px; border-top:1px dashed var(--rule); padding-top:12px; }
+  .nanum-cmt-wrap[hidden]{ display:none; }
+  .nanum-cmt{ font-size:0.86rem; color:var(--ink); line-height:1.6; padding:7px 0; border-bottom:1px solid var(--surface-border); }
+  .nanum-cmt:last-of-type{ border-bottom:0; }
+  .nanum-cmt .cn{ font-weight:700; margin-right:6px; }
+  .nanum-cmt .ct{ font-size:0.72rem; color:var(--ink-soft); margin-left:6px; }
+  .nanum-cmt .cx{ border:none; background:none; color:var(--ink-soft); cursor:pointer; font-size:0.72rem; margin-left:8px; padding:0; }
+  .nanum-cmt .cx:hover{ color:#b5482f; }
+  .nanum-cmt-empty{ font-size:0.82rem; color:var(--ink-soft); padding:6px 0; }
+  .nanum-cmt-box{ display:flex; gap:6px; margin-top:10px; }
+  .nanum-cmt-box input{
+    flex:1; min-width:0; border:1.5px solid var(--surface-border); border-radius:10px; padding:8px 11px;
+    font-family:inherit; font-size:0.86rem; color:var(--ink); background:var(--surface-alt);
+  }
+  .nanum-cmt-box input:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:1px; }
+
   /* ---- 오늘의 말씀 ---- */
   .today-wrap{ max-width:640px; margin:0 auto; }
   .today-head{ text-align:center; margin-bottom:28px; }
@@ -253,6 +277,19 @@
   .deed-day.is-sel{ box-shadow:0 0 0 2.5px var(--focus-ring); }
   .deed-day .dot{ width:5px; height:5px; border-radius:999px; background:#fff; }
   .deed-cal-note{ font-size:0.76rem; color:var(--ink-soft); text-align:center; margin:12px 0 0; }
+  .deed-share{ display:flex; align-items:center; gap:7px; font-size:0.82rem; color:var(--ink-soft); margin-top:10px; cursor:pointer; }
+  .deed-share input{ width:16px; height:16px; accent-color:var(--gold); }
+  .deed-share.is-off{ opacity:0.4; pointer-events:none; }
+  .deed-feed{ margin-top:26px; }
+  .deed-feed-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; }
+  .deed-feed-head h3{ font-family:"Noto Serif KR", serif; font-size:1rem; color:var(--ink); margin:0; }
+  .deed-feed-list{ display:flex; flex-direction:column; gap:8px; }
+  .deed-feed-item{
+    background:var(--surface-alt); border:1px solid var(--surface-border); border-radius:12px;
+    padding:11px 14px; font-size:0.9rem; color:var(--ink); line-height:1.6; word-break:keep-all;
+  }
+  .deed-feed-item .t{ font-size:0.72rem; color:var(--ink-soft); margin-left:6px; }
+  .deed-feed-empty{ font-size:0.84rem; color:var(--ink-soft); text-align:center; padding:16px 0; }
 
   .nanum-admin{
     background:var(--surface); border:1.5px solid var(--gold-soft); border-radius:16px;
@@ -1142,6 +1179,24 @@
 
   .mg-score{ text-align:center; font-family:"Noto Serif KR", serif; }
   .mg-score .big{ font-size:2.2rem; font-weight:800; color:var(--gold-strong); display:block; }
+  .mg-score .rank-note{ font-family:"Noto Sans KR", sans-serif; font-size:0.86rem; color:var(--ink-soft); margin-top:10px; }
+
+  .rank-tabs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+  .rank-tabs button{
+    border:1.5px solid var(--surface-border); background:var(--surface-alt); color:var(--ink-soft);
+    font-family:inherit; font-size:0.8rem; font-weight:700; padding:6px 12px; border-radius:999px; cursor:pointer;
+  }
+  .rank-tabs button.on{ background:var(--gold); color:#241a06; border-color:var(--gold); }
+  .rank-list{ display:flex; flex-direction:column; gap:6px; }
+  .rank-row{
+    display:flex; align-items:center; gap:12px; background:var(--surface-alt);
+    border:1px solid var(--surface-border); border-radius:10px; padding:9px 14px; font-size:0.9rem;
+  }
+  .rank-row .pos{ font-weight:800; color:var(--gold-strong); width:1.8em; text-align:center; }
+  .rank-row .nm{ flex:1; color:var(--ink); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rank-row .sc{ font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .rank-row.me{ border-color:var(--gold); background:color-mix(in srgb, var(--gold-soft) 24%, transparent); }
+  .rank-empty{ text-align:center; color:var(--ink-soft); font-size:0.86rem; padding:22px 0; }
 
   @media (prefers-reduced-motion: reduce){ *{ transition-duration:0.001ms !important; animation-duration:0.001ms !important; } }
 
@@ -1681,6 +1736,25 @@
             </span>
           </button>
         </div>
+        <div class="action-row" style="margin-top:16px; justify-content:center;">
+          <button type="button" class="btn btn-ghost" id="open-rank">🏆 게임 랭킹 보기</button>
+        </div>
+      </section>
+
+      <!-- ===== 게임 랭킹 ===== -->
+      <section class="screen" id="screen-rank" hidden>
+        <div class="game-top">
+          <div>
+            <p class="eyebrow">게임 랭킹</p>
+            <h1 style="font-size:1.4rem; margin-bottom:0;">🏆 최고 기록</h1>
+          </div>
+        </div>
+        <div class="rank-tabs" id="rank-tabs"></div>
+        <div id="rank-body"></div>
+        <div class="action-row">
+          <button type="button" class="btn btn-ghost" id="rank-refresh">새로고침</button>
+          <button type="button" class="btn-quiet" id="rank-to-menu">메뉴로</button>
+        </div>
       </section>
 
       <!-- ===== 새 말씀 게임: 공용 화면 ===== -->
@@ -1814,6 +1888,9 @@
       <div class="deed-editor" id="deed-editor">
         <p class="deed-editor-label" id="deed-editor-label">오늘, 어떤 선행을 하셨나요?</p>
         <textarea id="deed-note" maxlength="200" placeholder="예: 무거운 짐을 들어드렸어요 / 이야기를 끝까지 들어줬어요"></textarea>
+        <label class="deed-share" id="deed-share-wrap">
+          <input type="checkbox" id="deed-share"> 이 선행을 <strong>이름 없이</strong> 함께 나누기
+        </label>
         <div class="deed-editor-foot">
           <span class="deed-count"><span id="deed-note-count">0</span>/200</span>
           <span>
@@ -1835,6 +1912,14 @@
         </div>
         <div class="deed-cal-grid" id="deed-cal-grid"></div>
         <p class="deed-cal-note">날짜를 눌러 그날의 선행을 적거나 고칠 수 있어요.</p>
+      </div>
+
+      <div class="deed-feed">
+        <div class="deed-feed-head">
+          <h3>오늘 함께한 선행</h3>
+          <button type="button" class="admin-mini" id="deed-feed-refresh">새로고침</button>
+        </div>
+        <div class="deed-feed-list" id="deed-feed-list"></div>
       </div>
     </div>
   </div>
@@ -2952,6 +3037,24 @@
   var show = window.__gamesShow;
   if (!show || !document.getElementById("screen-mg")) return;
 
+  var RANKED = { cho:1, speed:1, order:1, who:1, parable:1, number:1, prayer:1 };
+  function mySession(){
+    try {
+      var s = JSON.parse(localStorage.getItem("bible-session-v1") || "null");
+      if (s && s.token && s.exp && s.exp * 1000 > Date.now()) return s;
+    } catch (e) {}
+    return null;
+  }
+  function submitScore(game, score, cb){
+    var s = mySession();
+    if (!s || !RANKED[game]) { if (cb) cb(null); return; }
+    fetch("/api/gamescore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.token },
+      body: JSON.stringify({ game: game, score: score })
+    }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ if (cb) cb(j); }).catch(function(){ if (cb) cb(null); });
+  }
+
   /* ---------- 데이터 ---------- */
   var V = [
     { r:"마태오 1, 23", t:"보아라, 동정녀가 잉태하여 아들을 낳으리니 그 이름을 임마누엘이라고 하리라." },
@@ -3255,9 +3358,11 @@
         stopTick(); cur.done = true;
         var rec = cur.score > cur.best;
         if (rec){ try { localStorage.setItem("bible-speed-best", String(cur.score)); } catch (e) {} }
-        bodyEl.innerHTML = '<div class="mg-score"><span class="big">' + cur.score + '점</span>' + (rec ? "새 최고 기록이에요! 🎉" : "최고 기록은 " + cur.best + "점") + '</div>';
+        bodyEl.innerHTML = '<div class="mg-score"><span class="big">' + cur.score + '점</span>' + (rec ? "새 최고 기록이에요! 🎉" : "최고 기록은 " + cur.best + "점") +
+          '<div class="rank-note" id="mg-rank-note"></div></div>';
         setFb("", ""); statsEl.textContent = "";
         againBtn.hidden = false; againBtn.focus();
+        reportScore("speed", cur.score);
       }
     }, 1000);
   }
@@ -3377,11 +3482,63 @@
 
   /* ---------- 점수 마무리 ---------- */
   function finishScore(score, total, label){
-    bodyEl.innerHTML = '<div class="mg-score"><span class="big">' + score + ' / ' + total + '</span>' +
-      (score === total ? "완벽해요! 🎉" : score >= total * 0.7 ? "훌륭해요!" : score >= total * 0.4 ? "좋아요, 조금만 더!" : "다시 도전해 보세요!") + '</div>';
+    var line = score === total ? "완벽해요! 🎉" : score >= total * 0.7 ? "훌륭해요!" : score >= total * 0.4 ? "좋아요, 조금만 더!" : "다시 도전해 보세요!";
+    bodyEl.innerHTML = '<div class="mg-score"><span class="big">' + score + ' / ' + total + '</span>' + line +
+      '<div class="rank-note" id="mg-rank-note"></div></div>';
     setFb("", ""); statsEl.textContent = "";
     nextBtn.hidden = true; againBtn.hidden = false; againBtn.focus();
+    reportScore(cur.key, score);
   }
+  function reportScore(game, score){
+    var note = document.getElementById("mg-rank-note");
+    if (!RANKED[game]) return;
+    if (!mySession()){ if (note) note.textContent = "로그인하면 이 점수가 랭킹에 올라가요."; return; }
+    if (note) note.textContent = "기록 저장 중…";
+    submitScore(game, score, function(j){
+      if (!note) return;
+      if (!j || !j.ok){ note.textContent = ""; return; }
+      note.textContent = j.updated ? ("새 최고 기록! (" + j.best + "점) 랭킹에 반영됐어요.") : ("내 최고 기록은 " + j.best + "점이에요.");
+    });
+  }
+
+  /* ---------- 랭킹 화면 ---------- */
+  var RANK_LABEL = { cho:"초성 퀴즈", speed:"60초 스피드", order:"책 순서", who:"인물 맞히기", parable:"비유 맞히기", number:"숫자 성경", prayer:"기도문 빈칸" };
+  var RANK_KEYS = ["speed","cho","number","who","parable","order","prayer"];
+  var rankTabsEl = document.getElementById("rank-tabs");
+  var rankBodyEl = document.getElementById("rank-body");
+  var rankCur = "speed";
+
+  function openRank(){
+    show("rank");
+    rankTabsEl.innerHTML = "";
+    RANK_KEYS.forEach(function(k){
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = RANK_LABEL[k];
+      if (k === rankCur) b.className = "on";
+      b.onclick = function(){ rankCur = k; openRank(); };
+      rankTabsEl.appendChild(b);
+    });
+    rankBodyEl.innerHTML = '<p class="rank-empty">불러오는 중…</p>';
+    fetch("/api/gamescore?game=" + encodeURIComponent(rankCur), { cache: "no-store" })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){
+        var list = (data && data.list) || [];
+        var myName = (mySession() && mySession().user && mySession().user.name) || null;
+        if (!list.length){ rankBodyEl.innerHTML = '<p class="rank-empty">아직 기록이 없어요. 첫 기록의 주인공이 되어보세요!</p>'; return; }
+        var h = '<div class="rank-list">';
+        list.forEach(function(row, i){
+          var me = myName && row.name === myName ? " me" : "";
+          h += '<div class="rank-row' + me + '"><span class="pos">' + (i + 1) + '</span><span class="nm">' +
+            String(row.name).replace(/</g, "&lt;") + '</span><span class="sc">' + row.score + '</span></div>';
+        });
+        h += '</div>';
+        rankBodyEl.innerHTML = h;
+      })
+      .catch(function(){ rankBodyEl.innerHTML = '<p class="rank-empty">랭킹을 불러오지 못했어요.</p>'; });
+  }
+  document.getElementById("open-rank").addEventListener("click", openRank);
+  document.getElementById("rank-refresh").addEventListener("click", openRank);
+  document.getElementById("rank-to-menu").addEventListener("click", function(){ show("menu"); });
 })();
 </script>
 
@@ -3493,6 +3650,10 @@
   var calGrid = document.getElementById("deed-cal-grid");
   var prevBtn = document.getElementById("deed-prev");
   var nextBtn = document.getElementById("deed-next");
+  var shareEl = document.getElementById("deed-share");
+  var shareWrap = document.getElementById("deed-share-wrap");
+  var feedListEl = document.getElementById("deed-feed-list");
+  var feedRefreshBtn = document.getElementById("deed-feed-refresh");
 
   var days = {};          // { "YYYY-MM-DD": {note} }
   var today = "";         // KST today from server
@@ -3538,9 +3699,45 @@
     noteCountEl.textContent = String(noteEl.value.length);
     saveBtn.textContent = days[d] ? "고쳐 쓰기" : "선행 완료 ✓";
     clearBtn.hidden = !days[d];
+    shareEl.checked = !!(days[d] && days[d].shared);
+    shareWrap.classList.toggle("is-off", !isToday);
     setStatus("", null);
     renderCal();
   }
+
+  function fmtTime(iso){
+    try { var t = new Date(iso); function p(n){ return n < 10 ? "0" + n : n; } return p(t.getHours()) + ":" + p(t.getMinutes()); }
+    catch (e) { return ""; }
+  }
+  function loadFeed(){
+    var sess = getSession();
+    if (!sess) return;
+    fetch("/api/deed?feed=1", { cache: "no-store", headers: { "Authorization": "Bearer " + sess.token } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){
+        var feed = (data && data.feed) || [];
+        feedListEl.innerHTML = "";
+        if (!feed.length){
+          var e = document.createElement("div");
+          e.className = "deed-feed-empty";
+          e.textContent = "아직 함께 나눈 선행이 없어요. 첫 번째로 나눠보세요.";
+          feedListEl.appendChild(e);
+          return;
+        }
+        feed.forEach(function(f){
+          var it = document.createElement("div");
+          it.className = "deed-feed-item";
+          it.textContent = f.note;
+          var t = document.createElement("span");
+          t.className = "t";
+          t.textContent = fmtTime(f.at);
+          it.appendChild(t);
+          feedListEl.appendChild(it);
+        });
+      })
+      .catch(function(){});
+  }
+  if (feedRefreshBtn) feedRefreshBtn.addEventListener("click", loadFeed);
 
   function renderStats(){
     streakEl.textContent = String(calcStreak());
@@ -3607,7 +3804,7 @@
     fetch("/api/deed", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sess.token },
-      body: JSON.stringify({ date: selDate, note: noteEl.value })
+      body: JSON.stringify({ date: selDate, note: noteEl.value, share: shareEl.checked && selDate === today })
     }).then(function(r){ return r.json().then(function(j){ return { s: r.status, j: j }; }); })
       .then(function(res){
         busy = false; saveBtn.disabled = false;
@@ -3616,6 +3813,7 @@
         applyData(res.j);
         renderAll();
         setStatus(selDate === today ? "오늘의 선행을 기록했어요. 고마워요!" : "기록했어요.", "ok");
+        if (selDate === today) setTimeout(loadFeed, 400);
       }).catch(function(){
         busy = false; saveBtn.disabled = false;
         setStatus("저장에 실패했어요.", "error");
@@ -3667,6 +3865,7 @@
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(data){ if (data) { applyData(data); renderAll(); } })
       .catch(function(){});
+    loadFeed();
   };
 })();
 </script>
@@ -3769,6 +3968,7 @@
   }
 
   var lastPosts = [];
+  var meta = { likes: {}, comments: {}, mine: [] };
   function renderList(posts) {
     if (Array.isArray(posts)) lastPosts = posts;
     listEl.innerHTML = "";
@@ -3816,6 +4016,33 @@
       textP.className = "nanum-post-text";
       textP.textContent = post.text;
       card.appendChild(textP);
+
+      if (post.id) {
+        var react = document.createElement("div");
+        react.className = "nanum-react";
+        var likeCount = (meta.likes && meta.likes[post.id]) || 0;
+        var iLike = meta.mine && meta.mine.indexOf(post.id) >= 0;
+        var likeBtn = document.createElement("button");
+        likeBtn.type = "button";
+        likeBtn.className = iLike ? "liked" : "";
+        likeBtn.innerHTML = (iLike ? "♥" : "♡") + ' <span>' + likeCount + '</span>';
+        likeBtn.addEventListener("click", function () { toggleLike(post.id, likeBtn); });
+        react.appendChild(likeBtn);
+        var cmtCount = (meta.comments && meta.comments[post.id]) || 0;
+        var cmtBtn = document.createElement("button");
+        cmtBtn.type = "button";
+        cmtBtn.innerHTML = '💬 <span>' + cmtCount + '</span>';
+        var cwrap = document.createElement("div");
+        cwrap.className = "nanum-cmt-wrap";
+        cwrap.hidden = true;
+        cmtBtn.addEventListener("click", function () {
+          if (cwrap.hidden) { cwrap.hidden = false; openComments(post.id, cwrap); }
+          else { cwrap.hidden = true; }
+        });
+        react.appendChild(cmtBtn);
+        card.appendChild(react);
+        card.appendChild(cwrap);
+      }
 
       if (session && session.user && post.id) {
         var mine = post.sub && post.sub === session.user.sub;
@@ -4014,6 +4241,7 @@
       if (adminBox) adminBox.hidden = true;
     }
     renderList(lastPosts);
+    if (lastPosts.length) loadMeta();
     if (window.__loadDeed) window.__loadDeed(true);
   }
 
@@ -4177,6 +4405,119 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) { if (Array.isArray(data)) renderList(data); })
       .catch(function () {});
+    loadMeta();
+  }
+
+  function loadMeta() {
+    var headers = {};
+    if (session) headers.Authorization = "Bearer " + session.token;
+    fetch("/api/nanum?meta=1", { cache: "no-store", headers: headers })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        meta = { likes: data.likes || {}, comments: data.comments || {}, mine: data.mine || [] };
+        renderList(lastPosts);
+      })
+      .catch(function () {});
+  }
+
+  function toggleLike(id, btn) {
+    if (!session) { setStatus("좋아요를 누르려면 로그인해 주세요.", "error"); return; }
+    btn.disabled = true;
+    fetch("/api/nanum", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ action: "like", id: id })
+    }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+      .then(function (res) {
+        btn.disabled = false;
+        if (res.s === 401) { clearSession(); return; }
+        if (res.s !== 200 || !res.j || !res.j.ok) return;
+        meta.likes[id] = res.j.count;
+        if (res.j.liked) { if (meta.mine.indexOf(id) < 0) meta.mine.push(id); }
+        else { meta.mine = meta.mine.filter(function (x) { return x !== id; }); }
+        renderList(lastPosts);
+      }).catch(function () { btn.disabled = false; });
+  }
+
+  function renderComments(id, wrap, list) {
+    wrap.innerHTML = "";
+    if (!list.length) {
+      var e = document.createElement("div");
+      e.className = "nanum-cmt-empty";
+      e.textContent = "아직 댓글이 없어요.";
+      wrap.appendChild(e);
+    } else {
+      list.forEach(function (c) {
+        var row = document.createElement("div");
+        row.className = "nanum-cmt";
+        var cn = document.createElement("span"); cn.className = "cn"; cn.textContent = c.name || "익명";
+        var ct = document.createElement("span"); ct.textContent = c.text;
+        var tt = document.createElement("span"); tt.className = "ct"; tt.textContent = formatTime(c.time);
+        row.appendChild(cn); row.appendChild(ct); row.appendChild(tt);
+        if (session && session.user && (c.sub === session.user.sub || isAdmin())) {
+          var xb = document.createElement("button");
+          xb.type = "button"; xb.className = "cx"; xb.textContent = "삭제";
+          xb.addEventListener("click", function () {
+            fetch("/api/nanum?comment=" + encodeURIComponent(id) + "&cid=" + encodeURIComponent(c.id), {
+              method: "DELETE", headers: { "Authorization": "Bearer " + session.token }
+            }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+              .then(function (res) {
+                if (res.s !== 200 || !res.j || !res.j.ok) return;
+                meta.comments[id] = res.j.comments.length;
+                renderComments(id, wrap, res.j.comments);
+                renderList(lastPosts);
+              });
+          });
+          row.appendChild(xb);
+        }
+        wrap.appendChild(row);
+      });
+    }
+    if (session) {
+      var box = document.createElement("div");
+      box.className = "nanum-cmt-box";
+      var input = document.createElement("input");
+      input.type = "text"; input.maxLength = 200; input.placeholder = "댓글을 남겨보세요";
+      var send = document.createElement("button");
+      send.type = "button"; send.className = "btn-quiet"; send.textContent = "달기";
+      function post() {
+        var text = input.value.trim();
+        if (!text) return;
+        send.disabled = true; input.disabled = true;
+        fetch("/api/nanum", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+          body: JSON.stringify({ action: "comment", id: id, text: text })
+        }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+          .then(function (res) {
+            send.disabled = false; input.disabled = false;
+            if (res.s === 401) { clearSession(); return; }
+            if (res.s !== 200 || !res.j || !res.j.ok) return;
+            input.value = "";
+            meta.comments[id] = res.j.comments.length;
+            renderComments(id, wrap, res.j.comments);
+            renderList(lastPosts);
+          }).catch(function () { send.disabled = false; input.disabled = false; });
+      }
+      send.addEventListener("click", post);
+      input.addEventListener("keydown", function (e) { if (e.key === "Enter") post(); });
+      box.appendChild(input); box.appendChild(send);
+      wrap.appendChild(box);
+    } else {
+      var hint = document.createElement("p");
+      hint.className = "nanum-cmt-empty";
+      hint.textContent = "댓글을 남기려면 로그인해 주세요.";
+      wrap.appendChild(hint);
+    }
+  }
+
+  function openComments(id, wrap) {
+    wrap.innerHTML = '<p class="nanum-cmt-empty">불러오는 중…</p>';
+    fetch("/api/nanum?comments=" + encodeURIComponent(id), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) { renderComments(id, wrap, (data && data.comments) || []); })
+      .catch(function () { wrap.innerHTML = '<p class="nanum-cmt-empty">댓글을 불러오지 못했어요.</p>'; });
   }
 
   submitBtn.addEventListener("click", function () {
