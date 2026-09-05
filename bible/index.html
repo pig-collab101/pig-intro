@@ -331,6 +331,36 @@
   .rosary-text{ font-family:"Noto Serif KR", serif; font-size:1rem; color:var(--ink); line-height:1.85; white-space:pre-line; margin:0; }
   .rosary-done-msg{ text-align:center; font-family:"Noto Serif KR", serif; font-size:1.05rem; color:var(--ink); line-height:1.8; padding:30px 10px; }
 
+  /* ---- 성경 읽기 진도표 ---- */
+  .read-wrap{ max-width:640px; margin:0 auto; }
+  .read-head{ text-align:center; margin-bottom:20px; }
+  .read-head h2{ font-family:"Noto Serif KR", serif; font-size:clamp(1.4rem, 2vw + 1rem, 1.9rem); color:var(--ink); margin:0 0 8px; }
+  .read-banner{
+    font-family:"Noto Serif KR", serif; font-size:1rem; color:var(--gold-strong); font-weight:700;
+    background:color-mix(in srgb, var(--gold-soft) 24%, transparent); border-radius:12px; padding:12px 16px; margin:0;
+  }
+  .read-login-hint{
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+    background:var(--surface-alt); border:1.5px dashed var(--rule); border-radius:14px;
+    padding:16px; font-size:0.88rem; color:var(--ink-soft); margin-top:18px;
+  }
+  .read-progress{ display:flex; align-items:center; gap:10px; margin:22px 0 8px; }
+  .read-bar{ flex:1; height:10px; border-radius:999px; background:var(--surface-border); overflow:hidden; }
+  .read-bar > i{ display:block; height:100%; background:var(--gold); }
+  .read-progress span{ font-size:0.82rem; font-weight:700; color:var(--ink); white-space:nowrap; }
+  .read-next{ font-size:0.86rem; color:var(--gold-strong); font-weight:700; text-align:center; margin:0 0 20px; }
+  .read-cols{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:640px){ .read-cols{ grid-template-columns:1fr; } }
+  .read-col h3{ font-family:"Noto Serif KR", serif; font-size:0.95rem; color:var(--ink); margin:0 0 10px; }
+  .read-list{ display:flex; flex-direction:column; gap:6px; }
+  .read-item{
+    display:flex; align-items:center; gap:9px; border:1px solid var(--surface-border); background:var(--surface-alt);
+    border-radius:10px; padding:8px 12px; cursor:pointer; font-size:0.86rem; color:var(--ink);
+  }
+  .read-item input{ width:16px; height:16px; accent-color:var(--gold); flex-shrink:0; }
+  .read-item.on{ background:var(--sage-soft); border-color:var(--sage); }
+  .read-item.on span{ text-decoration:line-through; color:var(--ink-soft); }
+
   .nanum-admin{
     background:var(--surface); border:1.5px solid var(--gold-soft); border-radius:16px;
     padding:16px 18px; margin-bottom:24px;
@@ -1273,6 +1303,17 @@
   .nanum-list-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
   .nanum-list-head h3{ font-family:"Noto Serif KR", serif; font-size:1.05rem; color:var(--ink); margin:0; }
   .nanum-list-count{ font-size:0.82rem; color:var(--ink-soft); }
+  .nanum-search-banner{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background:var(--surface-alt); border:1.5px dashed var(--rule); border-radius:12px;
+    padding:11px 16px; font-size:0.86rem; color:var(--ink-soft); margin-bottom:16px;
+  }
+  .nanum-search-banner strong{ color:var(--ink); }
+  .nanum-search-banner button{
+    border:1px solid var(--surface-border); background:var(--surface); color:var(--ink-soft);
+    font-family:inherit; font-size:0.78rem; font-weight:600; padding:5px 12px; border-radius:999px; cursor:pointer;
+  }
+  .nanum-search-banner button:hover{ border-color:var(--gold); color:var(--gold-strong); }
   .nanum-list{ display:flex; flex-direction:column; gap:14px; }
   .nanum-post{
     background:var(--surface); border:1px solid var(--surface-border); border-radius:16px;
@@ -1320,8 +1361,8 @@
         </div>
       </div>
       <div class="search">
-        <input type="text" placeholder="검색어를 입력해주세요" disabled>
-        <button type="button" title="준비 중인 기능이에요" aria-label="검색">🔍</button>
+        <input type="text" id="site-search" placeholder="메뉴 이름이나 나눔마당 글을 검색해보세요">
+        <button type="button" id="site-search-btn" aria-label="검색">🔍</button>
       </div>
     </div>
   </div>
@@ -1357,6 +1398,7 @@
     <a class="nav-item" href="#" data-goto="nanum">나눔마당</a>
     <a class="nav-item" href="#" data-goto="today">오늘의 말씀</a>
     <a class="nav-item" href="#" data-goto="rosary">묵주기도</a>
+    <a class="nav-item" href="#" data-goto="read">성경 읽기</a>
     <a class="nav-item" href="#" data-goto="deed">1일 1선행</a>
     <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">사이트안내<span class="badge">준비중</span></a>
   </div>
@@ -2011,6 +2053,42 @@
 </div>
 </div>
 
+<div id="page-read" hidden>
+<div class="stage">
+  <div class="read-wrap">
+    <div class="read-head">
+      <p class="section-eyebrow">Bible Reading</p>
+      <h2>성경 읽기 진도표</h2>
+      <p class="read-banner">성경 73권, 하나씩 읽어나가요!</p>
+    </div>
+
+    <div class="read-login-hint" id="read-login-hint" hidden>
+      <span>읽은 책을 기록하려면 <strong>로그인</strong>이 필요해요.</span>
+      <button type="button" class="btn btn-primary" id="login-open-btn-4">로그인 / 회원가입</button>
+    </div>
+
+    <div id="read-main" hidden>
+      <div class="read-progress">
+        <div class="read-bar"><i id="read-bar-fill"></i></div>
+        <span id="read-progress-text">0 / 73권</span>
+      </div>
+      <p class="read-next" id="read-next"></p>
+
+      <div class="read-cols">
+        <div class="read-col">
+          <h3>구약 (46권)</h3>
+          <div class="read-list" id="read-list-ot"></div>
+        </div>
+        <div class="read-col">
+          <h3>신약 (27권)</h3>
+          <div class="read-list" id="read-list-nt"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div id="page-nanum" hidden>
 <script id="nanum-data" type="application/json">[{"name": "BIBLE", "verseRef": "", "text": "나눔마당에 오신 것을 환영해요. 말씀을 읽으며 떠오른 생각이나 기도를 자유롭게 나눠보세요.", "time": "2026-08-28T12:00:00Z"}]</script>
 <div class="stage">
@@ -2059,6 +2137,11 @@
         <button type="button" class="btn btn-primary" id="nanum-submit">나누기</button>
       </div>
       <div class="nanum-status" id="nanum-status"></div>
+    </div>
+
+    <div class="nanum-search-banner" id="nanum-search-banner" hidden>
+      <span>'<strong id="nanum-search-q"></strong>' 검색 결과 <strong id="nanum-search-n">0</strong>건</span>
+      <button type="button" id="nanum-search-clear">전체 목록 보기</button>
     </div>
 
     <div class="nanum-list-head">
@@ -3642,7 +3725,7 @@
 (function(){
   "use strict";
   function goTo(page, anchor){
-    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today", deed: "page-deed", rosary: "page-rosary" };
+    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today", deed: "page-deed", rosary: "page-rosary", read: "page-read" };
     Object.keys(pages).forEach(function(key){
       var el = document.getElementById(pages[key]);
       if (el) el.hidden = key !== page;
@@ -3655,15 +3738,46 @@
     } else {
       window.scrollTo({ top: 0, behavior: "auto" });
     }
+    if (page === "today" && window.__loadToday) window.__loadToday();
+    if (page === "deed" && window.__loadDeed) window.__loadDeed();
+    if (page === "read" && window.__loadRead) window.__loadRead();
   }
+  window.__goTo = goTo;
   document.addEventListener("click", function(e){
     var el = e.target.closest("[data-goto]");
     if (!el) return;
     e.preventDefault();
     goTo(el.getAttribute("data-goto"), el.getAttribute("data-anchor"));
-    if (el.getAttribute("data-goto") === "today" && window.__loadToday) window.__loadToday();
-    if (el.getAttribute("data-goto") === "deed" && window.__loadDeed) window.__loadDeed();
   });
+
+  /* ---- 사이트 검색 ---- */
+  var searchInput = document.getElementById("site-search");
+  var searchBtn = document.getElementById("site-search-btn");
+  var NAV_KEYWORDS = [
+    [["게임", "빙고", "틱택토", "퀴즈모음", "랭킹", "초성", "메모리", "스피드", "책순서", "인물맞히기", "비유", "숫자성경", "기도문"], "games"],
+    [["나눔", "나눔마당", "댓글", "좋아요"], "nanum"],
+    [["오늘의말씀", "독서", "복음", "매일미사"], "today"],
+    [["선행", "1일1선행", "착한일"], "deed"],
+    [["묵주", "묵주기도", "신비"], "rosary"],
+    [["읽기", "성경읽기", "진도"], "read"],
+    [["모자이크", "암송"], "quiz"],
+    [["홈", "메인"], "home"]
+  ];
+  function doSearch(){
+    var raw = (searchInput.value || "").trim();
+    if (!raw) return;
+    var norm = raw.replace(/\s+/g, "").toLowerCase();
+    var navKey = null;
+    NAV_KEYWORDS.forEach(function(row){
+      if (navKey) return;
+      row[0].forEach(function(k){ if (!navKey && norm.indexOf(k.toLowerCase()) >= 0) navKey = row[1]; });
+    });
+    if (navKey){ goTo(navKey); return; }
+    goTo("nanum");
+    if (window.__searchNanum) window.__searchNanum(raw);
+  }
+  if (searchBtn) searchBtn.addEventListener("click", doSearch);
+  if (searchInput) searchInput.addEventListener("keydown", function(e){ if (e.key === "Enter") doSearch(); });
 })();
 </script>
 
@@ -4141,6 +4255,124 @@
 })();
 </script>
 
+<script>
+(function(){
+  "use strict";
+  var SESSION_KEY = "bible-session-v1";
+  var hint = document.getElementById("read-login-hint");
+  var main = document.getElementById("read-main");
+  if (!main) return;
+
+  var BOOKS_OT = [
+    "창세기","탈출기","레위기","민수기","신명기","여호수아기","판관기","룻기",
+    "사무엘기 상권","사무엘기 하권","열왕기 상권","열왕기 하권","역대기 상권","역대기 하권",
+    "에즈라기","느헤미야기","토빗기","유딧기","에스테르기","마카베오기 상권","마카베오기 하권",
+    "욥기","시편","잠언","코헬렛","아가","지혜서","집회서",
+    "이사야서","예레미야서","애가","바룩서","에제키엘서","다니엘서",
+    "호세아서","요엘서","아모스서","오바드야서","요나서","미카서","나훔서","하바쿡서","스바니야서","하까이서","즈카르야서","말라키서"
+  ];
+  var BOOKS_NT = [
+    "마태오 복음서","마르코 복음서","루카 복음서","요한 복음서","사도행전",
+    "로마 신자들에게 보낸 서간","코린토 신자들에게 보낸 첫째 서간","코린토 신자들에게 보낸 둘째 서간",
+    "갈라티아 신자들에게 보낸 서간","에페소 신자들에게 보낸 서간","필리피 신자들에게 보낸 서간","콜로새 신자들에게 보낸 서간",
+    "테살로니카 신자들에게 보낸 첫째 서간","테살로니카 신자들에게 보낸 둘째 서간",
+    "티모테오에게 보낸 첫째 서간","티모테오에게 보낸 둘째 서간","티토에게 보낸 서간","필레몬에게 보낸 서간",
+    "히브리인들에게 보낸 서간","야고보 서간","베드로의 첫째 서간","베드로의 둘째 서간",
+    "요한의 첫째 서간","요한의 둘째 서간","요한의 셋째 서간","유다 서간","요한 묵시록"
+  ];
+  var BOOKS = BOOKS_OT.concat(BOOKS_NT); // index 0~72, 성경에 나오는 순서
+
+  var barFill = document.getElementById("read-bar-fill");
+  var progressText = document.getElementById("read-progress-text");
+  var nextEl = document.getElementById("read-next");
+  var listOtEl = document.getElementById("read-list-ot");
+  var listNtEl = document.getElementById("read-list-nt");
+
+  var readMap = {};   // { idx: {at} }
+  var loadedFor = "";
+  var busy = false;
+
+  function getSession(){
+    try {
+      var s = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+      if (s && s.token && s.exp && s.exp * 1000 > Date.now()) return s;
+    } catch (e) {}
+    return null;
+  }
+
+  function renderProgress(){
+    var done = Object.keys(readMap).length;
+    var pct = Math.round(done / BOOKS.length * 100);
+    barFill.style.width = pct + "%";
+    progressText.textContent = done + " / " + BOOKS.length + "권";
+    var nextIdx = -1;
+    for (var i = 0; i < BOOKS.length; i++){ if (!readMap[i]){ nextIdx = i; break; } }
+    nextEl.textContent = nextIdx === -1 ? "성경을 전부 읽으셨어요! 정말 대단해요 🎉" : "다음으로 읽어보면 좋은 책: " + BOOKS[nextIdx];
+  }
+
+  function toggle(idx, checked){
+    if (busy) return;
+    var sess = getSession();
+    if (!sess) return;
+    busy = true;
+    fetch("/api/bibleplan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sess.token },
+      body: JSON.stringify({ index: idx, checked: checked })
+    }).then(function(r){ return r.json().then(function(j){ return { s: r.status, j: j }; }); })
+      .then(function(res){
+        busy = false;
+        if (res.s !== 200 || !res.j || !res.j.ok) return;
+        readMap = res.j.read || {};
+        renderProgress();
+        renderLists();
+      }).catch(function(){ busy = false; });
+  }
+
+  function renderLists(){
+    function build(container, books, offset){
+      container.innerHTML = "";
+      books.forEach(function(name, i){
+        var idx = offset + i;
+        var row = document.createElement("label");
+        row.className = "read-item" + (readMap[idx] ? " on" : "");
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !!readMap[idx];
+        cb.addEventListener("change", function(){ toggle(idx, cb.checked); });
+        var span = document.createElement("span");
+        span.textContent = name;
+        row.appendChild(cb); row.appendChild(span);
+        container.appendChild(row);
+      });
+    }
+    build(listOtEl, BOOKS_OT, 0);
+    build(listNtEl, BOOKS_NT, BOOKS_OT.length);
+  }
+
+  window.__loadRead = function(force){
+    var sess = getSession();
+    if (!sess) {
+      hint.hidden = false;
+      main.hidden = true;
+      loadedFor = "";
+      return;
+    }
+    hint.hidden = true;
+    main.hidden = false;
+    if (!force && loadedFor === sess.token) return;
+    loadedFor = sess.token;
+    fetch("/api/bibleplan", { cache: "no-store", headers: { "Authorization": "Bearer " + sess.token } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){
+        readMap = (data && data.read) || {};
+        renderProgress();
+        renderLists();
+      })
+      .catch(function(){});
+  };
+})();
+</script>
 
 <script>
 (function(){
@@ -4156,7 +4388,7 @@
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
   }
 
-  var openBtns = [document.getElementById("login-open-btn"), document.getElementById("login-open-btn-2"), document.getElementById("login-open-btn-3")].filter(Boolean);
+  var openBtns = [document.getElementById("login-open-btn"), document.getElementById("login-open-btn-2"), document.getElementById("login-open-btn-3"), document.getElementById("login-open-btn-4")].filter(Boolean);
   var chip = document.getElementById("profile-chip");
   var nameEl = document.getElementById("profile-name");
   var logoutBtn = document.getElementById("logout-btn");
@@ -4514,6 +4746,7 @@
     renderList(lastPosts);
     if (lastPosts.length) loadMeta();
     if (window.__loadDeed) window.__loadDeed(true);
+    if (window.__loadRead) window.__loadRead(true);
   }
 
   function saveSession(data) {
@@ -4691,6 +4924,35 @@
       })
       .catch(function () {});
   }
+
+  var searchBanner = document.getElementById("nanum-search-banner");
+  var searchQEl = document.getElementById("nanum-search-q");
+  var searchNEl = document.getElementById("nanum-search-n");
+  var searchClearBtn = document.getElementById("nanum-search-clear");
+  if (searchClearBtn) searchClearBtn.addEventListener("click", function () {
+    if (searchBanner) searchBanner.hidden = true;
+    loadPosts();
+  });
+  window.__searchNanum = function (q) {
+    var query = String(q || "").trim();
+    if (!query) return;
+    if (searchBanner) { searchBanner.hidden = false; searchQEl.textContent = query; searchNEl.textContent = "…"; }
+    fetch("/api/nanum", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (data) {
+        var arr = Array.isArray(data) ? data : [];
+        var ql = query.toLowerCase();
+        var filtered = arr.filter(function (p) {
+          return (p.text || "").toLowerCase().indexOf(ql) >= 0 ||
+                 (p.name || "").toLowerCase().indexOf(ql) >= 0 ||
+                 (p.verseRef || "").toLowerCase().indexOf(ql) >= 0;
+        });
+        if (searchNEl) searchNEl.textContent = String(filtered.length);
+        renderList(filtered);
+        loadMeta();
+      })
+      .catch(function () { if (searchNEl) searchNEl.textContent = "0"; });
+  };
 
   function toggleLike(id, btn) {
     if (!session) { setStatus("좋아요를 누르려면 로그인해 주세요.", "error"); return; }
