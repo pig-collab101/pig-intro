@@ -1,4 +1,12 @@
 <title>BIBLE</title>
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem("bible-theme");
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+  } catch (e) {}
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
 
@@ -131,6 +139,12 @@
   }
   .btn-login:hover{ border-color:var(--gold); }
   .btn-login.is-hidden{ display:none; }
+  .theme-toggle{
+    width:38px; height:38px; border-radius:999px; border:1.5px solid var(--surface-border);
+    background:var(--surface); cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .theme-toggle:hover{ border-color:var(--gold); }
   .profile-chip{
     display:flex; align-items:center; gap:6px; background:var(--surface);
     border:1.5px solid var(--surface-border); border-radius:999px; padding:5px 6px 5px 14px;
@@ -205,9 +219,15 @@
   }
   .today-reading .r-source{ font-size:0.86rem; color:var(--ink-soft); margin:0 0 8px; }
   .today-reading .r-sub{
-    font-size:0.92rem; color:var(--gold-strong); font-style:italic; margin:0;
+    font-size:0.92rem; color:var(--gold-strong); font-style:italic; margin:0 0 10px;
     padding-left:12px; border-left:2.5px solid var(--gold-soft);
   }
+  .today-reading .r-bookmark{
+    border:1px solid var(--surface-border); background:var(--surface-alt); color:var(--ink-soft);
+    font-family:inherit; font-size:0.76rem; font-weight:600; padding:4px 11px; border-radius:999px; cursor:pointer;
+  }
+  .today-reading .r-bookmark:hover{ border-color:var(--gold); color:var(--gold-strong); }
+  .today-reading .r-bookmark:disabled{ opacity:0.7; cursor:default; }
   .today-link{
     display:block; text-align:center; margin:22px 0 10px;
     background:var(--gold); color:#241a06; font-weight:700; font-size:0.92rem;
@@ -216,6 +236,18 @@
   .today-link:hover{ background:var(--gold-strong); color:#fff; }
   .today-credit{ font-size:0.76rem; color:var(--ink-soft); text-align:center; line-height:1.6; margin:12px 0 0; }
   .today-credit a{ color:var(--gold-strong); text-decoration:underline; }
+  .today-saint{
+    background:color-mix(in srgb, var(--gold-soft) 22%, transparent); border:1px solid var(--gold-soft);
+    border-radius:14px; padding:14px 18px; margin-bottom:16px; text-align:center;
+  }
+  .today-saint .ts-label{ font-size:0.74rem; font-weight:700; color:var(--gold-strong); letter-spacing:0.04em; margin:0 0 4px; }
+  .today-saint .ts-name{ font-family:"Noto Serif KR", serif; font-size:1rem; color:var(--ink); font-weight:700; margin:0; }
+  .today-card-btn{
+    display:block; width:100%; text-align:center; margin:10px 0 0; background:var(--surface);
+    border:1.5px solid var(--surface-border); color:var(--ink); font-weight:700; font-size:0.88rem;
+    padding:11px 16px; border-radius:12px; cursor:pointer; font-family:inherit;
+  }
+  .today-card-btn:hover{ border-color:var(--gold); color:var(--gold-strong); }
   .today-error{ text-align:center; color:var(--ink-soft); padding:24px 0; }
 
   /* ---- 1일 1선행 ---- */
@@ -360,6 +392,64 @@
   .read-item input{ width:16px; height:16px; accent-color:var(--gold); flex-shrink:0; }
   .read-item.on{ background:var(--sage-soft); border-color:var(--sage); }
   .read-item.on span{ text-decoration:line-through; color:var(--ink-soft); }
+
+  /* ---- 내 정보 ---- */
+  .profile-wrap{ max-width:640px; margin:0 auto; }
+  .profile-head{ text-align:center; margin-bottom:20px; }
+  .profile-head h2{ font-family:"Noto Serif KR", serif; font-size:clamp(1.4rem, 2vw + 1rem, 1.9rem); color:var(--ink); margin:0 0 6px; }
+  .profile-name-line{ font-size:0.92rem; color:var(--gold-strong); font-weight:700; margin:0; }
+  .profile-login-hint{
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+    background:var(--surface-alt); border:1.5px dashed var(--rule); border-radius:14px;
+    padding:16px; font-size:0.88rem; color:var(--ink-soft); margin-top:18px;
+  }
+  .profile-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:20px 0 26px; }
+  .profile-stat{
+    background:var(--surface); border:1px solid var(--surface-border); border-radius:14px;
+    box-shadow:var(--shadow); padding:14px 6px; text-align:center;
+  }
+  .p-num{ display:block; font-family:"Noto Serif KR", serif; font-size:1.35rem; font-weight:700; color:var(--gold-strong); }
+  .p-lbl{ display:block; font-size:0.68rem; color:var(--ink-soft); margin-top:3px; line-height:1.3; }
+  .profile-block{ margin-bottom:26px; }
+  .profile-block h3{ font-family:"Noto Serif KR", serif; font-size:0.98rem; color:var(--ink); margin:0 0 10px; }
+  .profile-list{ display:flex; flex-direction:column; gap:8px; }
+  .profile-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface-alt);
+    border:1px solid var(--surface-border); border-radius:11px; padding:10px 14px; font-size:0.86rem; color:var(--ink);
+  }
+  .profile-item .pi-main{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .profile-item .pi-sub{ font-size:0.76rem; color:var(--ink-soft); flex-shrink:0; }
+  .profile-item button{
+    border:none; background:none; color:var(--ink-soft); cursor:pointer; font-size:0.76rem; flex-shrink:0; padding:0 0 0 8px;
+  }
+  .profile-item button:hover{ color:#b5482f; }
+  .profile-empty{ font-size:0.84rem; color:var(--ink-soft); text-align:center; padding:14px 0; }
+
+  /* ---- 세례명 축일 계산기 ---- */
+  .feast-wrap{ max-width:560px; margin:0 auto; }
+  .feast-head{ text-align:center; margin-bottom:18px; }
+  .feast-head h2{ font-family:"Noto Serif KR", serif; font-size:clamp(1.4rem, 2vw + 1rem, 1.9rem); color:var(--ink); margin:0 0 8px; }
+  .feast-note{ font-size:0.82rem; color:var(--ink-soft); margin:0; }
+  .feast-search{ margin:20px 0 16px; }
+  .feast-search input{
+    width:100%; box-sizing:border-box; border:1.5px solid var(--surface-border); border-radius:12px;
+    padding:12px 16px; font-family:inherit; font-size:0.98rem; color:var(--ink); background:var(--surface-alt);
+  }
+  .feast-search input:focus-visible{ outline:2.5px solid var(--focus-ring); outline-offset:1px; }
+  .feast-card{
+    background:var(--surface); border:1.5px solid var(--gold-soft); border-radius:16px; box-shadow:var(--shadow);
+    padding:20px 22px; text-align:center; margin-bottom:18px;
+  }
+  .feast-card .fc-name{ font-family:"Noto Serif KR", serif; font-size:1.1rem; font-weight:700; color:var(--ink); margin:0 0 6px; }
+  .feast-card .fc-date{ font-size:1.3rem; font-weight:800; color:var(--gold-strong); margin:0 0 4px; }
+  .feast-card .fc-dday{ font-size:0.84rem; color:var(--ink-soft); margin:0; }
+  .feast-none{ text-align:center; color:var(--ink-soft); font-size:0.88rem; padding:18px 0; }
+  .feast-all{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:8px; }
+  .feast-all button{
+    border:1px solid var(--surface-border); background:var(--surface-alt); color:var(--ink-soft);
+    font-family:inherit; font-size:0.76rem; padding:4px 11px; border-radius:999px; cursor:pointer;
+  }
+  .feast-all button:hover{ border-color:var(--gold); color:var(--gold-strong); }
 
   .nanum-admin{
     background:var(--surface); border:1.5px solid var(--gold-soft); border-radius:16px;
@@ -1303,6 +1393,13 @@
   .nanum-list-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
   .nanum-list-head h3{ font-family:"Noto Serif KR", serif; font-size:1.05rem; color:var(--ink); margin:0; }
   .nanum-list-count{ font-size:0.82rem; color:var(--ink-soft); }
+  .nanum-list-head{ flex-wrap:wrap; row-gap:8px; }
+  .nanum-sort{ display:flex; gap:6px; }
+  .nanum-sort button{
+    border:1.5px solid var(--surface-border); background:var(--surface-alt); color:var(--ink-soft);
+    font-family:inherit; font-size:0.76rem; font-weight:700; padding:4px 11px; border-radius:999px; cursor:pointer;
+  }
+  .nanum-sort button.on{ background:var(--gold); color:#241a06; border-color:var(--gold); }
   .nanum-search-banner{
     display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
     background:var(--surface-alt); border:1.5px dashed var(--rule); border-radius:12px;
@@ -1351,10 +1448,12 @@
         <a href="#" data-goto="home">홈</a><span class="sep">|</span>
         <a href="#" data-goto="home" data-anchor="soon" title="준비 중인 기능이에요">사이트맵</a>
       </div>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="화면 밝기 전환" title="화면 밝기 전환">🌙</button>
       <div class="auth-area" id="auth-area">
         <button type="button" class="btn-login" id="login-open-btn">로그인</button>
         <div class="profile-chip" id="profile-chip" hidden>
           <span class="p-name" id="profile-name"></span>
+          <button type="button" class="p-logout" id="profile-open-btn">내 정보</button>
           <button type="button" class="p-logout" id="rename-btn">아이디변경</button>
           <button type="button" class="p-logout" id="changepw-btn">비번변경</button>
           <button type="button" class="p-logout" id="logout-btn">로그아웃</button>
@@ -1399,6 +1498,7 @@
     <a class="nav-item" href="#" data-goto="today">오늘의 말씀</a>
     <a class="nav-item" href="#" data-goto="rosary">묵주기도</a>
     <a class="nav-item" href="#" data-goto="read">성경 읽기</a>
+    <a class="nav-item" href="#" data-goto="feast">세례명 축일</a>
     <a class="nav-item" href="#" data-goto="deed">1일 1선행</a>
     <a class="nav-item muted" href="#" data-goto="home" data-anchor="soon">사이트안내<span class="badge">준비중</span></a>
   </div>
@@ -1498,6 +1598,46 @@
         <p class="section-note">이 사이트는 조금씩 자라나고 있어요. 최근에 새로 생긴 것들이에요.</p>
       </div>
       <div class="update-list">
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">내 정보·다크모드·구절 즐겨찾기·세례명 축일</div>
+            <div class="desc">로그인 후 이름 옆 ‘내 정보’에서 선행·게임 기록·읽기 진도·즐겨찾은 구절을 한눈에 볼 수 있어요. 오른쪽 위 🌙 버튼으로 화면을 어둡게, 세례명 축일 계산기도 새로 생겼어요.</div>
+          </div>
+          <span class="update-date">2026.09.07</span>
+        </div>
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">오늘의 성인 · 말씀 카드 이미지 저장</div>
+            <div class="desc">‘오늘의 말씀’에 그날 기념하는 성인이 함께 표시되고, 말씀 카드를 이미지로 저장해 나눌 수 있어요.</div>
+          </div>
+          <span class="update-date">2026.09.07</span>
+        </div>
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">묵주기도 · 성경 읽기 진도표 · 검색</div>
+            <div class="desc">요일별 신비를 안내하는 묵주기도 도우미, 성경 73권 읽기 체크리스트, 그리고 상단 검색창이 열렸어요.</div>
+          </div>
+          <span class="update-date">2026.09.05</span>
+        </div>
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">나눔마당 좋아요·댓글 / 게임 랭킹</div>
+            <div class="desc">나눔 글에 ♡ 좋아요와 댓글을 달 수 있고, 말씀 게임 최고 기록이 랭킹에 올라가요.</div>
+          </div>
+          <span class="update-date">2026.09.04</span>
+        </div>
+        <div class="update-item">
+          <span class="update-dot"></span>
+          <div class="update-body">
+            <div class="title">말씀 게임 8종 추가</div>
+            <div class="desc">초성 퀴즈, 말씀 메모리, 60초 스피드 O·X, 성경 책 순서, 인물·비유·숫자 맞히기, 기도문 빈칸이 새로 생겼어요.</div>
+          </div>
+          <span class="update-date">2026.08.31</span>
+        </div>
         <div class="update-item">
           <span class="update-dot"></span>
           <div class="update-body">
@@ -1937,12 +2077,14 @@
       <h2 class="today-title" id="today-title">오늘의 말씀</h2>
       <p class="today-date" id="today-date"></p>
     </div>
+    <div class="today-saint" id="today-saint" hidden></div>
     <div id="today-body">
       <p class="today-loading" id="today-loading">불러오는 중…</p>
     </div>
     <a class="today-link" id="today-link" href="https://missa.cbck.or.kr/DailyMissa" target="_blank" rel="noopener">
       매일미사에서 독서·복음 전문 읽기 →
     </a>
+    <button type="button" class="today-card-btn" id="today-card-btn" hidden>🖼️ 오늘의 말씀 카드 이미지로 저장</button>
     <p class="today-credit">자료: 한국천주교주교회의 <a href="https://missa.cbck.or.kr/" target="_blank" rel="noopener">매일미사</a> · 이 페이지는 전례일과 독서·복음의 출처(장·절)만 안내합니다.</p>
   </div>
 </div>
@@ -2089,6 +2231,64 @@
 </div>
 </div>
 
+<div id="page-profile" hidden>
+<div class="stage">
+  <div class="profile-wrap">
+    <div class="profile-head">
+      <p class="section-eyebrow">My Page</p>
+      <h2>내 정보</h2>
+      <p class="profile-name-line" id="profile-page-name"></p>
+    </div>
+
+    <div class="profile-login-hint" id="profile-login-hint" hidden>
+      <span>내 활동을 보려면 <strong>로그인</strong>이 필요해요.</span>
+      <button type="button" class="btn btn-primary" id="login-open-btn-5">로그인 / 회원가입</button>
+    </div>
+
+    <div id="profile-main" hidden>
+      <div class="profile-stats">
+        <div class="profile-stat"><span class="p-num" id="pf-deed-streak">0</span><span class="p-lbl">선행 연속기록</span></div>
+        <div class="profile-stat"><span class="p-num" id="pf-deed-total">0</span><span class="p-lbl">전체 선행</span></div>
+        <div class="profile-stat"><span class="p-num" id="pf-read-count">0</span><span class="p-lbl">읽은 성경책</span></div>
+        <div class="profile-stat"><span class="p-num" id="pf-nanum-count">0</span><span class="p-lbl">나눔 글</span></div>
+      </div>
+
+      <div class="profile-block">
+        <h3>🏆 내 게임 최고 기록</h3>
+        <div class="profile-list" id="pf-games"></div>
+      </div>
+
+      <div class="profile-block">
+        <h3>⭐ 즐겨찾는 구절</h3>
+        <div class="profile-list" id="pf-bookmarks"></div>
+      </div>
+
+      <div class="profile-block">
+        <h3>✍️ 내가 쓴 나눔 글</h3>
+        <div class="profile-list" id="pf-posts"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="page-feast" hidden>
+<div class="stage">
+  <div class="feast-wrap">
+    <div class="feast-head">
+      <p class="section-eyebrow">Baptismal Name</p>
+      <h2>세례명 축일 계산기</h2>
+      <p class="feast-note">자주 쓰이는 세례명 위주로 정리했어요. 정확한 축일은 소속 본당에도 확인해 보세요.</p>
+    </div>
+    <div class="feast-search">
+      <input type="text" id="feast-input" placeholder="세례명을 입력해보세요 (예: 안드레아, 마리아)" autocomplete="off">
+    </div>
+    <div id="feast-result"></div>
+    <div class="feast-all" id="feast-all"></div>
+  </div>
+</div>
+</div>
+
 <div id="page-nanum" hidden>
 <script id="nanum-data" type="application/json">[{"name": "BIBLE", "verseRef": "", "text": "나눔마당에 오신 것을 환영해요. 말씀을 읽으며 떠오른 생각이나 기도를 자유롭게 나눠보세요.", "time": "2026-08-28T12:00:00Z"}]</script>
 <div class="stage">
@@ -2146,6 +2346,10 @@
 
     <div class="nanum-list-head">
       <h3>다른 분들의 나눔</h3>
+      <div class="nanum-sort" id="nanum-sort">
+        <button type="button" class="on" data-sort="new">최신순</button>
+        <button type="button" data-sort="pop">인기순</button>
+      </div>
       <span class="nanum-list-count" id="nanum-list-count"></span>
     </div>
     <div class="nanum-list" id="nanum-list"></div>
@@ -3725,7 +3929,7 @@
 (function(){
   "use strict";
   function goTo(page, anchor){
-    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today", deed: "page-deed", rosary: "page-rosary", read: "page-read" };
+    var pages = { home: "page-home", quiz: "page-quiz", games: "page-games", nanum: "page-nanum", today: "page-today", deed: "page-deed", rosary: "page-rosary", read: "page-read", profile: "page-profile", feast: "page-feast" };
     Object.keys(pages).forEach(function(key){
       var el = document.getElementById(pages[key]);
       if (el) el.hidden = key !== page;
@@ -3741,8 +3945,28 @@
     if (page === "today" && window.__loadToday) window.__loadToday();
     if (page === "deed" && window.__loadDeed) window.__loadDeed();
     if (page === "read" && window.__loadRead) window.__loadRead();
+    if (page === "profile" && window.__loadProfile) window.__loadProfile();
   }
   window.__goTo = goTo;
+
+  /* ---- 다크모드 수동 전환 ---- */
+  var themeBtn = document.getElementById("theme-toggle");
+  function isDarkNow(){
+    var explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit === "dark") return true;
+    if (explicit === "light") return false;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function renderThemeBtn(){ themeBtn.textContent = isDarkNow() ? "☀️" : "🌙"; }
+  if (themeBtn){
+    themeBtn.addEventListener("click", function(){
+      var next = isDarkNow() ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try { localStorage.setItem("bible-theme", next); } catch (e) {}
+      renderThemeBtn();
+    });
+    renderThemeBtn();
+  }
   document.addEventListener("click", function(e){
     var el = e.target.closest("[data-goto]");
     if (!el) return;
@@ -3788,46 +4012,177 @@
   var titleEl = document.getElementById("today-title");
   var dateEl = document.getElementById("today-date");
   var linkEl = document.getElementById("today-link");
+  var saintEl = document.getElementById("today-saint");
+  var cardBtn = document.getElementById("today-card-btn");
   if (!bodyEl) return;
   var loaded = false, loading = false;
+  var lastData = null;
 
   var COLOR = { "녹": "#4c7a4f", "백": "#8a7b3c", "홍": "#b5482f", "자": "#6b4b8a", "금": "#a97a26", "장미": "#c77" };
 
   function esc(s){ var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
 
+  function bookOf(src){
+    var s = String(src || "").replace(/^[^가-힣A-Za-z0-9]+/, "").replace(/\s+/g, " ").trim();
+    s = s.replace(/입니다\.?\s*$/, "").trim();
+    s = s.replace(/(.+?)[가이] 전한 거룩한 복음$/, "$1 복음");
+    s = s.replace(/\s*말씀$/, "");
+    s = s.replace(/의$/, "");
+    s = s.replace(/^사도 \S+의 (.+)$/, "$1");
+    return s.trim();
+  }
+
   function render(data){
+    lastData = data;
     if (!data || data.unavailable || !data.readings || !data.readings.length){
       titleEl.textContent = "오늘의 말씀";
       bodyEl.innerHTML = '<p class="today-error">지금은 오늘의 독서를 불러올 수 없어요.<br>아래 버튼으로 매일미사에서 확인해 주세요.</p>';
+      saintEl.hidden = true;
+      cardBtn.hidden = true;
       return;
     }
     titleEl.textContent = data.title || "오늘의 말씀";
     if (data.color && COLOR[data.color]) titleEl.style.color = COLOR[data.color];
     dateEl.textContent = data.dateText || "";
     if (data.source_url) linkEl.href = data.source_url;
+    cardBtn.hidden = false;
 
-    function bookOf(src){
-      var s = String(src || "").replace(/^[^가-힣A-Za-z0-9]+/, "").replace(/\s+/g, " ").trim();
-      s = s.replace(/입니다\.?\s*$/, "").trim();
-      s = s.replace(/(.+?)[가이] 전한 거룩한 복음$/, "$1 복음");
-      s = s.replace(/\s*말씀$/, "");
-      s = s.replace(/의$/, "");
-      s = s.replace(/^사도 \S+의 (.+)$/, "$1");
-      return s.trim();
+    if (data.saints && data.saints.length){
+      saintEl.hidden = false;
+      saintEl.innerHTML = '<p class="ts-label">오늘의 성인·기념일</p>' +
+        data.saints.map(function(s){ return '<p class="ts-name">' + esc(s) + '</p>'; }).join('');
+    } else {
+      saintEl.hidden = true;
+      saintEl.innerHTML = "";
     }
 
     var html = "";
-    data.readings.forEach(function(r){
+    data.readings.forEach(function(r, i){
       var book = bookOf(r.source);
       var headline = book ? (book + " " + (r.ref || "")) : (r.ref || "");
       html += '<div class="today-reading">';
       html += '<span class="r-label">' + esc(r.label) + '</span>';
       if (headline) html += '<p class="r-ref">' + esc(headline) + '</p>';
       if (r.subtitle) html += '<p class="r-sub">' + esc(r.subtitle) + '</p>';
+      if (headline) html += '<button type="button" class="r-bookmark" data-ridx="' + i + '">☆ 즐겨찾기</button>';
       html += '</div>';
     });
     bodyEl.innerHTML = html;
+
+    Array.prototype.forEach.call(bodyEl.querySelectorAll(".r-bookmark"), function(btn){
+      btn.addEventListener("click", function(){
+        var r = data.readings[+btn.getAttribute("data-ridx")];
+        var book = bookOf(r.source);
+        var ref = (book ? book + " " : "") + (r.ref || "");
+        addBookmark(ref, r.source, r.subtitle, data.date, btn);
+      });
+    });
   }
+
+  function getSession(){
+    try {
+      var s = JSON.parse(localStorage.getItem("bible-session-v1") || "null");
+      if (s && s.token && s.exp && s.exp * 1000 > Date.now()) return s;
+    } catch (e) {}
+    return null;
+  }
+  function addBookmark(ref, source, subtitle, date, btn){
+    var sess = getSession();
+    if (!sess) { btn.textContent = "로그인 후 이용해주세요"; setTimeout(function(){ btn.textContent = "☆ 즐겨찾기"; }, 1600); return; }
+    btn.disabled = true;
+    fetch("/api/bookmark", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sess.token },
+      body: JSON.stringify({ ref: ref, source: source, subtitle: subtitle, date: date })
+    }).then(function(r){ return r.json().then(function(j){ return { s: r.status, j: j }; }); })
+      .then(function(res){
+        if (res.s === 200 && res.j && res.j.ok){ btn.textContent = res.j.duplicate ? "★ 이미 저장됨" : "★ 저장됨"; }
+        else { btn.disabled = false; btn.textContent = "☆ 즐겨찾기 (실패, 다시 시도)"; }
+      }).catch(function(){ btn.disabled = false; btn.textContent = "☆ 즐겨찾기 (실패, 다시 시도)"; });
+  }
+
+  function wrapLines(ctx, text, maxWidth){
+    var lines = [], line = "";
+    for (var i = 0; i < text.length; i++){
+      var test = line + text[i];
+      if (line && ctx.measureText(test).width > maxWidth){ lines.push(line); line = text[i]; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function downloadCard(){
+    if (document.fonts && document.fonts.ready){ document.fonts.ready.then(drawCard); }
+    else { drawCard(); }
+  }
+  function drawCard(){
+    var data = lastData;
+    if (!data || !data.readings || !data.readings.length) return;
+    var featured = data.readings.filter(function(r){ return r.label === "복음"; })[0] || data.readings[data.readings.length - 1];
+
+    var W = 720, H = 960;
+    var canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext("2d");
+
+    var grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "#f6efdd"); grad.addColorStop(1, "#ecdfba");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "#a97a26"; ctx.lineWidth = 3;
+    ctx.strokeRect(26, 26, W - 52, H - 52);
+    ctx.strokeStyle = "#d9c69a"; ctx.lineWidth = 1;
+    ctx.strokeRect(38, 38, W - 76, H - 76);
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#8a611c";
+    ctx.font = "700 20px 'Noto Sans KR', sans-serif";
+    ctx.fillText("BIBLE  ·  TODAY'S WORD", W / 2, 100);
+
+    ctx.fillStyle = "#746a8a";
+    ctx.font = "16px 'Noto Sans KR', sans-serif";
+    ctx.fillText(data.dateText || "", W / 2, 130);
+
+    ctx.fillStyle = "#26213a";
+    ctx.font = "700 27px 'Noto Serif KR', serif";
+    var y = 190;
+    wrapLines(ctx, data.title || "", 600).slice(0, 2).forEach(function(l){ ctx.fillText(l, W / 2, y); y += 38; });
+
+    if (data.saints && data.saints.length){
+      y += 6;
+      ctx.fillStyle = "#a97a26";
+      ctx.font = "700 18px 'Noto Serif KR', serif";
+      ctx.fillText(data.saints[0], W / 2, y);
+      y += 30;
+    }
+
+    y += 30;
+    ctx.strokeStyle = "#d9c69a"; ctx.beginPath(); ctx.moveTo(W / 2 - 60, y); ctx.lineTo(W / 2 + 60, y); ctx.stroke();
+    y += 50;
+
+    var book = bookOf(featured.source);
+    ctx.fillStyle = "#8a611c";
+    ctx.font = "700 24px 'Noto Serif KR', serif";
+    ctx.fillText((book ? book + " " : "") + (featured.ref || ""), W / 2, y);
+    y += 50;
+
+    ctx.fillStyle = "#26213a";
+    ctx.font = "24px 'Noto Serif KR', serif";
+    var quote = featured.subtitle ? ("“" + featured.subtitle + "”") : "";
+    wrapLines(ctx, quote, 560).forEach(function(l){ ctx.fillText(l, W / 2, y); y += 38; });
+
+    ctx.fillStyle = "#746a8a";
+    ctx.font = "14px 'Noto Sans KR', sans-serif";
+    ctx.fillText("자료: 한국천주교주교회의 매일미사 (missa.cbck.or.kr)", W / 2, H - 60);
+
+    var a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = "오늘의말씀-" + (data.date || "card") + ".png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  if (cardBtn) cardBtn.addEventListener("click", downloadCard);
 
   window.__loadToday = function(){
     if (loaded || loading) return;
@@ -4375,6 +4730,176 @@
 </script>
 
 <script>
+/* ================= 내 정보 (프로필) + 세례명 축일 ================= */
+(function(){
+  "use strict";
+  function getSession(){
+    try {
+      var s = JSON.parse(localStorage.getItem("bible-session-v1") || "null");
+      if (s && s.token && s.exp && s.exp * 1000 > Date.now()) return s;
+    } catch (e) {}
+    return null;
+  }
+  function esc(s){ var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+  function fmtDate(iso){
+    try { var d = new Date(iso); function p(n){ return n < 10 ? "0" + n : n; } return d.getFullYear() + "." + p(d.getMonth() + 1) + "." + p(d.getDate()); }
+    catch (e) { return ""; }
+  }
+
+  /* ---------- 프로필 ---------- */
+  var pfMain = document.getElementById("profile-main");
+  var pfHint = document.getElementById("profile-login-hint");
+  var GAME_LABEL = { cho:"초성 퀴즈", speed:"60초 스피드", order:"책 순서", who:"인물 맞히기", parable:"비유 맞히기", number:"숫자 성경", prayer:"기도문 빈칸" };
+
+  function pfList(el, rows, emptyMsg){
+    el.innerHTML = "";
+    if (!rows.length){ var e = document.createElement("div"); e.className = "profile-empty"; e.textContent = emptyMsg; el.appendChild(e); return; }
+    rows.forEach(function(row){ el.appendChild(row); });
+  }
+
+  window.__loadProfile = function(){
+    var sess = getSession();
+    if (!sess){ pfHint.hidden = false; pfMain.hidden = true; return; }
+    pfHint.hidden = true; pfMain.hidden = false;
+    var mySub = sess.user && sess.user.sub;
+    document.getElementById("profile-page-name").textContent = (sess.user && sess.user.name || "") + " 님";
+    var H = { "Authorization": "Bearer " + sess.token };
+
+    fetch("/api/deed", { cache: "no-store", headers: H }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+      var days = (d && d.days) || {};
+      var today = (d && d.today) || "";
+      document.getElementById("pf-deed-total").textContent = Object.keys(days).length;
+      // streak
+      function addDays(ds, n){ var t = new Date(ds + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+      var cur = days[today] ? today : addDays(today, -1), n = 0;
+      while (today && days[cur]) { n++; cur = addDays(cur, -1); }
+      document.getElementById("pf-deed-streak").textContent = n;
+    }).catch(function(){});
+
+    fetch("/api/bibleplan", { cache: "no-store", headers: H }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+      document.getElementById("pf-read-count").textContent = Object.keys((d && d.read) || {}).length;
+    }).catch(function(){});
+
+    fetch("/api/gamescore?mine=1", { cache: "no-store", headers: H }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+      var scores = (d && d.scores) || {};
+      var rows = Object.keys(scores).filter(function(k){ return GAME_LABEL[k]; }).map(function(k){
+        var it = document.createElement("div"); it.className = "profile-item";
+        it.innerHTML = '<span class="pi-main">' + esc(GAME_LABEL[k]) + '</span><span class="pi-sub">' + scores[k] + '점</span>';
+        return it;
+      });
+      pfList(document.getElementById("pf-games"), rows, "아직 게임 기록이 없어요.");
+    }).catch(function(){});
+
+    fetch("/api/bookmark", { cache: "no-store", headers: H }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+      var items = (d && d.items) || [];
+      var rows = items.map(function(bm){
+        var it = document.createElement("div"); it.className = "profile-item";
+        var main = document.createElement("span"); main.className = "pi-main";
+        main.textContent = bm.ref + (bm.subtitle ? " — " + bm.subtitle : "");
+        var del = document.createElement("button"); del.type = "button"; del.textContent = "삭제";
+        del.addEventListener("click", function(){
+          fetch("/api/bookmark?id=" + encodeURIComponent(bm.id), { method: "DELETE", headers: H })
+            .then(function(r){ return r.json(); }).then(function(j){
+              if (j && j.ok){ it.remove(); if (!document.querySelector("#pf-bookmarks .profile-item")){ pfList(document.getElementById("pf-bookmarks"), [], "즐겨찾은 구절이 없어요."); } }
+            });
+        });
+        it.appendChild(main); it.appendChild(del);
+        return it;
+      });
+      pfList(document.getElementById("pf-bookmarks"), rows, "즐겨찾은 구절이 없어요. 오늘의 말씀에서 별표를 눌러보세요.");
+    }).catch(function(){});
+
+    fetch("/api/nanum", { cache: "no-store" }).then(function(r){ return r.ok ? r.json() : []; }).then(function(arr){
+      var mine = (Array.isArray(arr) ? arr : []).filter(function(p){ return p.sub === mySub; });
+      document.getElementById("pf-nanum-count").textContent = mine.length;
+      var rows = mine.slice(0, 20).map(function(p){
+        var it = document.createElement("div"); it.className = "profile-item";
+        it.innerHTML = '<span class="pi-main">' + esc(p.text) + '</span><span class="pi-sub">' + fmtDate(p.time) + '</span>';
+        return it;
+      });
+      pfList(document.getElementById("pf-posts"), rows, "아직 나눔마당에 쓴 글이 없어요.");
+    }).catch(function(){});
+  };
+
+  /* ---------- 세례명 축일 ---------- */
+  // "월-일" 형식. 자주 쓰는 세례명 위주 (한국 천주교 일반 전례력 기준)
+  var FEAST = {
+    "안드레아":"11-30","베드로":"6-29","바오로":"6-29","요한":"12-27","세례자 요한":"6-24",
+    "야고보":"7-25","마태오":"9-21","마르코":"4-25","루카":"10-18","토마스":"7-3","필립보":"5-3",
+    "바르톨로메오":"8-24","시몬":"10-28","유다 타대오":"10-28","마티아":"5-14","마리아":"8-15",
+    "요셉":"3-19","안나":"7-26","요아킴":"7-26","가브리엘":"9-29","미카엘":"9-29","라파엘":"9-29",
+    "스테파노":"12-26","라우렌시오":"8-10","빈첸시오":"9-27","아우구스티노":"8-28","모니카":"8-27",
+    "베네딕토":"7-11","프란치스코":"10-4","프란치스코 하비에르":"12-3","도미니코":"8-8","안토니오":"6-13",
+    "이냐시오":"7-31","보나벤투라":"7-15","토마스 아퀴나스":"1-28","알베르토":"11-15","예로니모":"9-30",
+    "암브로시오":"12-7","그레고리오":"9-3","대 레오":"11-10","김대건 안드레아":"9-20","정하상 바오로":"9-20",
+    "아녜스":"1-21","체칠리아":"11-22","루치아":"12-13","아가타":"2-5","가타리나":"11-25",
+    "시에나의 가타리나":"4-29","소화 데레사":"10-1","아빌라의 데레사":"10-15","콜카타의 데레사":"9-5",
+    "클라라":"8-11","헬레나":"8-18","엘리사벳":"11-17","리타":"5-22","로사":"8-23","마르타":"7-29",
+    "막달레나":"7-22","베로니카":"7-12","바르바라":"12-4","마카리오":"1-2","니콜라오":"12-6",
+    "마르티노":"11-11","세바스티아노":"1-20","게오르지오":"4-23","발렌티노":"2-14","블라시오":"2-3",
+    "라자로":"12-17","즈카르야":"11-5","시메온":"10-8","바르나바":"6-11","티모테오":"1-26","티토":"1-26",
+    "실베스테르":"12-31","비오 10세":"8-21","비오":"8-21","대 그레고리오":"9-3","레오":"11-10",
+    "가롤로":"11-4","프란치스카":"3-9","제노베파":"1-3","힐라리오":"1-13","안셀모":"4-21",
+    "가밀로":"7-14","베르나르도":"8-20","알폰소":"8-1","도미니카":"7-6","유스티노":"6-1",
+    "이레네오":"6-28","치릴로":"6-27","보니파시오":"6-5","안토니오 아빠스":"1-17","바울리노":"6-22"
+  };
+  var feastInput = document.getElementById("feast-input");
+  var feastResult = document.getElementById("feast-result");
+  var feastAll = document.getElementById("feast-all");
+  var MON = ["","1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+
+  function ddayText(md){
+    var parts = md.split("-"); var m = +parts[0], d = +parts[1];
+    var now = new Date();
+    var y = now.getFullYear();
+    var next = new Date(y, m - 1, d);
+    var todayMid = new Date(y, now.getMonth(), now.getDate());
+    if (next < todayMid) next = new Date(y + 1, m - 1, d);
+    var diff = Math.round((next - todayMid) / 86400000);
+    if (diff === 0) return "바로 오늘이에요! 축하합니다 🎉";
+    return "축일까지 " + diff + "일 남았어요";
+  }
+  function showFeast(name){
+    var md = FEAST[name];
+    if (!md){
+      feastResult.innerHTML = '<p class="feast-none">‘' + esc(name) + '’ 은(는) 목록에 없어요. 아래에서 골라보거나, 본당에 문의해 보세요.</p>';
+      return;
+    }
+    var parts = md.split("-");
+    feastResult.innerHTML =
+      '<div class="feast-card">' +
+      '<p class="fc-name">' + esc(name) + '</p>' +
+      '<p class="fc-date">' + MON[+parts[0]] + " " + (+parts[1]) + '일</p>' +
+      '<p class="fc-dday">' + ddayText(md) + '</p>' +
+      '</div>';
+  }
+  function findMatch(q){
+    q = q.replace(/\s+/g, "");
+    if (!q) return null;
+    var keys = Object.keys(FEAST);
+    var exact = keys.filter(function(k){ return k.replace(/\s+/g, "") === q; })[0];
+    if (exact) return exact;
+    return keys.filter(function(k){ return k.replace(/\s+/g, "").indexOf(q) >= 0; })[0] || null;
+  }
+  if (feastInput){
+    feastInput.addEventListener("input", function(){
+      var q = feastInput.value.trim();
+      if (!q){ feastResult.innerHTML = ""; return; }
+      var m = findMatch(q);
+      if (m) showFeast(m);
+      else feastResult.innerHTML = '<p class="feast-none">비슷한 이름을 찾지 못했어요. 아래 목록에서 골라보세요.</p>';
+    });
+    Object.keys(FEAST).sort().forEach(function(name){
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = name;
+      b.addEventListener("click", function(){ feastInput.value = name; showFeast(name); window.scrollTo({ top: 0, behavior: "smooth" }); });
+      feastAll.appendChild(b);
+    });
+  }
+})();
+</script>
+
+<script>
 (function(){
   "use strict";
 
@@ -4388,7 +4913,7 @@
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
   }
 
-  var openBtns = [document.getElementById("login-open-btn"), document.getElementById("login-open-btn-2"), document.getElementById("login-open-btn-3"), document.getElementById("login-open-btn-4")].filter(Boolean);
+  var openBtns = [document.getElementById("login-open-btn"), document.getElementById("login-open-btn-2"), document.getElementById("login-open-btn-3"), document.getElementById("login-open-btn-4"), document.getElementById("login-open-btn-5")].filter(Boolean);
   var chip = document.getElementById("profile-chip");
   var nameEl = document.getElementById("profile-name");
   var logoutBtn = document.getElementById("logout-btn");
@@ -4472,10 +4997,15 @@
 
   var lastPosts = [];
   var meta = { likes: {}, comments: {}, mine: [] };
+  var sortMode = "new";
   function renderList(posts) {
     if (Array.isArray(posts)) lastPosts = posts;
+    var display = posts ? posts.slice() : posts;
+    if (display && sortMode === "pop") {
+      display.sort(function (a, b) { return ((meta.likes && meta.likes[b.id]) || 0) - ((meta.likes && meta.likes[a.id]) || 0); });
+    }
     listEl.innerHTML = "";
-    if (!posts || !posts.length) {
+    if (!display || !display.length) {
       var empty = document.createElement("div");
       empty.className = "nanum-empty";
       empty.textContent = "아직 나눈 이야기가 없어요. 첫 번째로 나눠보세요!";
@@ -4483,8 +5013,8 @@
       listCountEl.textContent = "";
       return;
     }
-    listCountEl.textContent = posts.length + "개의 이야기";
-    posts.forEach(function (post) {
+    listCountEl.textContent = display.length + "개의 이야기";
+    display.forEach(function (post) {
       var card = document.createElement("div");
       card.className = "nanum-post";
 
@@ -4747,6 +5277,8 @@
     if (lastPosts.length) loadMeta();
     if (window.__loadDeed) window.__loadDeed(true);
     if (window.__loadRead) window.__loadRead(true);
+    var pp = document.getElementById("page-profile");
+    if (pp && !pp.hidden && window.__loadProfile) window.__loadProfile();
   }
 
   function saveSession(data) {
@@ -4824,6 +5356,8 @@
   openBtns.forEach(function (b) { b.addEventListener("click", function () { openModal("login"); }); });
   if (changepwBtn) changepwBtn.addEventListener("click", function () { openModal("changepw"); });
   if (renameBtn) renameBtn.addEventListener("click", function () { openModal("rename"); });
+  var profileOpenBtn = document.getElementById("profile-open-btn");
+  if (profileOpenBtn) profileOpenBtn.addEventListener("click", function () { if (window.__goTo) window.__goTo("profile"); });
   mClose.addEventListener("click", closeModal);
   modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
   mSwitchBtn.addEventListener("click", function () { setAuthMode(authMode === "login" ? "signup" : "login"); });
@@ -4924,6 +5458,15 @@
       })
       .catch(function () {});
   }
+
+  var sortEl = document.getElementById("nanum-sort");
+  if (sortEl) sortEl.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-sort]");
+    if (!b) return;
+    sortMode = b.getAttribute("data-sort");
+    Array.prototype.forEach.call(sortEl.querySelectorAll("button"), function (x) { x.classList.toggle("on", x === b); });
+    renderList(lastPosts);
+  });
 
   var searchBanner = document.getElementById("nanum-search-banner");
   var searchQEl = document.getElementById("nanum-search-q");

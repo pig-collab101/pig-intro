@@ -56,9 +56,24 @@ function parsePsalm(html) {
   return { label: '화답송', subtitle: '', source: '', ref: ref };
 }
 
+// 전례일 제목에서 '기념/축일' 성인 이름만 뽑아냄 (매주 토요일 뜨는 '복되신 동정 마리아' 선택기념은 제외)
+function extractSaints(rawTitle) {
+  if (!rawTitle) return [];
+  const parts = rawTitle.split(/\s*또는\s*/);
+  const out = [];
+  parts.forEach((part) => {
+    let p = part.replace(/^\[[^\]]+\]\s*/, '').trim();
+    if (!p) return;
+    if (/^(연중|대림|사순|부활|주일|주간|성탄|사순 제|부활 제)/.test(p)) return;
+    if (/성[^\s]|복자|복녀|복되신|축일|기념/.test(p)) out.push(p);
+  });
+  return out;
+}
+
 function parseMissa(html) {
   const t = html.match(/<h3 id="missa_title">([\s\S]*?)<\/h3>/);
-  let title = t ? stripTags(t[1]) : '';
+  let rawTitle = t ? stripTags(t[1]) : '';
+  let title = rawTitle;
   let color = '';
   const cm = title.match(/^\[([^\]]+)\]\s*/);
   if (cm) { color = cm[1]; title = title.slice(cm[0].length).trim(); }
@@ -72,7 +87,9 @@ function parseMissa(html) {
   const r2 = parseReading(html, '제2독서'); if (r2) readings.push(r2);
   const gs = parseReading(html, '복음'); if (gs) readings.push(gs);
 
-  return { title: title, color: color, dateText: dateText, readings: readings };
+  const saints = extractSaints(rawTitle).filter((s) => !/^복되신 동정 마리아$/.test(s));
+
+  return { title: title, color: color, dateText: dateText, readings: readings, saints: saints };
 }
 
 async function loadCache(date) {
@@ -82,7 +99,7 @@ async function loadCache(date) {
     const r = await fetch(`${base}/${DIR}${date}.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) return null;
     const d = await r.json();
-    return (d && d.readings && d.readings.length) ? d : null;
+    return (d && d.readings && d.readings.length && d.v === 2) ? d : null;
   } catch (e) { return null; }
 }
 function saveCache(date, obj) {
@@ -120,7 +137,9 @@ module.exports = async (req, res) => {
       title: parsed.title,
       color: parsed.color,
       readings: parsed.readings,
+      saints: parsed.saints,
       source_url: SRC_URL,
+      v: 2,
     };
 
     if (out.readings.length && blobStoreId()) await saveCache(date, out);

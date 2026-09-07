@@ -1,6 +1,7 @@
 // 성경 사이트 – 말씀 게임 점수 랭킹 API
 // POST {game, score}  (로그인 필요) → 그 게임의 개인 최고점 갱신 + 랭킹 집계 재생성
 // GET  ?game=<키>     → 그 게임 상위 20명 [{name, score}]  (누구나 조회)
+// GET  ?mine=1        (로그인 필요) → 내 최고 기록 { scores: { game: best } }
 // GET                 → 전체 게임 랭킹 { game: [...] }
 // DELETE ?name=<아이디> (관리자 전용) → 그 계정의 랭킹 기록 삭제 (테스트 데이터 정리용)
 //
@@ -71,6 +72,15 @@ module.exports = async (req, res) => {
   if (!blobStoreId()) { res.status(503).json({ error: 'no-db' }); return; }
 
   try {
+    if (req.method === 'GET' && req.query && req.query.mine === '1') {
+      const sess0 = verifySession(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+      if (!sess0) { res.status(401).json({ error: 'unauthorized' }); return; }
+      const u0 = await loadUser(sess0.sub);
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).json({ scores: (u0 && u0.scores) || {} });
+      return;
+    }
+
     if (req.method === 'GET') {
       const rank = await loadRanking();
       const g = req.query && req.query.game;
