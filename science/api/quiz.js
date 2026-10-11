@@ -10,8 +10,11 @@
 // DELETE ?id=X                     → 퀴즈 삭제 (본인 퀴즈, 또는 관리자)
 //
 // 퀴즈 = 개별 불변 파일 sci/q/<id>.json, 읽기용 집계 sci/quizzes.json (등록/삭제 때만 재생성)
-// 풀이 = sci/a/<id>__<유저해시>.json (allowOverwrite:false 로 1인 1회 보장)
-// 내 기록 = sci/s/<유저해시>.json, 랭킹 = sci/rank.json (내 기록에서 다시 계산해 덮어써서 자가 복구)
+// 풀이 잠금 = sci/a/<id>__<유저해시>.json (allowOverwrite:false 로 1인 1회 보장)
+// 풀이 기록 = sci/r/<유저해시>/<id>_<맞음1|0>_<고른번호>_<이름hex>.json  (경로에 정보를 담아 list() 만으로 집계)
+// 집계 = sci/stats.json { stats:{id:[도전,정답]}, users:{유저해시:{name,correct,tries}}, hidden:[] } — 풀이 때마다 list() 로 새로 만듦
+// (Blob 공개 URL 은 최대 60초 늦게 반영되므로 공용 파일을 읽고-고쳐-쓰는 방식은 쓰지 않음)
+// 랭킹 제외 = sci/hide/<유저해시>.json
 
 const crypto = require('crypto');
 const { put, list, del, head } = require('@vercel/blob');
@@ -20,10 +23,10 @@ const { verifySession, isAdmin, isBanned, banName, unbanName, blobBase, blobStor
 const AGG_PATH = 'sci/quizzes.json';
 const Q_DIR = 'sci/q/';
 const A_DIR = 'sci/a/';
-const S_DIR = 'sci/s/';
+const R_DIR = 'sci/r/';
+const HIDE_DIR = 'sci/hide/';
 const REP_DIR = 'sci/rep/';
-const RANK_PATH = 'sci/rank.json';
-const STAT_PATH = 'sci/qstat.json';
+const STATS_PATH = 'sci/stats.json';
 const CATS = ['물리', '화학', '생명과학', '지구과학', '기타'];
 const MAX_SHOW = 200;
 
@@ -34,6 +37,8 @@ const PTS_RECEIVED = 1;
 function subHash(sub) {
   return crypto.createHash('sha256').update(String(sub)).digest('hex').slice(0, 40);
 }
+function hex(s) { return Buffer.from(String(s), 'utf8').toString('hex'); }
+function unhex(h) { try { return Buffer.from(h, 'hex').toString('utf8'); } catch (e) { return ''; } }
 function clean(s, max) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, max);
 }
@@ -100,25 +105,73 @@ async function purgeReports(id) {
   } catch (e) { /* 무시 */ }
 }
 
-async function buildRank() {
-  const [rank, quizzes, stats] = await Promise.all([loadObj(RANK_PATH), loadAgg(), loadObj(STAT_PATH)]);
-  const rows = {};
-  function row(sub, name) {
-    if (!rows[sub]) rows[sub] = { sub: sub, name: name || '', correct: 0, tries: 0, made: 0, received: 0 };
-    if (name && !rows[sub].name) rows[sub].name = name;
-    return rows[sub];
+async function listAll(prefix) {
+  let out = [], cursor;
+  for (let i = 0; i < 20; i++) {
+    const r = await list({ prefix: prefix, limit: 1000, cursor: cursor });
+    out = out.concat(r.blobs || []);
+    if (!r.hasMore) break;
+    cursor = r.cursor;
   }
-  Object.keys(rank).forEach((sub) => {
-    const e = rank[sub] || {};
-    if (e.hidden) return;
-    const r = row(sub, e.name);
-    r.correct = e.correct || 0; r.tries = e.tries || 0;
+  return out;
+}
+// sci/r/<h>/<id>_<ok>_<pick>_<namehex>.json → { h, id, ok, pick, name }
+function parseRecord(pathname) {
+  const m = /^sci\/r\/([0-9a-f]+)\/([0-9a-z-]+)_([01])_(\d+)_([0-9a-f]*)\.json$/.exec(pathname);
+  return m ? { h: m[1], id: m[2], ok: m[3] === '1', pick: +m[4], name: unhex(m[5]) } : null;
+}
+function recordPath(h, id, ok, pick, name) {
+  return R_DIR + h + '/' + id + '_' + (ok ? 1 : 0) + '_' + pick + '_' + hex(name) + '.json';
+}
+
+// 풀이 기록 전체를 list() 로 모아 집계 파일을 다시 만듦 (풀이·랭킹제외 때만 호출)
+// ensure: 방금 저장한 기록 (list 반영 지연 대비)
+async function rebuildStats(ensure) {
+  let recs = [], hidden = [];
+  try {
+    const [rb, hb] = await Promise.all([listAll(R_DIR), listAll(HIDE_DIR)]);
+    recs = rb.map((b) => parseRecord(b.pathname)).filter(Boolean);
+    hidden = hb.map((b) => b.pathname.slice(HIDE_DIR.length).replace(/\.json$/, ''));
+  } catch (e) { return null; }
+  if (ensure && !recs.some((r) => r.h === ensure.h && r.id === ensure.id)) recs.push(ensure);
+  if (ensure && ensure.hide && hidden.indexOf(ensure.hide) < 0) hidden.push(ensure.hide);
+  const stats = {}, users = {};
+  recs.forEach((r) => {
+    if (!r.id) return;
+    const st = stats[r.id] || (stats[r.id] = [0, 0]);
+    st[0] += 1; if (r.ok) st[1] += 1;
+    const u = users[r.h] || (users[r.h] = { name: r.name, correct: 0, tries: 0 });
+    u.tries += 1; if (r.ok) u.correct += 1;
+  });
+  const data = { stats: stats, users: users, hidden: hidden, at: new Date().toISOString() };
+  try { await saveJson(STATS_PATH, data); } catch (e) { /* 다음 풀이 때 복구 */ }
+  return data;
+}
+async function loadStats() {
+  const d = await loadObj(STATS_PATH);
+  return { stats: d.stats || {}, users: d.users || {}, hidden: d.hidden || [] };
+}
+
+function buildRank(quizzes, data) {
+  const hidden = {};
+  (data.hidden || []).forEach((h) => { hidden[h] = 1; });
+  const rows = {};
+  function row(name) {
+    const sub = 'local:' + String(name).toLowerCase();
+    const h = subHash(sub);
+    if (hidden[h]) return null;
+    return rows[h] || (rows[h] = { sub: sub, name: name, correct: 0, tries: 0, made: 0, received: 0 });
+  }
+  Object.keys(data.users).forEach((h) => {
+    const u = data.users[h];
+    const r = row(u.name);
+    if (r) { r.correct = u.correct; r.tries = u.tries; }
   });
   quizzes.forEach((q) => {
-    if (rank[q.sub] && rank[q.sub].hidden) return;
-    const r = row(q.sub, q.name);
+    const r = row(q.name);
+    if (!r) return;
     r.made += 1;
-    const st = stats[q.id];
+    const st = data.stats[q.id];
     if (Array.isArray(st)) r.received += st[0] || 0;
   });
   return Object.values(rows)
@@ -136,15 +189,25 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const q = req.query || {};
       res.setHeader('Cache-Control', 'no-store');
-      if (q.rank === '1') { res.status(200).json({ rank: await buildRank() }); return; }
-      if (q.me === '1') {
-        if (!sess) { res.status(401).json({ error: 'unauthorized' }); return; }
-        const mine = await readStrong(S_DIR + subHash(sess.sub) + '.json');
-        res.status(200).json({ solved: (mine && mine.solved) || {} });
+      if (q.rank === '1') {
+        const [quizzes, data] = await Promise.all([loadAgg(), loadStats()]);
+        res.status(200).json({ rank: buildRank(quizzes, data) });
         return;
       }
-      const [quizzes, stats] = await Promise.all([loadAgg(), loadObj(STAT_PATH)]);
-      res.status(200).json({ quizzes: quizzes.slice(0, MAX_SHOW).map(publicQuiz), stats: stats });
+      if (q.me === '1') {
+        if (!sess) { res.status(401).json({ error: 'unauthorized' }); return; }
+        const solved = {};
+        try {
+          (await listAll(R_DIR + subHash(sess.sub) + '/')).forEach((b) => {
+            const r = parseRecord(b.pathname);
+            if (r) solved[r.id] = { ok: r.ok, pick: r.pick };
+          });
+        } catch (e) { /* 빈 기록 */ }
+        res.status(200).json({ solved: solved });
+        return;
+      }
+      const [quizzes, data] = await Promise.all([loadAgg(), loadStats()]);
+      res.status(200).json({ quizzes: quizzes.slice(0, MAX_SHOW).map(publicQuiz), stats: data.stats });
       return;
     }
 
@@ -188,10 +251,10 @@ module.exports = async (req, res) => {
       if (!admin) { res.status(403).json({ error: 'not-admin' }); return; }
       const sub = clean(body.sub, 80);
       if (!sub) { res.status(400).json({ error: 'no-sub' }); return; }
-      const rank = await loadObj(RANK_PATH);
-      rank[sub] = Object.assign({}, rank[sub] || {}, { hidden: true });
-      await saveJson(RANK_PATH, rank);
-      res.status(200).json({ ok: true, rank: await buildRank() });
+      await saveJson(HIDE_DIR + subHash(sub) + '.json', { sub: sub, by: sess.name, at: new Date().toISOString() });
+      let data = await rebuildStats({ hide: subHash(sub) });
+      if (!data) { data = await loadStats(); data.hidden.push(subHash(sub)); }
+      res.status(200).json({ ok: true, rank: buildRank(await loadAgg(), data) });
       return;
     }
 
@@ -235,23 +298,18 @@ module.exports = async (req, res) => {
         res.status(409).json({ error: 'already', correct: !!(prev && prev.ok), pick: prev ? prev.pick : null, answer: quiz.answer, explain: quiz.explain || '' });
         return;
       }
-      const mine = (await readStrong(S_DIR + h + '.json')) || { solved: {} };
-      mine.solved = mine.solved || {};
-      mine.solved[id] = { ok: ok, pick: pick, at: at };
-      mine.name = sess.name;
-      await saveJson(S_DIR + h + '.json', mine);
-
-      const vals = Object.values(mine.solved);
-      const [rank, stats] = await Promise.all([loadObj(RANK_PATH), loadObj(STAT_PATH)]);
-      rank[sess.sub] = Object.assign({}, rank[sess.sub] || {}, {
-        name: sess.name, tries: vals.length, correct: vals.filter((v) => v.ok).length,
-      });
-      const st = Array.isArray(stats[id]) ? stats[id] : [0, 0];
-      stats[id] = [st[0] + 1, st[1] + (ok ? 1 : 0)];
-      await Promise.all([saveJson(RANK_PATH, rank), saveJson(STAT_PATH, stats)]);
+      const name = clean(sess.name, 16);
+      try {
+        await put(recordPath(h, id, ok, pick, name), '1', {
+          access: 'public', addRandomSuffix: false, allowOverwrite: true,
+          contentType: 'text/plain', cacheControlMaxAge: 31536000,
+        });
+      } catch (e) { /* 잠금 파일은 이미 있음 — 집계에서만 빠짐 */ }
+      const data = await rebuildStats({ h: h, id: id, ok: ok, pick: pick, name: name });
+      const stat = (data && data.stats[id]) || null;
 
       res.setHeader('Cache-Control', 'no-store');
-      res.status(200).json({ ok: true, correct: ok, pick: pick, answer: quiz.answer, explain: quiz.explain || '', stat: stats[id] });
+      res.status(200).json({ ok: true, correct: ok, pick: pick, answer: quiz.answer, explain: quiz.explain || '', stat: stat });
       return;
     }
 
