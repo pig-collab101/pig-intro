@@ -5,11 +5,16 @@
 //   start  {plane}                   → {ticket}            게임 시작 표 (코인 부정 방지)
 //   finish {ticket, score, stage, clear} → {earned, wallet}
 //   tune   {plane, stat}             → {cost, wallet}      능력치 1단계 올리기
+// GET ?rank=all | ?rank=<기체번호>     → {list:[{name, score, plane, clear}]}  랭킹 (30초 캐시)
 //
 // 계정 = sky/u/<이름해시>.json  (head()로 존재 확인)
 // 지갑 = 사건 파일 sky/e/<유저해시>/<순번6자리>.json  (allowOverwrite:false, 내용은 안 바뀜)
 //   순번만 경로에 있어서 동시에 두 번 써도 같은 순번은 하나만 성공 → 코인 이중 사용 불가.
 //   하나의 지갑 JSON 을 고쳐 쓰면 CDN 지연(최대 60초) 때문에 코인이 사라질 수 있어서 이렇게 함.
+// 랭킹 = 자기 최고기록을 깰 때만 빈 파일 하나 기록. 정보는 전부 경로에 들어 있음:
+//   sky/r/all/<9999999999-점수>_<기체>_<클리어>_<유저해시8>_<이름hex>.json
+//   sky/r/p<기체>/...  (기체별 랭킹)
+//   list() 는 경로 순서(=점수 높은 순)로 돌려줘서 파일을 열어 볼 필요가 없음.
 
 const crypto = require('crypto');
 const { put, head, list } = require('@vercel/blob');
@@ -17,6 +22,7 @@ const { put, head, list } = require('@vercel/blob');
 const SALT = 'sky2026-salt';
 const USER_DIR = 'sky/u/';
 const EVENT_DIR = 'sky/e/';
+const RANK_DIR = 'sky/r/';
 const SESSION_TTL = 60 * 24 * 60 * 60;   // 60일
 const TICKET_TTL = 3 * 60 * 60;          // 3시간
 const START_COINS = 100;
@@ -121,9 +127,50 @@ async function addEvent(h, makeEvent) {
   return { error: 'busy' };
 }
 
+// ---- 랭킹 ----
+function rankPath(board, score, plane, clear, h, name) {
+  const inv = String(9999999999 - score).padStart(10, '0');
+  return RANK_DIR + board + '/' + inv + '_' + String(plane).padStart(2, '0') + '_' + (clear ? 1 : 0) + '_' +
+    h.slice(0, 8) + '_' + Buffer.from(name, 'utf8').toString('hex') + '.json';
+}
+async function writeRank(board, score, plane, clear, h, name) {
+  try {
+    await put(rankPath(board, score, plane, clear, h, name), '{}', {
+      access: 'public', addRandomSuffix: false, allowOverwrite: true,
+      contentType: 'application/json', cacheControlMaxAge: 31536000,
+    });
+  } catch (e) { /* 랭킹 기록 실패는 무시 (코인은 이미 저장됨) */ }
+}
+async function readRank(board) {
+  const r = await list({ prefix: RANK_DIR + board + '/', limit: 400 });
+  const seen = new Set(), out = [];
+  for (const b of r.blobs || []) {
+    const m = /\/(\d{10})_(\d{2})_([01])_([0-9a-f]{8})_([0-9a-f]+)\.json$/.exec(b.pathname);
+    if (!m || seen.has(m[4])) continue;     // 한 사람은 최고 기록 하나만
+    seen.add(m[4]);
+    out.push({ name: Buffer.from(m[5], 'hex').toString('utf8'), score: 9999999999 - +m[1], plane: +m[2], clear: m[3] === '1' });
+    if (out.length >= 100) break;
+  }
+  return out;
+}
+
 const cleanName = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, 12);
 
 module.exports = async (req, res) => {
+  if (req.method === 'GET' && req.query && req.query.rank != null) {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) { res.status(503).json({ error: 'no-db' }); return; }
+    const q = String(req.query.rank);
+    const plane = parseInt(q, 10);
+    const board = q === 'all' ? 'all' : (plane >= 0 && plane < PLANE_COUNT ? 'p' + plane : null);
+    if (!board) { res.status(400).json({ error: 'bad-board' }); return; }
+    try {
+      const listOut = await readRank(board);
+      // 여러 사람이 동시에 봐도 30초 동안은 저장소에 다시 안 물어봄 (작업 횟수 절약)
+      res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+      res.status(200).json({ list: listOut });
+    } catch (e) { res.status(500).json({ error: String((e && e.message) || e) }); }
+    return;
+  }
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.status(405).json({ error: 'method-not-allowed' }); return; }
   if (!process.env.BLOB_READ_WRITE_TOKEN) { res.status(503).json({ error: 'no-db' }); return; }
@@ -187,12 +234,21 @@ module.exports = async (req, res) => {
       const score = Math.max(0, Math.min(parseInt(body.score, 10) || 0, Math.floor(secs * 6000), 5000000));
       let coins = Math.floor(score / 5000) + cleared * 30 + (clear ? 100 : 0);
       coins = Math.max(0, Math.min(coins, Math.floor(secs * 1.5), MAX_EARN));
+      let prevAll = 0, prevPlane = 0;
       const r = await addEvent(h, (st) => {
         if (st.tickets.has(t.t0)) return { error: 'used' };
+        prevAll = Math.max(0, ...Object.values(st.w.best));
+        prevPlane = st.w.best[t.p] || 0;
         return { k: 'earn', p: t.p, coins, score, clear: clear && secs > 120 ? 1 : 0, t0: t.t0, at: new Date().toISOString() };
       });
       if (r.error) { res.status(r.error === 'used' ? 409 : 503).json({ error: r.error }); return; }
-      res.status(200).json({ earned: coins, wallet: r.w });
+      // 자기 최고 기록을 깼을 때만 랭킹에 올림
+      const rc = r.ev.clear;
+      await Promise.all([
+        score > prevAll ? writeRank('all', score, t.p, rc, h, sess.name) : null,
+        score > prevPlane ? writeRank('p' + t.p, score, t.p, rc, h, sess.name) : null,
+      ]);
+      res.status(200).json({ earned: coins, wallet: r.w, newBest: score > prevAll, newPlaneBest: score > prevPlane });
       return;
     }
 

@@ -99,6 +99,18 @@ button{font-family:inherit;cursor:pointer;border:none}
 .tune:disabled{background:#2a3d66;color:#6f86a8;cursor:default}
 .card .wrench{position:absolute;bottom:3px;right:4px;font-size:11px}
 #overCoin{font-size:22px;color:#ffd54a;min-height:30px}
+#rank{background:#0b1426;align-items:stretch}
+#rankList{flex:1;overflow-y:auto;padding:6px 10px;touch-action:pan-y}
+.rk{display:flex;align-items:center;gap:8px;background:#16233f;border-radius:10px;padding:6px 10px;margin-bottom:5px}
+.rk.me{background:#3a2f0b;border:2px solid #ffd54a}
+.rk .no{width:34px;text-align:center;font-size:18px}
+.rk canvas{width:34px;height:34px}
+.rk .who{flex:1;min-width:0}
+.rk .who b{font-weight:normal;font-size:16px}
+.rk .who div{font-size:11.5px;color:#9fb6d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk .sc{font-size:17px;color:#ffd54a}
+#rankInfo{text-align:center;color:#9fb6d0;padding:30px 10px;font-size:16px;line-height:1.6}
+#rankNote{font-size:12px;color:#6f86a8;text-align:center;padding:4px}
 </style>
 </head>
 <body>
@@ -111,12 +123,13 @@ button{font-family:inherit;cursor:pointer;border:none}
     <div class="sub">세계 50개 나라 · 68대의 비행기<br>정체불명 <b style="color:#ff8080">무인기 군단</b>을 막아라!</div>
     <div id="acct"></div>
     <button class="big" id="startBtn">✈️ 출격 준비</button>
+    <button class="small" id="rankBtn" style="font-size:18px;padding:8px 26px">🏆 랭킹</button>
     <div class="sub" id="titleDex" style="font-size:16px;color:#ffd54a"></div>
     <div class="keys">방향키/WASD 이동 · 자동 사격<br>Z 특수기 · X/스페이스 폭탄 · P 일시정지 · M 음악<br>📱 휴대폰: 화면을 끌어서 이동</div>
   </div>
 
   <div id="sel" class="screen">
-    <div class="selTop"><button class="small" id="selBack">← 처음</button><b>기체 선택 · 도감</b><span id="dexCount"></span></div>
+    <div class="selTop"><button class="small" id="selBack">← 처음</button><b>기체 선택 · 도감</b><span id="dexCount"></span><button class="small" id="selRank" style="padding:6px 10px">🏆</button></div>
     <div class="tabs">
       <button data-s="F" class="on">⚔️ 전투기 50</button>
       <button data-s="A">💥 공격기 10</button>
@@ -148,6 +161,16 @@ button{font-family:inherit;cursor:pointer;border:none}
     <button class="small" id="quitBtn">기체 선택으로</button>
   </div>
 
+  <div id="rank" class="screen">
+    <div class="selTop"><button class="small" id="rankBack">← 뒤로</button><b>🏆 랭킹</b></div>
+    <div class="tabs">
+      <button data-b="all" class="on">🌍 전체 TOP 100</button>
+      <button data-b="plane" id="rankPlaneTab">✈️ 기체별</button>
+    </div>
+    <div id="rankList"></div>
+    <div id="rankNote">로그인하고 자기 최고 기록을 깨면 랭킹에 올라가요 · 30초마다 새로 고침</div>
+  </div>
+
   <div id="login" class="screen">
     <div class="box">
       <h3 id="lgTitle">🔑 로그인</h3>
@@ -166,7 +189,7 @@ button{font-family:inherit;cursor:pointer;border:none}
     <p id="overP"></p>
     <div id="overCoin"></div>
     <div class="row"><button class="big" id="retryBtn">🔁 다시</button></div>
-    <button class="small" id="toSelBtn">기체 선택으로</button>
+    <div class="row"><button class="small" id="toSelBtn">기체 선택으로</button><button class="small" id="overRank">🏆 랭킹</button></div>
   </div>
 </div>
 
@@ -1544,7 +1567,7 @@ function drawTitleDemo() {
 }
 
 /* ───────────── 화면 전환 ───────────── */
-function show(id) { ['title','sel','pause','over','login'].forEach(s => $(s).classList.toggle('on', s === id)); $('hudBtns').classList.toggle('on', id === null); }
+function show(id) { ['title','sel','pause','over','login','rank'].forEach(s => $(s).classList.toggle('on', s === id)); $('hudBtns').classList.toggle('on', id === null); }
 function pause() { if (!G || G.state !== 'play') return; G.state = 'pause'; show('pause'); $('hudBtns').classList.remove('on'); }
 function resume() { if (!G) return; G.state = 'play'; show(null); }
 function endGame(win) {
@@ -1560,7 +1583,11 @@ function endGame(win) {
   if (SESSION && G.ticket) {
     $('overCoin').textContent = '🪙 코인 계산 중…';
     api('finish', {ticket:G.ticket, score:G.score, stage:G.stage, clear:win})
-      .then(j => { $('overCoin').textContent = `🪙 +${j.earned} 코인! (가진 코인 ${j.wallet.coins.toLocaleString()})`; refreshAcct(); })
+      .then(j => {
+        $('overCoin').innerHTML = `🪙 +${j.earned} 코인! (가진 코인 ${j.wallet.coins.toLocaleString()})` +
+          (j.newBest ? '<br><span style="color:#7dd3fc">🏆 내 최고 기록! 랭킹에 올라갔어요</span>' : j.newPlaneBest ? '<br><span style="color:#7dd3fc">🏆 이 기체 랭킹에 올라갔어요</span>' : '');
+        refreshAcct();
+      })
       .catch(() => { $('overCoin').textContent = '코인 저장에 실패했어요 😢'; });
   } else if (!SESSION) $('overCoin').innerHTML = '<span style="font-size:15px;color:#9fb6d0">로그인하면 코인을 받을 수 있어요</span>';
   $('overT').textContent = win ? '🏆 모든 스테이지 클리어!' : '💥 게임 오버';
@@ -1587,6 +1614,7 @@ $('resumeBtn').onclick = resume;
 $('quitBtn').onclick = () => { G = null; openSelect(); };
 $('retryBtn').onclick = () => startPlay(G.plane.id);
 $('toSelBtn').onclick = () => { G = null; openSelect(); };
+$('overRank').onclick = () => { G = null; openRank('sel'); };
 function refreshTitle() { $('titleDex').textContent = `🏅 도감 ${clearedCount()} / ${PLANES.length}`; }
 refreshTitle();
 
@@ -1664,6 +1692,61 @@ function drawRadar(st, eff) {
   c.fillStyle = '#cfe0f5'; c.font = '24px Jua'; c.textAlign = 'center'; c.textBaseline = 'middle';
   for (let i = 0; i < 5; i++) { const [x, y] = pt(i, R + 26); c.fillText(STAT_NAMES[i], x, y); }
 }
+
+/* ───────────── 랭킹 ───────────── */
+let rankBoard = 'all', rankBack = 'title', rankReq = 0;
+function openRank(from) {
+  rankBack = from;
+  $('rankPlaneTab').textContent = `✈️ ${PLANES[selPlane].name}`;
+  show('rank');
+  loadRank(rankBoard);
+}
+document.querySelectorAll('#rank .tabs button').forEach(b => b.onclick = () => {
+  rankBoard = b.dataset.b;
+  document.querySelectorAll('#rank .tabs button').forEach(x => x.classList.toggle('on', x === b));
+  loadRank(rankBoard);
+});
+async function loadRank(board) {
+  const req = ++rankReq, L = $('rankList');
+  L.innerHTML = '<div id="rankInfo">불러오는 중… ✈️</div>';
+  const P = PLANES[selPlane];
+  let list;
+  try {
+    const r = await fetch('/api/sky?rank=' + (board === 'all' ? 'all' : selPlane));
+    if (!r.ok) throw 0;
+    list = (await r.json()).list || [];
+  } catch (e) {
+    if (req === rankReq) L.innerHTML = '<div id="rankInfo">랭킹을 불러오지 못했어요 😢<br>잠시 후 다시 해 주세요</div>';
+    return;
+  }
+  if (req !== rankReq) return;
+  if (!list.length) {
+    L.innerHTML = `<div id="rankInfo">아직 ${board === 'all' ? '' : P.name + ' '}기록이 없어요.<br>첫 번째 주인공이 되어 보세요! 🚀</div>`;
+    return;
+  }
+  const myName = SESSION ? SESSION.name.toLowerCase() : null;
+  L.innerHTML = '';
+  list.forEach((it, i) => {
+    const pl = PLANES[it.plane] || PLANES[0];
+    const d = document.createElement('div');
+    d.className = 'rk' + (myName && it.name.toLowerCase() === myName ? ' me' : '');
+    d.innerHTML = `<div class="no">${i < 3 ? ['🥇','🥈','🥉'][i] : i + 1}</div><canvas width="68" height="68"></canvas>` +
+      `<div class="who"><b></b>${it.clear ? ' 🏅' : ''}<div>${pl.nat} · ${pl.name} <span class="tier t${pl.tier}" style="position:static;display:inline-block;font-size:10px;width:15px;height:15px;line-height:15px;text-align:center">${pl.tier}</span></div></div>` +
+      `<div class="sc">${it.score.toLocaleString()}</div>`;
+    d.querySelector('b').textContent = it.name;   // 이름은 글자로만 넣기 (HTML 막기)
+    drawPlaneIcon(d.querySelector('canvas'), pl);
+    L.appendChild(d);
+  });
+  const mine = myName && list.findIndex(it => it.name.toLowerCase() === myName);
+  if (myName && mine < 0) {
+    const n = document.createElement('div'); n.id = 'rankInfo'; n.style.padding = '10px';
+    n.textContent = '아직 내 기록이 순위에 없어요. 도전! 💪';
+    L.appendChild(n);
+  }
+}
+$('rankBtn').onclick = () => { initAudio(); openRank('title'); };
+$('selRank').onclick = () => openRank('sel');
+$('rankBack').onclick = () => rankBack === 'sel' ? openSelect() : show('title');
 
 /* ───────────── 메인 루프 ───────────── */
 let last = performance.now(), acc = 0;
