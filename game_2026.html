@@ -68,6 +68,8 @@ button{font-family:inherit;cursor:pointer;border:none}
 #hudBtns.on{display:block}
 #hudBtns button{pointer-events:auto;position:absolute;border-radius:50%;color:#fff;font-size:15px;background:#0006;border:2px solid #fff6}
 #btnPause{top:58px;right:8px;width:40px;height:40px;font-size:16px}
+#btnMute{top:58px;right:54px;width:40px;height:40px;font-size:16px}
+#titleMute{position:absolute;top:12px;right:12px;width:46px;height:46px;border-radius:50%;font-size:20px;background:#0006;border:2px solid #fff6;color:#fff}
 #btnBomb{bottom:70px;right:10px;width:66px;height:66px}
 #btnSpec{bottom:146px;right:10px;width:66px;height:66px}
 #btnSpec.ready{background:#ffb30099;border-color:#ffd54a;animation:pulse .6s infinite alternate}
@@ -104,12 +106,13 @@ button{font-family:inherit;cursor:pointer;border:none}
   <canvas id="cv" width="480" height="720"></canvas>
 
   <div id="title" class="screen on">
+    <button id="titleMute" class="muteBtn" title="배경음악 켜기/끄기 (M)">🎵</button>
     <h1>2026</h1>
     <div class="sub">세계 50개 나라 · 68대의 비행기<br>정체불명 <b style="color:#ff8080">무인기 군단</b>을 막아라!</div>
     <div id="acct"></div>
     <button class="big" id="startBtn">✈️ 출격 준비</button>
     <div class="sub" id="titleDex" style="font-size:16px;color:#ffd54a"></div>
-    <div class="keys">방향키/WASD 이동 · 자동 사격<br>Z 특수기 · X/스페이스 폭탄 · P 일시정지<br>📱 휴대폰: 화면을 끌어서 이동</div>
+    <div class="keys">방향키/WASD 이동 · 자동 사격<br>Z 특수기 · X/스페이스 폭탄 · P 일시정지 · M 음악<br>📱 휴대폰: 화면을 끌어서 이동</div>
   </div>
 
   <div id="sel" class="screen">
@@ -134,6 +137,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 
   <div id="hudBtns">
     <button id="btnPause">⏸</button>
+    <button id="btnMute" class="muteBtn">🎵</button>
     <button id="btnSpec">⚡<br>특수</button>
     <button id="btnBomb">💣<br>폭탄</button>
   </div>
@@ -437,6 +441,133 @@ function snd(k) {
     else if (k === 'spec') { tone(300, 1500, .35, 'sawtooth', .1); }
   } catch (e) {}
 }
+// 브라우저는 처음 클릭/키 입력이 있어야 소리를 낼 수 있어요
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => addEventListener(ev, () => initAudio(), {once:true, passive:true}));
+
+/* ───────────── 배경음악 (코드로 직접 연주하는 칩튠) ───────────── */
+// 멜로디는 8분음표 단위: 'E5' = 음, '-' = 길게, '.' = 쉼
+const NOTE_N = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
+const midiOf = s => 12 * (+s.slice(-1) + 1) + NOTE_N[s[0]] + (s[1] === '#' ? 1 : 0);
+const freqOf = m => 440 * Math.pow(2, (m - 69) / 12);
+function expandLead(str) {
+  const out = [];
+  str.trim().split(/\s+/).forEach(t => {
+    if (t === '.') out.push(null, null);
+    else if (t === '-') out.push('-', '-');
+    else out.push(midiOf(t), '-');
+  });
+  return out;
+}
+// [근음, 'M'=장조 / 'm'=단조]
+const CH = {C:[48,'M'], G:[43,'M'], Am:[45,'m'], F:[41,'M'], E:[40,'M'], Dm:[38,'m'], Em:[40,'m']};
+const STAGE_LEAD =
+  'E5 G5 C6 G5 E5 G5 A5 G5  D5 G5 B5 G5 D5 G5 B5 D6  C6 B5 A5 E5 C5 E5 A5 B5  C6 - A5 - F5 A5 C6 D6 ' +
+  'E6 - D6 C6 - G5 E5 G5  D6 - C6 B5 - G5 D5 G5  C6 - B5 A5 - E5 A5 B5  C6 D6 E6 - D6 C6 A5 G5';
+const BOSS_LEAD =
+  'A5 . A5 C6 . A5 E6 D6  C6 . A5 . F5 A5 C6 .  B5 . G5 D6 . B5 G5 B5  G#5 . B5 E6 . D6 B5 G#5 ' +
+  'E6 - D6 C6 - B5 A5 B5  C6 - A5 F5 - A5 C6 F6  D6 - B5 G5 - B5 D6 G6  E6 - - - G#5 - B5 -';
+const SONGS = {
+  title:() => ({bpm:108, chords:['C','Am','F','G'], arp:'soft', bass:'half', hat:'..x...x...x...x.', kick:'x.......x.......', snare:''}),
+  // 스테이지가 올라갈수록 키가 높아지고 빨라져요
+  stage:st => ({bpm:140 + st * 15, tr:st * 2, chords:['C','G','Am','F'], lead:expandLead(STAGE_LEAD), arp:'on', bass:'eighth',
+    kick:st < 2 ? 'x...x...x...x...' : 'x...x...x...x.x.', snare:'....x.......x...', hat:st ? 'x.xxx.xxx.xxx.xx' : 'x.x.x.x.x.x.x.x.'}),
+  boss:st => ({bpm:168 + st * 8, tr:st, chords:['Am','F','G','E'], lead:expandLead(BOSS_LEAD), arp:'on', bass:'drive', leadType:'sawtooth',
+    kick:'x..xx..xx..xx..x', snare:'....x.......x..x', hat:'xxxxxxxxxxxxxxxx'}),
+  clear:() => ({bpm:150, once:true, chords:['C'], lead:expandLead('C5 E5 G5 C6 - - G5 C6 - - - - . . . .'), bass:'none', kick:'x...............', snare:'', hat:''}),
+  win:() => ({bpm:132, once:true, chords:['C','F','G','C'], lead:expandLead('C5 E5 G5 C6 - G5 C6 E6  F5 A5 C6 F6 - C6 F6 A6  G5 B5 D6 G6 - F6 E6 D6  C6 - E6 - G6 - - -'), arp:'on', bass:'eighth', kick:'x...x...x...x...', snare:'....x.......x...', hat:'x.x.x.x.x.x.x.x.'}),
+  over:() => ({bpm:96, once:true, chords:['Am'], lead:expandLead('E5 - C5 - A4 - G#4 - A4 - - - . . . .'), bass:'none', kick:'', snare:'', hat:''}),
+};
+let MUTED = false;
+try { MUTED = localStorage.getItem('sky2026-mute') === '1'; } catch (e) {}
+const MUS = {cur:null, song:null, step:0, next:0, timer:null, gain:null, paused:false};
+function playSong(name, arg) {
+  const key = name + (arg != null ? arg : '');
+  if (!AC || MUS.cur === key) return;
+  MUS.cur = key;
+  if (name === 'none') { MUS.song = null; return; }
+  if (!MUS.gain) { MUS.gain = AC.createGain(); MUS.gain.gain.value = .5; MUS.gain.connect(AC.destination); }
+  MUS.song = SONGS[name](arg || 0);
+  MUS.song.len = MUS.song.lead ? MUS.song.lead.length : MUS.song.chords.length * 16;
+  MUS.step = 0; MUS.next = AC.currentTime + .08;
+  if (!MUS.timer) MUS.timer = setInterval(schedMusic, 25);
+}
+function schedMusic() {
+  const S = MUS.song;
+  if (!S || !AC) return;
+  if (MUTED || MUS.paused) { MUS.next = AC.currentTime + .05; return; }
+  const spb = 60 / S.bpm / 4;  // 16분음표 길이
+  if (MUS.next < AC.currentTime - .2) MUS.next = AC.currentTime + .02;
+  while (MUS.next < AC.currentTime + .12) {
+    if (S.once && MUS.step >= S.len) { MUS.song = null; return; }
+    try { playStep(S, MUS.step % S.len, MUS.next, spb); } catch (e) {}
+    MUS.next += spb; MUS.step++;
+  }
+}
+function voice(type, m, t, dur, vol, cut) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freqOf(m), t);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .006);
+  g.gain.setValueAtTime(vol * .7, t + Math.min(dur * .5, .08));
+  g.gain.exponentialRampToValueAtTime(.0005, t + dur);
+  let node = o;
+  if (cut) { const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; node = o.connect(f); }
+  node.connect(g).connect(MUS.gain); o.start(t); o.stop(t + dur + .02);
+}
+function drum(kind, t) {
+  if (kind === 'k') {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(40, t + .12);
+    g.gain.setValueAtTime(.5, t); g.gain.exponentialRampToValueAtTime(.001, t + .14);
+    o.connect(g).connect(MUS.gain); o.start(t); o.stop(t + .15);
+  } else {
+    const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(), dur = kind === 's' ? .14 : .035;
+    s.buffer = NOISE; f.type = 'highpass'; f.frequency.value = kind === 's' ? 1500 : 7000;
+    g.gain.setValueAtTime(kind === 's' ? .22 : .06, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    s.connect(f).connect(g).connect(MUS.gain); s.start(t, Math.random() * .5); s.stop(t + dur);
+  }
+}
+function playStep(S, step, t, spb) {
+  const s = step % 16, tr = S.tr || 0;
+  const [root, type] = CH[S.chords[Math.floor(step / 16) % S.chords.length]];
+  const tones = type === 'M' ? [0, 4, 7, 12] : [0, 3, 7, 12];
+  // 드럼
+  if (S.kick && S.kick[s] === 'x') drum('k', t);
+  if (S.snare && S.snare[s] === 'x') drum('s', t);
+  if (S.hat && S.hat[s] === 'x') drum('h', t);
+  // 베이스
+  const b = root + tr - 12;
+  if (S.bass === 'eighth' && s % 2 === 0) voice('square', b + (s % 4 === 2 ? 12 : 0), t, spb * 1.8, .09, 900);
+  if (S.bass === 'drive') voice('sawtooth', b + (s % 8 === 6 ? 12 : 0), t, spb * .9, .08, 700);
+  if (S.bass === 'half' && s % 8 === 0) voice('triangle', b + 12, t, spb * 7.5, .2);
+  // 아르페지오 (화음을 빠르게 쪼개 연주)
+  if (S.arp === 'on') voice('square', root + tr + 12 + tones[s % 4], t, spb * .9, .025, 3000);
+  if (S.arp === 'soft' && s % 2 === 0) voice('triangle', root + tr + 24 + tones[(s / 2) % 4], t, spb * 3, .07);
+  // 멜로디
+  if (S.lead) {
+    const n = S.lead[step];
+    if (typeof n === 'number') {
+      let len = 1; while (S.lead[(step + len) % S.len] === '-' && len < 16) len++;
+      voice(S.leadType || 'square', n + tr, t, spb * len * .95, .055, 4500);
+      voice('triangle', n + tr - 12, t, spb * len * .95, .05);
+    }
+  }
+}
+function setMute(m) {
+  MUTED = m;
+  try { localStorage.setItem('sky2026-mute', m ? '1' : '0'); } catch (e) {}
+  document.querySelectorAll('.muteBtn').forEach(b => b.textContent = m ? '🔇' : '🎵');
+}
+// 지금 상황에 맞는 음악 고르기
+function updateMusic() {
+  if (!AC) return;
+  MUS.paused = !!(G && G.state === 'pause');
+  if (!G) return playSong('title');
+  if (G.state !== 'play') return;
+  if (G.clearT) return playSong('clear', G.stage);
+  if (G.boss && !G.bossDying) return playSong('boss', G.stage);
+  if (G.boss && !G.boss.mid) return playSong('none');   // 보스 폭발 중엔 조용히
+  playSong('stage', G.stage);
+}
 
 /* ───────────── 유틸 ───────────── */
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -607,12 +738,15 @@ let mDown = false;
 cv.addEventListener('mousedown', e => { mDown = true; tLast = [e.clientX, e.clientY]; });
 addEventListener('mousemove', e => { if (mDown) { tdx += (e.clientX - tLast[0]) / SCALE; tdy += (e.clientY - tLast[1]) / SCALE; tLast = [e.clientX, e.clientY]; } });
 addEventListener('mouseup', () => { mDown = false; });
-['btnBomb','btnSpec','btnPause'].forEach(id => {
+['btnBomb','btnSpec','btnPause','btnMute'].forEach(id => {
   $(id).addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); $(id).click(); }, {passive:false});
 });
 $('btnBomb').onclick = () => useBomb();
 $('btnSpec').onclick = () => useSpecial();
 $('btnPause').onclick = () => pause();
+document.querySelectorAll('.muteBtn').forEach(b => b.onclick = () => { initAudio(); setMute(!MUTED); });
+setMute(MUTED);
+addEventListener('keydown', e => { if (e.code === 'KeyM' && !(e.target && e.target.tagName === 'INPUT')) setMute(!MUTED); });
 
 /* ───────────── 게임 상태 ───────────── */
 let G = null;
@@ -1415,6 +1549,7 @@ function pause() { if (!G || G.state !== 'play') return; G.state = 'pause'; show
 function resume() { if (!G) return; G.state = 'play'; show(null); }
 function endGame(win) {
   G.state = 'over';
+  playSong(win ? 'win' : 'over');
   const P = G.plane, d = dexOf(P.id);
   const newBest = G.score > Math.max(d.best, dexInfo(P.id).best);
   if (newBest) d.best = G.score;
@@ -1536,6 +1671,7 @@ function loop(now) {
   acc += Math.min(100, now - last); last = now;
   while (acc >= 1000 / 60) { update(); acc -= 1000 / 60; }
   draw();
+  updateMusic();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
