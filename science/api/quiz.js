@@ -338,8 +338,9 @@ module.exports = async (req, res) => {
       const choices = rawChoices.map((c) => clean(c, 60)).filter((c) => c.length > 0);
       const answer = parseInt(body.answer, 10);
       const explain = clean(body.explain, 300);
-      const lv = parseInt(body.lv, 10);
-      if (!(lv >= 1 && lv <= MAX_LV)) { res.status(400).json({ error: 'bad-lv' }); return; }
+      // 난이도를 안 보내는 예전 화면(새로고침 전 탭)에서 낸 퀴즈는 '난이도 없음'(0)으로 받음
+      const lv = body.lv == null || body.lv === '' ? 0 : parseInt(body.lv, 10);
+      if (!(lv === 0 || (lv >= 1 && lv <= MAX_LV))) { res.status(400).json({ error: 'bad-lv' }); return; }
       if (qText.length < 4) { res.status(400).json({ error: 'short-q' }); return; }
       if (choices.length < 2 || choices.length > 4 || choices.length !== rawChoices.length) { res.status(400).json({ error: 'bad-choices' }); return; }
       if (!(answer >= 0 && answer < choices.length)) { res.status(400).json({ error: 'bad-answer' }); return; }
