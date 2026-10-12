@@ -161,6 +161,19 @@
   .bg-info .pr{ font-size:.82rem; display:flex; align-items:center; gap:4px; font-weight:700; }
   .bg-info .btn{ margin-top:auto; }
   .owned-tag{ font-size:.7rem; color:var(--ok); font-weight:700; }
+  .bg-prev.center{ display:flex; align-items:center; justify-content:center; background:var(--surface-alt); cursor:default; padding:10px; text-align:center; }
+  .bg-prev[data-fx]{ cursor:pointer; }
+  .mini-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 16px; font-size:.8rem; font-weight:700; }
+  .uname{ font-weight:700; }
+  .ugrad{ -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+  .utitle{ display:inline-block; font-size:.66rem; font-weight:700; padding:1px 6px; border-radius:6px; margin-right:4px;
+    background:var(--accent-soft); color:var(--accent-strong); vertical-align:1px; }
+  .uicon{ margin-right:3px; }
+  .fx-layer{ position:fixed; inset:0; pointer-events:none; z-index:80; overflow:hidden; }
+  .fx{ position:absolute; top:-40px; animation:fx-fall linear forwards; }
+  .fx.conf{ width:9px; height:14px; border-radius:2px; }
+  @keyframes fx-fall{ to{ transform:translate(var(--drift), 110vh) rotate(var(--spin)); } }
+  @media (prefers-reduced-motion: reduce){ .fx-layer{ display:none; } }
 
   /* quiz list */
   .qgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px; }
@@ -298,7 +311,7 @@
     <div class="hero">
       <div>
         <h1>내가 낸 과학 퀴즈,<br><em>친구가 풀고</em> 친구 퀴즈는 내가 푼다!</h1>
-        <p>물리·화학·생명과학·지구과학 퀴즈를 직접 만들어 올리고, 다른 사람들이 낸 퀴즈에 도전하세요. 맞히면 점수가 쌓이고, 내 퀴즈에 많은 사람이 도전할수록 점수도 올라가요. 점수만큼 쌓이는 <b>코인</b>으로 상점에서 배경 40종을 살 수 있어요!</p>
+        <p>물리·화학·생명과학·지구과학 퀴즈를 직접 만들어 올리고, 다른 사람들이 낸 퀴즈에 도전하세요. 맞히면 점수가 쌓이고, 내 퀴즈에 많은 사람이 도전할수록 점수도 올라가요. 점수만큼 쌓이는 <b>코인</b>으로 상점에서 배경·칭호·이름 색·아이콘·카드 테두리·정답 효과를 살 수 있어요!</p>
         <div class="hero-btns">
           <button class="btn primary" data-goto="board">퀴즈 풀러 가기</button>
           <button class="btn" data-goto="make">퀴즈 내기</button>
@@ -441,12 +454,21 @@
 
   <!-- 상점 -->
   <section class="page" id="page-shop" hidden>
-    <h2>배경 상점</h2>
-    <p class="lead">점수 1점 = 코인 1개. 처음엔 30코인을 드려요. 산 배경은 언제든 바꿔 적용할 수 있어요.</p>
+    <h2>상점</h2>
+    <p class="lead">점수 1점 = 코인 1개. 처음엔 30코인을 드려요. 산 물건은 언제든 바꿔 적용할 수 있어요.</p>
     <div class="card" style="margin-bottom:16px" id="shop-wallet">
       <p style="margin:0 0 10px">코인을 모으고 배경을 사려면 로그인이 필요해요. 배경 미리보기는 지금도 볼 수 있어요.</p>
       <button class="btn primary" data-login>로그인 / 회원가입</button>
     </div>
+    <div class="filters" id="shop-types">
+      <button class="f on" data-type="bg">🖼️ 배경</button>
+      <button class="f" data-type="title">🏷️ 칭호</button>
+      <button class="f" data-type="color">🎨 이름 색</button>
+      <button class="f" data-type="icon">😀 아이콘</button>
+      <button class="f" data-type="frame">🔲 카드 테두리</button>
+      <button class="f" data-type="effect">🎉 정답 효과</button>
+    </div>
+    <p class="muted" id="shop-help" style="font-size:.84rem;margin:-4px 0 12px"></p>
     <div class="filters" id="shop-filters">
       <button class="f on" data-g="">전체</button>
       <button class="f" data-g="1">브론즈급</button>
@@ -455,7 +477,7 @@
       <button class="f" data-g="4">플래티넘급</button>
       <button class="f" data-g="5">다이아몬드급</button>
       <button class="f" data-g="6">루비급</button>
-      <label><input type="checkbox" id="shop-owned"> 내 배경만</label>
+      <label><input type="checkbox" id="shop-owned"> 가진 것만</label>
     </div>
     <div class="shop-grid" id="shop-grid"></div>
   </section>
@@ -525,7 +547,7 @@
   var SESSION_KEY = "sci-session-v1";
   var CATS = ["물리","화학","생명과학","지구과학","기타"];
   var state = { session:null, quizzes:[], stats:{}, solved:{}, me:null, cat:"", fam:0, sort:"new", page:"home",
-    shop:null, shopG:0 };
+    shop:null, shopG:0, shopType:"bg", lastRank:null };
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -607,7 +629,7 @@
     var s = state.session;
     $("login-open").hidden = !!s;
     $("profile").hidden = !s;
-    if (s){ $("profile-name").textContent = s.user.name; }
+    if (s){ $("profile-name").innerHTML = nameHTML(s.user.name); }
     renderMeTier();
     $("profile-admin").hidden = !isAdmin();
     $("tab-admin").hidden = !isAdmin();
@@ -700,13 +722,14 @@
     loadShop();
   }
   function renderMeTier(){
+    if (state.session) $("profile-name").innerHTML = nameHTML(state.session.user.name);
     var me = state.session && state.me;
     $("profile-tier").innerHTML = me ? userBadge(me.score) : "";
     var card = $("my-tier-card");
     if (!me){ card.hidden = true; return; }
     var lv = userLv(me.score), next = USER_MIN[lv], base = lv ? USER_MIN[lv - 1] : 0;
     card.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' + userBadge(me.score, true) +
-      '<div><b>' + esc(me.name) + '</b> 님 · ' + me.score + '점' + (me.place ? ' · ' + me.place + '위' : '') +
+      '<div>' + nameHTML(me.name) + ' 님 · ' + me.score + '점' + (me.place ? ' · ' + me.place + '위' : '') +
       '<div class="muted" style="font-size:.8rem">' + (next ? tierName(lv + 1) + '까지 ' + (next - me.score) + '점 남았어요' : '최고 등급이에요! 🎉') + '</div></div></div>' +
       (next ? '<div class="progress"><i style="width:' + Math.max(0, Math.min(100, Math.round((me.score - base) * 100 / (next - base)))) + '%"></i></div>' : '');
     card.hidden = false;
@@ -728,10 +751,10 @@
     var sv = state.solved[q.id];
     var badge = mine ? '<span class="badge mine">내 퀴즈</span>'
       : sv ? (sv.ok ? '<span class="badge ok">정답 ✓</span>' : '<span class="badge bad">오답 ✗</span>') : "";
-    return '<div class="qcard" data-qid="' + esc(q.id) + '">' +
+    return '<div class="qcard" data-qid="' + esc(q.id) + '"' + frameStyle(q.name) + '>' +
       '<div class="top"><span style="display:flex;gap:4px;flex-wrap:wrap">' + tierBadge(q.lv) + '<span class="cat cat-' + esc(q.cat) + '">' + esc(q.cat) + '</span></span>' + badge + '</div>' +
       '<div class="qt">' + esc(q.q) + '</div>' +
-      '<div class="meta"><span>' + esc(q.name) + ' · ' + timeAgo(q.time) + '</span><span>' + st[0] + '명 도전' + (st[0] ? ' · 정답률 ' + Math.round(st[1] * 100 / st[0]) + '%' : '') + '</span></div>' +
+      '<div class="meta"><span>' + nameHTML(q.name) + ' · ' + timeAgo(q.time) + '</span><span>' + st[0] + '명 도전' + (st[0] ? ' · 정답률 ' + Math.round(st[1] * 100 / st[0]) + '%' : '') + '</span></div>' +
       '</div>';
   }
   function renderBoard(){
@@ -780,7 +803,7 @@
   function openSolve(q){
     curQ = q;
     var st = state.stats[q.id] || [0, 0];
-    $("sv-head").innerHTML = tierBadge(q.lv, true) + ' <span class="cat cat-' + esc(q.cat) + '">' + esc(q.cat) + '</span> &nbsp;' + esc(q.name) + ' 님의 퀴즈 · ' + st[0] + '명 도전 · 맞히면 ' + quizPts(q.lv) + '점';
+    $("sv-head").innerHTML = tierBadge(q.lv, true) + ' <span class="cat cat-' + esc(q.cat) + '">' + esc(q.cat) + '</span> &nbsp;' + nameHTML(q.name) + ' 님의 퀴즈 · ' + st[0] + '명 도전 · 맞히면 ' + quizPts(q.lv) + '점';
     $("sv-q").textContent = q.q;
     $("sv-msg").textContent = "";
     $("sv-result").hidden = true;
@@ -833,6 +856,7 @@
       state.solved[q.id] = { ok: d.correct, pick: pick, at: new Date().toISOString() };
       if (d.stat) state.stats[q.id] = d.stat;
       showResult(d); renderAll(); loadMine();
+      if (d.correct) playEffect(myEffect());
     }).catch(function(err){
       if (err.data && err.data.answer != null){ state.solved[q.id] = { ok: err.data.correct, pick: err.data.pick }; showResult(err.data); renderAll(); return; }
       $("sv-msg").textContent = errText(err.message);
@@ -933,12 +957,13 @@
     api("/api/quiz?rank=1").then(function(d){ renderRank(d.rank || []); }).catch(function(){ $("rank-body").innerHTML = ""; });
   }
   function renderRank(rows){
+    state.lastRank = rows;
     var adm = isAdmin();
     Array.prototype.forEach.call(document.querySelectorAll(".adm-col"), function(x){ x.hidden = !adm; });
     $("rank-empty").hidden = rows.length > 0;
     $("rank-body").innerHTML = rows.map(function(r, i){
       var medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
-      return '<tr class="' + (r.sub === mySub() ? "me" : "") + '"><td class="medal">' + medal + '</td><td>' + userBadge(r.score) + '</td><td class="nm">' + esc(r.name) + '</td>' +
+      return '<tr class="' + (r.sub === mySub() ? "me" : "") + '"><td class="medal">' + medal + '</td><td>' + userBadge(r.score) + '</td><td class="nm">' + nameHTML(r.name) + '</td>' +
         '<td><b>' + r.score + '</b></td><td>' + r.correct + '/' + r.tries + '</td><td>' + r.made + '</td><td>' + r.received + '</td>' +
         (adm ? '<td><button class="btn sm danger" data-rankdel="' + esc(r.sub) + '" data-nm="' + esc(r.name) + '">제외</button></td>' : "") + '</tr>';
     }).join("");
@@ -1003,13 +1028,14 @@
   function loadShop(){
     return api("/api/shop").then(function(d){
       state.shop = d;
-      if (state.session && d.equipped !== undefined){
-        var it = itemById(d.equipped);
+      if (state.session && d.equipped){
+        var it = itemById(d.equipped.bg);
         var cur = null; try { cur = JSON.parse(localStorage.getItem("sci-bg") || "null"); } catch (e) {}
-        // 다른 기기에서 바꾼 배경 반영 (방금 이 기기에서 바꾼 건 서버 반영이 늦을 수 있어 1분간은 이 기기 값 유지)
-        if (!(cur && cur.at && Date.now() - cur.at < 70000)) applyBg(it ? it.id : "", it ? it.css : "");
+        // 다른 기기에서 바꾼 배경 반영 (방금 이 기기에서 바꾼 건 반영이 몇 초 늦을 수 있어 잠깐은 이 기기 값 유지)
+        if (!(cur && cur.at && Date.now() - cur.at < 15000)) applyBg(it ? it.id : "", it ? it.css : "");
       }
-      renderCoins(); renderShop();
+      renderCoins(); renderShop(); renderAll(); renderMeTier();
+      if (state.page === "rank" && state.lastRank) renderRank(state.lastRank);
     }).catch(function(){});
   }
   function renderCoins(){
@@ -1017,35 +1043,114 @@
     $("coin-n").textContent = sh && sh.coins != null ? sh.coins.toLocaleString() : "–";
   }
   function equippedId(){ try { var b = JSON.parse(localStorage.getItem("sci-bg") || "null"); return b ? b.id : ""; } catch (e) { return ""; } }
+  function equippedOf(type){
+    if (type === "bg") return equippedId();
+    return (state.shop && state.shop.equipped && state.shop.equipped[type]) || "";
+  }
+
+  // ---------- 이름 꾸미기 (칭호·이름 색·아이콘) ----------
+  function looksOf(name){ return (state.shop && state.shop.looks && state.shop.looks[String(name || "").toLowerCase()]) || null; }
+  function styledName(name, lk){
+    var h = "";
+    var ic = lk && itemById(lk.icon), ti = lk && itemById(lk.title), co = lk && itemById(lk.color);
+    if (ic) h += '<span class="uicon">' + ic.value + '</span>';
+    if (ti) h += '<span class="utitle">' + esc(ti.value) + '</span>';
+    var st = "";
+    if (co) st = /gradient/.test(co.value) ? ' class="uname ugrad" style="background-image:' + co.value + '"' : ' class="uname" style="color:' + co.value + '"';
+    else st = ' class="uname"';
+    return h + '<span' + st + '>' + esc(name) + '</span>';
+  }
+  function nameHTML(name){ return styledName(name, looksOf(name)); }
+  function frameStyle(name){
+    var lk = looksOf(name), fr = lk && itemById(lk.frame);
+    return fr ? ' style="border:2.5px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,' + fr.value + ' border-box"' : "";
+  }
+
+  // ---------- 정답 효과 ----------
+  function playEffect(value){
+    if (!value) return;
+    var layer = document.createElement("div");
+    layer.className = "fx-layer";
+    var emojis = value === "confetti" ? null : value.split(" ");
+    var colors = ["#ff5a5a", "#ffb347", "#ffe66d", "#3fbf5a", "#3f8cff", "#b14dff", "#ff4dd2"];
+    for (var i = 0; i < 46; i++){
+      var p = document.createElement("span");
+      p.className = "fx";
+      if (emojis) { p.textContent = emojis[i % emojis.length]; p.style.fontSize = (18 + Math.random() * 18) + "px"; }
+      else { p.className = "fx conf"; p.style.background = colors[i % colors.length]; }
+      p.style.left = (Math.random() * 100) + "vw";
+      p.style.animationDuration = (1.6 + Math.random() * 1.6) + "s";
+      p.style.animationDelay = (Math.random() * 0.5) + "s";
+      p.style.setProperty("--drift", ((Math.random() - 0.5) * 160) + "px");
+      p.style.setProperty("--spin", ((Math.random() - 0.5) * 720) + "deg");
+      layer.appendChild(p);
+    }
+    document.body.appendChild(layer);
+    setTimeout(function(){ layer.remove(); }, 4000);
+  }
+  function myEffect(){ var it = itemById(equippedOf("effect")); return it ? it.value : ""; }
+
+  // ---------- 상점 화면 ----------
+  var TYPE_LABEL = { bg:"배경", title:"칭호", color:"이름 색", icon:"아이콘", frame:"카드 테두리", effect:"정답 효과" };
+  var TYPE_HELP = {
+    bg:"사이트 전체 배경이 바뀌어요. (나만 보여요) 그림을 누르면 3초 동안 미리 입혀 볼 수 있어요.",
+    title:"이름 앞에 칭호가 붙어요. 퀴즈 광장·풀이 화면·랭킹에서 모두에게 보여요.",
+    color:"이름 색이 바뀌어요. 모두에게 보여요.",
+    icon:"이름 앞에 아이콘이 붙어요. 모두에게 보여요.",
+    frame:"내가 낸 퀴즈 카드에 테두리가 생겨요. 모두에게 보여요.",
+    effect:"퀴즈를 맞히면 화면에 효과가 터져요. (나만 보여요) 그림을 누르면 미리 볼 수 있어요.",
+  };
+  function myName(){ return state.session ? state.session.user.name : "내 이름"; }
+  function previewOf(it){
+    var t = it ? it.type : state.shopType;
+    if (t === "bg") return '<div class="bg-prev"' + (it ? ' data-peek="' + it.id + '" title="눌러서 미리보기" style="background:' + esc(it.css) + '"' : ' style="background:var(--bg)"') + '></div>';
+    var lk = Object.assign({}, looksOf(myName()) || {});
+    if (t === "title" || t === "color" || t === "icon") { lk[t] = it ? it.id : ""; }
+    var inner;
+    if (t === "icon") inner = '<span style="font-size:2.6rem">' + (it ? it.value : "🙂") + '</span>';
+    else if (t === "frame") inner = '<div class="mini-card"' + (it ? ' style="border:2.5px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,' + it.value + ' border-box"' : "") + '>내가 낸 퀴즈</div>';
+    else if (t === "effect") inner = it ? '<span style="font-size:2.2rem">' + (it.value === "confetti" ? "🎊" : it.value.split(" ").slice(0, 3).join("")) + '</span>' : '<span class="muted">효과 없음</span>';
+    else inner = '<span style="font-size:1.05rem">' + styledName(myName(), lk) + '</span>';
+    return '<div class="bg-prev center"' + (t === "effect" && it ? ' data-fx="' + it.id + '" title="눌러서 미리보기"' : "") + '>' + inner + '</div>';
+  }
   function renderShop(){
     var sh = state.shop; if (!sh) return;
+    var type = state.shopType;
+    $("shop-help").textContent = TYPE_HELP[type];
+    Array.prototype.forEach.call(document.querySelectorAll("#shop-types .f"), function(x){ x.classList.toggle("on", x.getAttribute("data-type") === type); });
     var logged = !!state.session && sh.coins != null;
     if (logged){
       $("shop-wallet").innerHTML = '<div class="wallet"><div class="big"><i class="coin-ic"></i>' + sh.coins.toLocaleString() + '</div>' +
         '<div class="calc">번 코인 ' + sh.earned.toLocaleString() + ' = 점수 ' + (sh.earned - sh.start - (sh.gifted || 0)).toLocaleString() + ' + 시작 선물 ' + sh.start +
-        (sh.gifted ? ' + 관리자 지급 ' + sh.gifted.toLocaleString() : '') + '<br>쓴 코인 ' + sh.spent.toLocaleString() + ' · 가진 배경 ' + sh.owned.length + ' / ' + sh.items.length + '개</div></div>';
+        (sh.gifted ? ' + 관리자 지급 ' + sh.gifted.toLocaleString() : '') + '<br>쓴 코인 ' + sh.spent.toLocaleString() + ' · 가진 물건 ' + sh.owned.length + ' / ' + sh.items.length + '개</div></div>';
     }
-    var owned = (sh.owned || []), eq = equippedId(), onlyOwned = $("shop-owned").checked;
-    var items = sh.items.filter(function(it){ return (!state.shopG || it.grade === state.shopG) && (!onlyOwned || owned.indexOf(it.id) >= 0); });
+    var owned = (sh.owned || []), eq = equippedOf(type), onlyOwned = $("shop-owned").checked;
+    var all = sh.items.filter(function(it){ return it.type === type; });
+    var items = all.filter(function(it){ return (!state.shopG || it.grade === state.shopG) && (!onlyOwned || owned.indexOf(it.id) >= 0); });
     var h = "";
     if (!state.shopG){
-      h += '<div class="bg-item' + (!eq ? " on" : "") + '"><div class="bg-prev" style="background:var(--bg)"></div><div class="bg-info">' +
-        '<div class="nm">기본 배경</div><div class="pr muted">무료</div>' +
-        (logged ? (eq ? '<button class="btn sm" data-equip="">적용</button>' : '<button class="btn sm" disabled>적용 중</button>') : '') + '</div></div>';
+      h += '<div class="bg-item' + (!eq ? " on" : "") + '">' + previewOf(null) + '<div class="bg-info">' +
+        '<div class="nm">' + (type === "bg" ? "기본 배경" : "없음") + '</div><div class="pr muted">무료</div>' +
+        (logged ? (eq ? '<button class="btn sm" data-equip="" data-slot="' + type + '">' + (type === "bg" ? "적용" : "해제") + '</button>' : '<button class="btn sm" disabled>' + (type === "bg" ? "적용 중" : "사용 중") + '</button>') : '') + '</div></div>';
     }
     h += items.map(function(it){
       var has = owned.indexOf(it.id) >= 0, on = eq === it.id;
       var btn = !logged ? '<button class="btn sm" data-login>로그인하고 사기</button>'
         : on ? '<button class="btn sm" disabled>적용 중</button>'
-        : has ? '<button class="btn sm primary" data-equip="' + it.id + '">적용</button>'
+        : has ? '<button class="btn sm primary" data-equip="' + it.id + '" data-slot="' + type + '">적용</button>'
         : sh.coins >= it.price ? '<button class="btn sm primary" data-buy="' + it.id + '">구매</button>'
         : '<button class="btn sm" disabled>코인 ' + (it.price - sh.coins).toLocaleString() + '개 부족</button>';
-      return '<div class="bg-item' + (on ? " on" : "") + '"><div class="bg-prev" data-peek="' + it.id + '" title="눌러서 미리보기" style="background:' + esc(it.css) + '"></div>' +
+      return '<div class="bg-item' + (on ? " on" : "") + '">' + previewOf(it) +
         '<div class="bg-info"><div class="nm"><span>' + esc(it.name) + '</span><span class="tier t-' + it.grade + '">' + FAMS[it.grade] + '</span></div>' +
         '<div class="pr"><i class="coin-ic"></i>' + it.price.toLocaleString() + (has ? ' <span class="owned-tag">· 보유 중</span>' : '') + '</div>' + btn + '</div></div>';
     }).join("");
-    $("shop-grid").innerHTML = h || '<div class="empty">아직 가진 배경이 없어요.</div>';
+    $("shop-grid").innerHTML = h || '<div class="empty">아직 가진 ' + TYPE_LABEL[type] + '이(가) 없어요.</div>';
   }
+  $("shop-types").addEventListener("click", function(e){
+    var b = e.target.closest(".f"); if (!b) return;
+    state.shopType = b.getAttribute("data-type");
+    renderShop();
+  });
   $("shop-filters").addEventListener("click", function(e){
     var b = e.target.closest(".f"); if (!b) return;
     state.shopG = +b.getAttribute("data-g") || 0;
@@ -1065,14 +1170,16 @@
       document.documentElement.classList.add("has-bg");
       toast("'" + it.name + "' 미리보기 (3초)");
       peekTimer = setTimeout(function(){ $("bg-style").textContent = saved; document.documentElement.classList.toggle("has-bg", hadBg); }, 3000);
+    } else if ((t = e.target.closest("[data-fx]"))){
+      var fx = itemById(t.getAttribute("data-fx")); if (fx) playEffect(fx.value);
     } else if ((t = e.target.closest("[data-buy]"))){
       var id = t.getAttribute("data-buy"), item = itemById(id);
-      if (!confirm("'" + item.name + "' 배경을 " + item.price.toLocaleString() + "코인에 살까요?")) return;
+      if (!confirm("'" + item.name + "' " + TYPE_LABEL[item.type] + "을(를) " + item.price.toLocaleString() + "코인에 살까요?")) return;
       t.disabled = true;
       var buy = function(again){
         return api("/api/shop", { method:"POST", body:{ action:"buy", id:id } }).then(function(d){
           state.shop.coins = d.coins; state.shop.spent += item.price; state.shop.owned = d.owned;
-          toast("'" + item.name + "' 배경을 샀어요! 적용 버튼을 눌러 보세요.");
+          toast("'" + item.name + "'을(를) 샀어요! 적용 버튼을 눌러 보세요.");
           renderCoins(); renderShop();
         }).catch(function(err){
           if (err.message === "retry" && !again) return new Promise(function(r){ setTimeout(r, 1200); }).then(function(){ return buy(true); });
@@ -1082,12 +1189,24 @@
       buy(false);
     } else if ((t = e.target.closest("[data-equip]"))){
       clearTimeout(peekTimer);
-      var eid = t.getAttribute("data-equip"), eit = itemById(eid);
-      applyBg(eid, eit ? eit.css : "");
-      try { if (eit) localStorage.setItem("sci-bg", JSON.stringify({ id:eid, css:eit.css, at:Date.now() })); } catch (e2) {}
-      renderShop();
-      api("/api/shop", { method:"POST", body:{ action:"equip", id:eid } }).then(function(){ toast(eit ? "'" + eit.name + "' 배경을 적용했어요." : "기본 배경으로 돌아왔어요."); })
-        .catch(function(err){ toast(errText(err.message)); });
+      var eid = t.getAttribute("data-equip"), slot = t.getAttribute("data-slot"), eit = itemById(eid);
+      if (slot === "bg"){
+        applyBg(eid, eit ? eit.css : "");
+        try { if (eit) localStorage.setItem("sci-bg", JSON.stringify({ id:eid, css:eit.css, at:Date.now() })); } catch (e2) {}
+      }
+      // 화면에 바로 반영
+      state.shop.equipped = state.shop.equipped || {};
+      state.shop.equipped[slot] = eid;
+      if (slot !== "bg" && slot !== "effect"){
+        var key = myName().toLowerCase();
+        var lk = state.shop.looks[key] = Object.assign({ name: myName() }, state.shop.looks[key] || {});
+        if (eid) lk[slot] = eid; else delete lk[slot];
+      }
+      renderShop(); renderAll(); renderMeTier();
+      if (slot === "effect" && eit) playEffect(eit.value);
+      api("/api/shop", { method:"POST", body:{ action:"equip", slot:slot, id:eid } })
+        .then(function(){ toast(eit ? "'" + eit.name + "'을(를) 적용했어요." : TYPE_LABEL[slot] + "을(를) 해제했어요."); })
+        .catch(function(err){ toast(errText(err.message)); loadShop(); });
     }
   });
   $("adm-gift-form").addEventListener("submit", function(e){
@@ -1195,7 +1314,7 @@
   $("pr-choices").addEventListener("click", function(e){
     var b = e.target.closest(".choice"); if (!b || b.disabled) return;
     var pick = +b.getAttribute("data-i"), ok = pr.opts[pick].ok;
-    if (ok) pr.score++;
+    if (ok) { pr.score++; playEffect(myEffect()); }
     Array.prototype.forEach.call(this.querySelectorAll(".choice"), function(x, i){
       x.disabled = true;
       if (pr.opts[i].ok) x.classList.add("correct"); else if (i === pick) x.classList.add("wrong");

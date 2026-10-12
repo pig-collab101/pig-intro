@@ -1,17 +1,20 @@
-// 과학 퀴즈 사이트 – 코인 & 배경 상점 API
-// GET                          → { items:[{id,name,price,grade,css}] }  (로그인 안 해도 됨)
-// GET  (로그인)                → + { coins, earned, spent, owned:[id], equipped }
-// POST {action:'buy', id}      → 배경 구매
-// POST {action:'equip', id}    → 배경 적용 ('' = 기본 배경)
+// 과학 퀴즈 사이트 – 코인 & 상점 API
+// 상품 종류(slot): bg 배경 · title 칭호 · color 이름 색 · icon 아이콘 · frame 퀴즈 카드 테두리 · effect 정답 효과
+// GET                          → { items:[{id,type,name,price,grade,value,css}], looks:{소문자이름:{name,title,color,icon,frame}} }
+// GET  (로그인)                → + { coins, earned, spent, owned:[id], equipped:{slot:id} }
+// POST {action:'buy', id}      → 구매
+// POST {action:'equip', slot, id} → 적용 (id '' = 해제)
 // POST {action:'gift', name, amount} → 관리자: 코인 지급 (음수면 회수)
 //
 // 코인 = 내 점수(랭킹 점수) + 가입 보너스 30 + 관리자 지급 − 산 배경 가격 합
 // 구매 = sci/buy/<유저해시>/<순번4자리>.json = {id, price} (allowOverwrite:false)
 //   순번은 지금까지 산 개수. 경로가 순번뿐이라 동시에 여러 개를 사도 같은 순번은 하나만 성공하고,
 //   list() 가 늦게 반영돼 개수를 적게 세도 이미 있는 순번과 부딪쳐 실패 → 코인 초과 사용 불가
-// 지급 = sci/gift/<유저해시>/<시각>_<금액>.json, 적용 중 배경 = sci/eq/<유저해시>.json
+// 지급 = sci/gift/<유저해시>/<시각>_<금액>.json
+// 적용 = sci/eq/<유저해시>/<시각>_<slot>_<id|none>_<이름hex>.json (내용 없음, 불변) — 같은 slot 은 가장 최근 것이 유효.
+//   남들에게 보이는 꾸미기(칭호·이름색·아이콘·테두리)는 적용할 때마다 list() 로 sci/looks.json 을 새로 만듦
 
-const { put } = require('@vercel/blob');
+const { put, del } = require('@vercel/blob');
 const { verifySession, isAdmin, isBanned, blobStoreId, blobBase } = require('./auth');
 const { computeMe, subHash, listAll } = require('./quiz');
 
@@ -75,10 +78,57 @@ const ITEMS = [
   ['r01', '루비 성운', 3000, STARS + ',radial-gradient(ellipse at 40% 40%,rgba(255,0,98,.7),transparent 55%),radial-gradient(ellipse at 70% 70%,rgba(255,120,60,.45),transparent 50%),#12020a'],
   ['r02', '빅뱅', 5000, 'repeating-conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,.12) 0 1deg,transparent 1deg 7deg),radial-gradient(circle at 50% 50%,#fff 0,#fff6c2 4%,#ffb3e6 10%,#9b6bff 22%,#2a63ff 36%,#081040 55%,#000 75%)'],
 ];
+// 칭호: [id, 칭호, 가격]
+const TITLES = [
+  ['t01', '호기심 많은', 20], ['t02', '꼬마 과학자', 30], ['t03', '실험 조수', 40], ['t04', '관찰왕', 50], ['t05', '질문 대장', 60],
+  ['t06', '비커 마스터', 100], ['t07', '현미경 탐험가', 120], ['t08', '별 관측자', 150], ['t09', '화학 마법사', 180], ['t10', '공룡 박사', 200],
+  ['t11', '원소 수집가', 300], ['t12', '중력 조종사', 350], ['t13', 'DNA 해커', 400], ['t14', '번개 연구원', 450],
+  ['t15', '우주 비행사', 700], ['t16', '블랙홀 탐사대', 850], ['t17', '양자 도약자', 1000],
+  ['t18', '노벨상 후보', 1800], ['t19', '천재 과학자', 2500], ['t20', '우주의 지배자', 6000],
+];
+// 이름 색: [id, 이름, 가격, 색 또는 그라데이션]
+const COLORS = [
+  ['c01', '하늘색', 30, '#1e90ff'], ['c02', '잎사귀 초록', 30, '#1f9d55'], ['c03', '노을 주황', 40, '#f07c1b'],
+  ['c04', '자수정 보라', 50, '#8b4dff'], ['c05', '장미 빨강', 60, '#e0245e'],
+  ['c06', '바다 그라데이션', 150, 'linear-gradient(90deg,#00b4fc,#1f5fd6)'], ['c07', '불꽃 그라데이션', 180, 'linear-gradient(90deg,#ff9a00,#ff2d55)'],
+  ['c08', '황금', 400, 'linear-gradient(90deg,#c99400,#ffd84d,#c99400)'], ['c09', '오로라', 450, 'linear-gradient(90deg,#1fbf8f,#6a4cff,#00b4fc)'],
+  ['c10', '플라스마', 800, 'linear-gradient(90deg,#b14dff,#ff4dd2)'], ['c11', '은하', 1200, 'linear-gradient(90deg,#5b7cff,#c86bff,#ff6b9e)'],
+  ['c12', '무지개', 3000, 'linear-gradient(90deg,#ff5a5a,#ffb347,#e6c200,#3fbf5a,#3f8cff,#8a5bff)'],
+];
+// 아이콘: [id, 이름, 가격, 이모지]
+const ICONS = [
+  ['i01', '시험관', 20, '🧪'], ['i02', '현미경', 20, '🔬'], ['i03', '새싹', 25, '🌱'], ['i04', '자석', 30, '🧲'], ['i05', '물방울', 30, '💧'],
+  ['i06', '개구리', 40, '🐸'], ['i07', '나비', 50, '🦋'], ['i08', '화산', 60, '🌋'],
+  ['i09', '망원경', 100, '🔭'], ['i10', 'DNA', 120, '🧬'], ['i11', '플라스크', 150, '⚗️'], ['i12', '공룡', 180, '🦕'], ['i13', '번개', 200, '⚡'],
+  ['i14', '토성', 300, '🪐'], ['i15', '은하', 400, '🌌'], ['i16', '혜성', 450, '☄️'],
+  ['i17', '로켓', 700, '🚀'], ['i18', 'UFO', 900, '🛸'], ['i19', '다이아몬드', 2000, '💎'], ['i20', '초신성', 4000, '🌟'],
+];
+// 퀴즈 카드 테두리: [id, 이름, 가격, 테두리 그라데이션]
+const FRAMES = [
+  ['f01', '하늘 테두리', 60, 'linear-gradient(135deg,#7fd3ff,#1479b8)'], ['f02', '새싹 테두리', 60, 'linear-gradient(135deg,#9be15d,#00a86b)'],
+  ['f03', '노을 테두리', 150, 'linear-gradient(135deg,#ffb46b,#d9576b)'], ['f04', '바다 테두리', 150, 'linear-gradient(135deg,#00e1ff,#2a63ff)'],
+  ['f05', '황금 테두리', 450, 'linear-gradient(135deg,#fff1b8,#e6b422,#a87c00,#ffe680)'], ['f06', '오로라 테두리', 800, 'linear-gradient(135deg,#1fbf8f,#6a4cff,#00b4fc)'],
+  ['f07', '다이아 테두리', 1800, 'linear-gradient(135deg,#b3f0ff,#3fa9f5,#ffffff,#7fe7ff)'], ['f08', '루비 테두리', 3500, 'linear-gradient(135deg,#ff0062,#ff7a3d,#ff0062)'],
+];
+// 정답 효과: [id, 이름, 가격, 떨어지는 것들 ('confetti' = 색종이)]
+const EFFECTS = [
+  ['e01', '색종이', 50, 'confetti'], ['e02', '반짝이는 별', 120, '⭐ ✨ 🌟'], ['e03', '하트', 120, '💖 💗 💕'],
+  ['e04', '원자 폭발', 300, '⚛️ 🧪 ⚗️ 🧬'], ['e05', '로켓 발사', 700, '🚀 ✨ 🌠'], ['e06', '우주 대폭발', 2000, '🌟 💥 🪐 ☄️ 🌌'],
+];
+
 const GRADE = { b: 1, s: 2, g: 3, p: 4, d: 5, r: 6 };
-const CATALOG = ITEMS.map((it) => ({ id: it[0], name: it[1], price: it[2], grade: GRADE[it[0][0]], css: it[3] }));
+function gradeOf(price) { return price <= 60 ? 1 : price <= 200 ? 2 : price <= 460 ? 3 : price <= 1000 ? 4 : price <= 2500 ? 5 : 6; }
+const CATALOG = ITEMS.map((it) => ({ id: it[0], type: 'bg', name: it[1], price: it[2], grade: GRADE[it[0][0]], value: it[3], css: it[3] }))
+  .concat(TITLES.map((it) => ({ id: it[0], type: 'title', name: it[1], price: it[2], grade: gradeOf(it[2]), value: it[1] })))
+  .concat(COLORS.map((it) => ({ id: it[0], type: 'color', name: it[1], price: it[2], grade: gradeOf(it[2]), value: it[3] })))
+  .concat(ICONS.map((it) => ({ id: it[0], type: 'icon', name: it[1], price: it[2], grade: gradeOf(it[2]), value: it[3] })))
+  .concat(FRAMES.map((it) => ({ id: it[0], type: 'frame', name: it[1], price: it[2], grade: gradeOf(it[2]), value: it[3] })))
+  .concat(EFFECTS.map((it) => ({ id: it[0], type: 'effect', name: it[1], price: it[2], grade: gradeOf(it[2]), value: it[3] })));
 const BY_ID = {};
 CATALOG.forEach((it) => { BY_ID[it.id] = it; });
+const SLOTS = ['bg', 'title', 'color', 'icon', 'frame', 'effect'];
+const PUBLIC_SLOTS = ['title', 'color', 'icon', 'frame'];
+const LOOKS_PATH = 'sci/looks.json';
 
 function saveJson(path, data) {
   return put(path, JSON.stringify(data), {
@@ -86,15 +136,53 @@ function saveJson(path, data) {
     contentType: 'application/json; charset=utf-8', cacheControlMaxAge: 0,
   });
 }
-async function loadEquip(h) {
+function hex(s) { return Buffer.from(String(s), 'utf8').toString('hex'); }
+function unhex(h) { try { return Buffer.from(h, 'hex').toString('utf8'); } catch (e) { return ''; } }
+// sci/eq/<h>/<ts>_<slot>_<id|none>_<namehex>.json
+function parseEq(b) {
+  const m = /^sci\/eq\/([0-9a-f]+)\/(\d+)_([a-z]+)_([a-z0-9]+)_([0-9a-f]*)\.json$/.exec(b.pathname);
+  if (!m || SLOTS.indexOf(m[3]) < 0) return null;
+  return { h: m[1], ts: +m[2], slot: m[3], id: m[4] === 'none' ? '' : m[4], name: unhex(m[5]), url: b.url };
+}
+// 기록 목록 → { h: { name, slot: {id, ts} } }  (slot 마다 가장 최근 것)
+function latestEq(recs) {
+  const out = {};
+  recs.forEach((r) => {
+    const u = out[r.h] || (out[r.h] = { name: r.name });
+    if (!u[r.slot] || u[r.slot].ts < r.ts) { u[r.slot] = { id: r.id, ts: r.ts }; u.name = r.name || u.name; }
+  });
+  return out;
+}
+async function myEquipped(h) {
+  const recs = (await listAll(EQ_DIR + h + '/').catch(() => [])).map(parseEq).filter(Boolean);
+  const u = latestEq(recs)[h] || {};
+  const eq = {};
+  SLOTS.forEach((sl) => { eq[sl] = u[sl] && BY_ID[u[sl].id] ? u[sl].id : ''; });
+  return { eq: eq, recs: recs };
+}
+// 모두의 공개 꾸미기 집계 (적용할 때만 다시 만듦). ensure = 방금 쓴 기록 (list 지연 대비)
+async function rebuildLooks(ensure) {
+  let recs;
+  try { recs = (await listAll(EQ_DIR)).map(parseEq).filter(Boolean); } catch (e) { return; }
+  if (ensure) recs.push(ensure);
+  const latest = latestEq(recs);
+  const looks = {};
+  Object.keys(latest).forEach((h) => {
+    const u = latest[h];
+    const lk = { name: u.name };
+    let any = false;
+    PUBLIC_SLOTS.forEach((sl) => { if (u[sl] && u[sl].id && BY_ID[u[sl].id]) { lk[sl] = u[sl].id; any = true; } });
+    if (any && u.name) looks[u.name.toLowerCase()] = lk;
+  });
+  try { await saveJson(LOOKS_PATH, looks); } catch (e) { /* 다음 적용 때 복구 */ }
+}
+async function loadLooks() {
   const base = blobBase();
-  if (!base) return '';
+  if (!base) return {};
   try {
-    const r = await fetch(`${base}/${EQ_DIR}${h}.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (!r.ok) return '';
-    const d = await r.json();
-    return d && BY_ID[d.id] ? d.id : '';
-  } catch (e) { return ''; }
+    const r = await fetch(`${base}/${LOOKS_PATH}?t=${Date.now()}`, { cache: 'no-store' });
+    return r.ok ? await r.json() : {};
+  } catch (e) { return {}; }
 }
 
 // 지갑: 번 코인 / 쓴 코인 / 가진 배경 / 구매 개수
@@ -130,10 +218,15 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
 
     if (req.method === 'GET') {
-      const out = { items: CATALOG, start: START_COINS };
+      const out = { items: CATALOG, start: START_COINS, looks: await loadLooks() };
       if (sess) {
         const w = await wallet(sess);
-        Object.assign(out, { coins: w.coins, earned: w.earned, spent: w.spent, gifted: w.gifted, owned: w.owned, equipped: await loadEquip(w.h) });
+        const mine = await myEquipped(w.h);
+        Object.assign(out, { coins: w.coins, earned: w.earned, spent: w.spent, gifted: w.gifted, owned: w.owned, equipped: mine.eq });
+        // 내 꾸미기는 집계 지연 없이 내 기록 기준으로
+        const lk = { name: sess.name };
+        PUBLIC_SLOTS.forEach((sl) => { if (mine.eq[sl]) lk[sl] = mine.eq[sl]; });
+        out.looks[String(sess.name).toLowerCase()] = lk;
       }
       res.status(200).json(out);
       return;
@@ -161,13 +254,27 @@ module.exports = async (req, res) => {
 
     if (await isBanned(sess.name)) { res.status(403).json({ error: 'banned' }); return; }
 
-    // ---- 배경 적용 ----
+    // ---- 적용 / 해제 ----
     if (body.action === 'equip') {
       const id = String(body.id || '');
+      const item = BY_ID[id];
+      const slot = item ? item.type : String(body.slot || 'bg');
+      if (SLOTS.indexOf(slot) < 0) { res.status(400).json({ error: 'bad-slot' }); return; }
       const w = await wallet(sess);
-      if (id && w.owned.indexOf(id) < 0) { res.status(400).json({ error: 'not-owned' }); return; }
-      await saveJson(EQ_DIR + w.h + '.json', { id: id, at: new Date().toISOString() });
-      res.status(200).json({ ok: true, equipped: id });
+      if (id && (!item || w.owned.indexOf(id) < 0)) { res.status(400).json({ error: 'not-owned' }); return; }
+      const name = String(sess.name).slice(0, 16);
+      const pathname = EQ_DIR + w.h + '/' + Date.now() + '_' + slot + '_' + (id || 'none') + '_' + hex(name) + '.json';
+      await put(pathname, '1', {
+        access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'text/plain', cacheControlMaxAge: 31536000,
+      });
+      const rec = parseEq({ pathname: pathname, url: '' });
+      // 같은 slot 의 예전 기록 정리 (목록이 길어지지 않게)
+      try {
+        const old = (await myEquipped(w.h)).recs.filter((r) => r.slot === slot && r.ts < rec.ts && r.url);
+        if (old.length) await del(old.map((r) => r.url));
+      } catch (e) { /* 무시 */ }
+      if (PUBLIC_SLOTS.indexOf(slot) >= 0) await rebuildLooks(rec);
+      res.status(200).json({ ok: true, slot: slot, equipped: id });
       return;
     }
 
