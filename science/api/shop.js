@@ -6,8 +6,9 @@
 // POST {action:'gift', name, amount} → 관리자: 코인 지급 (음수면 회수)
 //
 // 코인 = 내 점수(랭킹 점수) + 가입 보너스 30 + 관리자 지급 − 산 배경 가격 합
-// 구매 = sci/buy/<유저해시>/<순번4자리>_<배경id>.json (allowOverwrite:false)
-//   순번은 지금까지 산 개수. list() 가 늦게 반영돼 개수를 적게 세면 이미 있는 순번과 부딪쳐 실패 → 코인 초과 사용 불가
+// 구매 = sci/buy/<유저해시>/<순번4자리>.json = {id, price} (allowOverwrite:false)
+//   순번은 지금까지 산 개수. 경로가 순번뿐이라 동시에 여러 개를 사도 같은 순번은 하나만 성공하고,
+//   list() 가 늦게 반영돼 개수를 적게 세도 이미 있는 순번과 부딪쳐 실패 → 코인 초과 사용 불가
 // 지급 = sci/gift/<유저해시>/<시각>_<금액>.json, 적용 중 배경 = sci/eq/<유저해시>.json
 
 const { put } = require('@vercel/blob');
@@ -106,9 +107,12 @@ async function wallet(sess) {
   ]);
   const owned = [];
   let spent = 0;
-  buys.forEach((b) => {
-    const m = /\/(\d{4})_([a-z0-9]+)\.json$/.exec(b.pathname);
-    if (m && BY_ID[m[2]] && owned.indexOf(m[2]) < 0) { owned.push(m[2]); spent += BY_ID[m[2]].price; }
+  // 구매 파일은 바뀌지 않으므로 캐시된 내용을 그대로 읽어도 됨
+  const recs = await Promise.all(buys.map(async (b) => {
+    try { const r = await fetch(b.url, { cache: 'force-cache' }); return r.ok ? await r.json() : null; } catch (e) { return null; }
+  }));
+  recs.forEach((r) => {
+    if (r && BY_ID[r.id] && owned.indexOf(r.id) < 0) { owned.push(r.id); spent += Number(r.price) || BY_ID[r.id].price; }
   });
   let gifted = 0;
   gifts.forEach((b) => {
@@ -176,7 +180,7 @@ module.exports = async (req, res) => {
       if (w.coins < item.price) { res.status(400).json({ error: 'no-coins', coins: w.coins }); return; }
       const seq = String(w.count).padStart(4, '0');
       try {
-        await put(BUY_DIR + w.h + '/' + seq + '_' + item.id + '.json', JSON.stringify({ id: item.id, price: item.price, at: new Date().toISOString() }), {
+        await put(BUY_DIR + w.h + '/' + seq + '.json', JSON.stringify({ id: item.id, price: item.price, at: new Date().toISOString() }), {
           access: 'public', addRandomSuffix: false, allowOverwrite: false,
           contentType: 'application/json; charset=utf-8', cacheControlMaxAge: 31536000,
         });
