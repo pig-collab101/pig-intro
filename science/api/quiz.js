@@ -189,6 +189,26 @@ function buildRank(quizzes, data) {
     .sort((a, b) => b.score - a.score || b.correct - a.correct);
 }
 
+// 내 풀이 기록 + 내 랭킹 줄 (상점 코인 계산에도 씀)
+async function computeMe(sess) {
+  const solved = {};
+  const [mineList, quizzes, data] = await Promise.all([
+    listAll(R_DIR + subHash(sess.sub) + '/').catch(() => []), loadAgg(), loadStats(),
+  ]);
+  mineList.forEach((b) => {
+    const r = parseRecord(b.pathname);
+    if (r) solved[r.id] = { ok: r.ok, pick: r.pick, pts: r.pts };
+  });
+  // 내 점수는 내 풀이 기록(list, 최신)으로 덮어써서 집계 지연 없이 보여줌
+  const h = subHash(sess.sub);
+  const vals = Object.values(solved);
+  data.users[h] = { name: sess.name, tries: vals.length, correct: vals.filter((v) => v.ok).length, points: vals.reduce((a, v) => a + (v.pts || 0), 0) };
+  const rows = buildRank(quizzes, data);
+  const idx = rows.findIndex((r) => r.sub === sess.sub);
+  const me = idx >= 0 ? Object.assign({ place: idx + 1 }, rows[idx]) : { sub: sess.sub, name: sess.name, score: 0, correct: 0, tries: 0, points: 0, made: 0, received: 0 };
+  return { solved: solved, me: me };
+}
+
 module.exports = async (req, res) => {
   try {
     const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
@@ -204,22 +224,7 @@ module.exports = async (req, res) => {
       }
       if (q.me === '1') {
         if (!sess) { res.status(401).json({ error: 'unauthorized' }); return; }
-        const solved = {};
-        const [mineList, quizzes, data] = await Promise.all([
-          listAll(R_DIR + subHash(sess.sub) + '/').catch(() => []), loadAgg(), loadStats(),
-        ]);
-        mineList.forEach((b) => {
-          const r = parseRecord(b.pathname);
-          if (r) solved[r.id] = { ok: r.ok, pick: r.pick, pts: r.pts };
-        });
-        // 내 점수는 내 풀이 기록(list, 최신)으로 덮어써서 집계 지연 없이 보여줌
-        const h = subHash(sess.sub);
-        const vals = Object.values(solved);
-        data.users[h] = { name: sess.name, tries: vals.length, correct: vals.filter((v) => v.ok).length, points: vals.reduce((a, v) => a + (v.pts || 0), 0) };
-        const rows = buildRank(quizzes, data);
-        const idx = rows.findIndex((r) => r.sub === sess.sub);
-        const me = idx >= 0 ? Object.assign({ place: idx + 1 }, rows[idx]) : { sub: sess.sub, name: sess.name, score: 0, correct: 0, tries: 0, points: 0, made: 0, received: 0 };
-        res.status(200).json({ solved: solved, me: me });
+        res.status(200).json(await computeMe(sess));
         return;
       }
       const [quizzes, data] = await Promise.all([loadAgg(), loadStats()]);
@@ -370,3 +375,7 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: String((e && e.message) || e) });
   }
 };
+
+module.exports.computeMe = computeMe;
+module.exports.subHash = subHash;
+module.exports.listAll = listAll;
