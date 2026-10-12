@@ -115,6 +115,21 @@
   .filters .f.on{ background:var(--ink); color:var(--surface); border-color:var(--ink); }
   .filters label{ font-size:.8rem; display:flex; align-items:center; gap:4px; margin-left:auto; cursor:pointer; }
 
+  /* tiers (브론즈5 ~ 루비1) */
+  .tier{ display:inline-flex; align-items:center; gap:4px; font-size:.7rem; font-weight:900; padding:2px 8px 2px 6px; border-radius:999px; color:#fff; white-space:nowrap; letter-spacing:-.01em; }
+  .tier::before{ content:""; width:9px; height:9px; transform:rotate(45deg); background:rgba(255,255,255,.85); border-radius:2px; }
+  .tier.big{ font-size:.82rem; padding:4px 11px 4px 9px; }
+  .t-1{ background:#ad5600; } .t-2{ background:#435f7a; } .t-3{ background:#ec9a00; }
+  .t-4{ background:#27e2a4; color:#0b3b2c; } .t-5{ background:#00b4fc; } .t-6{ background:#ff0062; }
+  .t-4::before{ background:rgba(11,59,44,.6); }
+  .tier.unrated{ background:var(--surface-alt); color:var(--ink-soft); border:1px solid var(--border); }
+  .tier.unrated::before{ background:var(--ink-soft); }
+  .tier-table{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .tier-table .col{ border:1px solid var(--border); border-radius:12px; padding:10px; background:var(--surface); }
+  .tier-table .col div{ display:flex; justify-content:space-between; align-items:center; font-size:.76rem; padding:3px 0; }
+  .sort{ border:1px solid var(--border); background:var(--surface); border-radius:999px; padding:5px 10px; font-size:.8rem; font-weight:700; }
+  .lv-preview{ margin-left:8px; }
+
   /* quiz list */
   .qgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px; }
   .qcard{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; cursor:pointer; display:flex; flex-direction:column; gap:8px; transition:transform .12s, border-color .12s; }
@@ -223,7 +238,8 @@
         <div id="auth-area">
           <button class="btn primary" id="login-open">로그인 / 회원가입</button>
           <div class="chip" id="profile" hidden>
-            <span>🧪 <b id="profile-name"></b></span>
+            <span id="profile-tier"></span>
+            <span><b id="profile-name"></b></span>
             <span class="admin-tag" id="profile-admin" hidden>관리자</span>
             <button class="btn sm" id="pw-open">비번변경</button>
             <button class="btn sm" id="logout-btn">로그아웃</button>
@@ -272,9 +288,9 @@
       <div class="stat"><div class="v" id="st-me">–</div><div class="k">내가 푼 퀴즈</div></div>
     </div>
     <div class="how">
-      <div class="card"><h3>✏️ 퀴즈 내기</h3><p>문제와 보기 2~4개, 정답과 해설을 적어 올리면 모두의 퀴즈 광장에 올라가요. 출제할 때마다 +5점.</p></div>
-      <div class="card"><h3>🔬 퀴즈 풀기</h3><p>퀴즈 하나당 기회는 딱 한 번! 맞히면 +10점. 풀고 나면 정답과 해설, 정답률을 볼 수 있어요.</p></div>
-      <div class="card"><h3>🏆 랭킹</h3><p>내 퀴즈에 누군가 도전할 때마다 +1점. 좋은 퀴즈를 많이 낼수록 랭킹이 올라가요.</p></div>
+      <div class="card"><h3>✏️ 퀴즈 내기</h3><p>문제·보기·정답·해설과 함께 <b>브론즈 5 ~ 루비 1</b> 난이도를 정해 올려요. 출제할 때마다 +5점.</p></div>
+      <div class="card"><h3>🔬 퀴즈 풀기</h3><p>퀴즈 하나당 기회는 딱 한 번! 맞히면 난이도만큼 점수를 받아요 (브론즈 5 = 5점 … 루비 1 = 34점).</p></div>
+      <div class="card"><h3>🏆 등급</h3><p>점수가 쌓이면 내 등급도 브론즈 5에서 루비 1까지 올라가요. 내 퀴즈에 누군가 도전할 때마다 +1점.</p></div>
     </div>
   </section>
 
@@ -290,6 +306,18 @@
       <button class="f" data-cat="지구과학">지구과학</button>
       <button class="f" data-cat="기타">기타</button>
       <label><input type="checkbox" id="only-unsolved"> 안 푼 퀴즈만</label>
+    </div>
+    <div class="filters" id="tier-filters">
+      <button class="f on" data-fam="">모든 난이도</button>
+      <button class="f" data-fam="1">브론즈</button>
+      <button class="f" data-fam="2">실버</button>
+      <button class="f" data-fam="3">골드</button>
+      <button class="f" data-fam="4">플래티넘</button>
+      <button class="f" data-fam="5">다이아몬드</button>
+      <button class="f" data-fam="6">루비</button>
+      <select class="sort" id="board-sort" aria-label="정렬" style="margin-left:auto">
+        <option value="new">최신순</option><option value="easy">쉬운 순</option><option value="hard">어려운 순</option><option value="pop">도전 많은 순</option>
+      </select>
     </div>
     <div class="qgrid" id="board-list"></div>
     <div class="empty" id="board-empty" hidden>아직 퀴즈가 없어요. 첫 번째 퀴즈를 내 보세요!</div>
@@ -309,6 +337,10 @@
         <select id="mk-cat">
           <option>물리</option><option>화학</option><option>생명과학</option><option>지구과학</option><option>기타</option>
         </select>
+      </div>
+      <div>
+        <label class="l" for="mk-lv">난이도 <span class="hint">— 맞히면 받는 점수: 브론즈 5 = 5점, 한 단계 오를 때마다 +1점 (루비 1 = 34점)</span></label>
+        <div style="display:flex;align-items:center"><select id="mk-lv"></select><span class="lv-preview" id="mk-lv-prev"></span></div>
       </div>
       <div>
         <label class="l" for="mk-q">문제</label>
@@ -359,14 +391,18 @@
   <!-- 랭킹 -->
   <section class="page" id="page-rank" hidden>
     <h2>랭킹</h2>
-    <p class="lead">점수 = 맞힌 퀴즈 × 10 + 낸 퀴즈 × 5 + 내 퀴즈 도전받은 횟수 × 1</p>
+    <p class="lead">점수 = 맞힌 퀴즈의 난이도 점수 합 + 낸 퀴즈 × 5 + 내 퀴즈 도전받은 횟수 × 1</p>
+    <div class="card" id="my-tier-card" style="margin-bottom:14px" hidden></div>
     <div class="card table-scroll">
       <table class="rank">
-        <thead><tr><th>순위</th><th style="text-align:left">아이디</th><th>점수</th><th>맞힘/도전</th><th>출제</th><th>도전받음</th><th class="adm-col" hidden></th></tr></thead>
+        <thead><tr><th>순위</th><th>등급</th><th style="text-align:left">아이디</th><th>점수</th><th>맞힘/도전</th><th>출제</th><th>도전받음</th><th class="adm-col" hidden></th></tr></thead>
         <tbody id="rank-body"></tbody>
       </table>
       <div class="empty" id="rank-empty" hidden>아직 랭킹이 없어요.</div>
     </div>
+    <h3 style="margin:24px 0 4px">등급표</h3>
+    <p class="lead" style="margin-bottom:12px">점수가 아래 기준 이상이 되면 그 등급이 돼요.</p>
+    <div class="tier-table" id="tier-table"></div>
   </section>
 
   <!-- 관리자 -->
@@ -424,7 +460,7 @@
   "use strict";
   var SESSION_KEY = "sci-session-v1";
   var CATS = ["물리","화학","생명과학","지구과학","기타"];
-  var state = { session:null, quizzes:[], stats:{}, solved:{}, cat:"", page:"home" };
+  var state = { session:null, quizzes:[], stats:{}, solved:{}, me:null, cat:"", fam:0, sort:"new", page:"home" };
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -441,8 +477,28 @@
     "exists":"이미 있는 아이디예요.", "wrong":"아이디 또는 비밀번호가 틀렸어요.", "banned":"관리자에 의해 이용이 제한된 아이디예요.",
     "unauthorized":"로그인이 필요해요.", "not-admin":"관리자만 할 수 있어요.", "not-yours":"본인 퀴즈만 지울 수 있어요.",
     "not-found":"퀴즈를 찾을 수 없어요 (이미 삭제됐을 수 있어요).", "own-quiz":"내가 낸 퀴즈예요.", "short-q":"문제를 4자 이상 적어 주세요.",
-    "bad-choices":"보기는 2~4개, 빈 칸 없이 적어 주세요.", "bad-answer":"정답 보기를 골라 주세요.", "no-db":"저장소가 아직 연결되지 않았어요.",
+    "bad-choices":"보기는 2~4개, 빈 칸 없이 적어 주세요.", "bad-lv":"난이도를 골라 주세요.", "bad-answer":"정답 보기를 골라 주세요.", "no-db":"저장소가 아직 연결되지 않았어요.",
   };
+  // ---------- 등급 (정올/solved.ac 스타일) ----------
+  // 퀴즈 난이도 lv: 1 = 브론즈 5 … 5 = 브론즈 1, 6 = 실버 5 … 30 = 루비 1
+  var FAMS = ["", "브론즈", "실버", "골드", "플래티넘", "다이아몬드", "루비"];
+  function famOf(lv){ return lv >= 1 ? Math.floor((lv - 1) / 5) + 1 : 0; }
+  function tierName(lv){ return lv >= 1 && lv <= 30 ? FAMS[famOf(lv)] + " " + (5 - (lv - 1) % 5) : "난이도 없음"; }
+  function tierBadge(lv, big){
+    return lv >= 1 && lv <= 30
+      ? '<span class="tier t-' + famOf(lv) + (big ? " big" : "") + '">' + tierName(lv) + '</span>'
+      : '<span class="tier unrated' + (big ? " big" : "") + '">난이도 없음</span>';
+  }
+  function quizPts(lv){ return lv >= 1 && lv <= 30 ? lv + 4 : 5; }
+  // 사용자 등급: 점수가 USER_MIN[lv-1] 이상이면 그 등급
+  var USER_MIN = [1, 10, 25, 45, 70, 100, 140, 190, 250, 320, 400, 500, 620, 760, 920,
+    1100, 1300, 1550, 1850, 2200, 2600, 3100, 3700, 4400, 5200, 6100, 7100, 8300, 9700, 11500];
+  function userLv(score){ var lv = 0; for (var i = 0; i < USER_MIN.length; i++) if (score >= USER_MIN[i]) lv = i + 1; return lv; }
+  function userBadge(score, big){
+    var lv = userLv(score);
+    return lv ? tierBadge(lv, big) : '<span class="tier unrated' + (big ? " big" : "") + '">Unrated</span>';
+  }
+
   function errText(e){ return ERR[e] || ("오류가 났어요 (" + e + ")"); }
 
   // ---------- API ----------
@@ -471,7 +527,7 @@
   function setSession(s){
     state.session = s;
     try { if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSION_KEY); } catch (e) {}
-    state.solved = {};
+    state.solved = {}; state.me = null;
     applyAuthUI();
     if (s) loadMine();
     renderAll();
@@ -483,6 +539,7 @@
     $("login-open").hidden = !!s;
     $("profile").hidden = !s;
     if (s){ $("profile-name").textContent = s.user.name; }
+    renderMeTier();
     $("profile-admin").hidden = !isAdmin();
     $("tab-admin").hidden = !isAdmin();
     $("make-login").hidden = !!s;
@@ -569,7 +626,19 @@
   }
   function loadMine(){
     if (!state.session) return;
-    api("/api/quiz?me=1").then(function(d){ state.solved = d.solved || {}; renderAll(); }).catch(function(){});
+    api("/api/quiz?me=1").then(function(d){ state.solved = d.solved || {}; state.me = d.me || null; renderAll(); renderMeTier(); }).catch(function(){});
+  }
+  function renderMeTier(){
+    var me = state.session && state.me;
+    $("profile-tier").innerHTML = me ? userBadge(me.score) : "";
+    var card = $("my-tier-card");
+    if (!me){ card.hidden = true; return; }
+    var lv = userLv(me.score), next = USER_MIN[lv], base = lv ? USER_MIN[lv - 1] : 0;
+    card.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' + userBadge(me.score, true) +
+      '<div><b>' + esc(me.name) + '</b> 님 · ' + me.score + '점' + (me.place ? ' · ' + me.place + '위' : '') +
+      '<div class="muted" style="font-size:.8rem">' + (next ? tierName(lv + 1) + '까지 ' + (next - me.score) + '점 남았어요' : '최고 등급이에요! 🎉') + '</div></div></div>' +
+      (next ? '<div class="progress"><i style="width:' + Math.max(0, Math.min(100, Math.round((me.score - base) * 100 / (next - base)))) + '%"></i></div>' : '');
+    card.hidden = false;
   }
   function renderAll(){ renderHomeStats(); renderBoard(); renderMyQuizzes(); }
 
@@ -589,7 +658,7 @@
     var badge = mine ? '<span class="badge mine">내 퀴즈</span>'
       : sv ? (sv.ok ? '<span class="badge ok">정답 ✓</span>' : '<span class="badge bad">오답 ✗</span>') : "";
     return '<div class="qcard" data-qid="' + esc(q.id) + '">' +
-      '<div class="top"><span class="cat cat-' + esc(q.cat) + '">' + esc(q.cat) + '</span>' + badge + '</div>' +
+      '<div class="top"><span style="display:flex;gap:4px;flex-wrap:wrap">' + tierBadge(q.lv) + '<span class="cat cat-' + esc(q.cat) + '">' + esc(q.cat) + '</span></span>' + badge + '</div>' +
       '<div class="qt">' + esc(q.q) + '</div>' +
       '<div class="meta"><span>' + esc(q.name) + ' · ' + timeAgo(q.time) + '</span><span>' + st[0] + '명 도전' + (st[0] ? ' · 정답률 ' + Math.round(st[1] * 100 / st[0]) + '%' : '') + '</span></div>' +
       '</div>';
@@ -598,9 +667,14 @@
     var only = $("only-unsolved").checked;
     var list = state.quizzes.filter(function(q){
       if (state.cat && q.cat !== state.cat) return false;
+      if (state.fam && famOf(q.lv) !== state.fam) return false;
       if (only && (state.solved[q.id] || q.sub === mySub())) return false;
       return true;
     });
+    var tries = function(q){ return (state.stats[q.id] || [0])[0]; };
+    if (state.sort === "easy") list.sort(function(a, b){ return (a.lv || 99) - (b.lv || 99); });
+    else if (state.sort === "hard") list.sort(function(a, b){ return (b.lv || 0) - (a.lv || 0); });
+    else if (state.sort === "pop") list.sort(function(a, b){ return tries(b) - tries(a); });
     $("board-list").innerHTML = list.map(quizCard).join("");
     $("board-empty").hidden = list.length > 0;
     $("board-empty").textContent = state.quizzes.length ? "조건에 맞는 퀴즈가 없어요." : "아직 퀴즈가 없어요. 첫 번째 퀴즈를 내 보세요!";
@@ -617,6 +691,13 @@
     renderBoard();
   });
   $("only-unsolved").addEventListener("change", renderBoard);
+  $("tier-filters").addEventListener("click", function(e){
+    var b = e.target.closest(".f"); if (!b) return;
+    state.fam = +b.getAttribute("data-fam") || 0;
+    Array.prototype.forEach.call(this.querySelectorAll(".f"), function(x){ x.classList.toggle("on", x === b); });
+    renderBoard();
+  });
+  $("board-sort").addEventListener("change", function(){ state.sort = this.value; renderBoard(); });
   document.addEventListener("click", function(e){
     var c = e.target.closest(".qcard[data-qid]"); if (!c) return;
     var q = state.quizzes.find(function(x){ return x.id === c.getAttribute("data-qid"); });
@@ -628,7 +709,7 @@
   function openSolve(q){
     curQ = q;
     var st = state.stats[q.id] || [0, 0];
-    $("sv-head").innerHTML = '<span class="cat cat-' + esc(q.cat) + '">' + esc(q.cat) + '</span> &nbsp;' + esc(q.name) + ' 님의 퀴즈 · ' + st[0] + '명 도전';
+    $("sv-head").innerHTML = tierBadge(q.lv, true) + ' <span class="cat cat-' + esc(q.cat) + '">' + esc(q.cat) + '</span> &nbsp;' + esc(q.name) + ' 님의 퀴즈 · ' + st[0] + '명 도전 · 맞히면 ' + quizPts(q.lv) + '점';
     $("sv-q").textContent = q.q;
     $("sv-msg").textContent = "";
     $("sv-result").hidden = true;
@@ -667,7 +748,7 @@
     });
     var r = $("sv-result");
     r.className = "result " + (d.correct ? "ok" : "bad");
-    r.innerHTML = "<b>" + (d.correct ? "🎉 정답이에요! (+10점)" : "아쉬워요, 정답은 " + (d.answer + 1) + "번이에요.") + "</b>" +
+    r.innerHTML = "<b>" + (d.correct ? "🎉 정답이에요! (+" + (d.pts || quizPts(curQ.lv)) + "점)" : "아쉬워요, 정답은 " + (d.answer + 1) + "번이에요.") + "</b>" +
       (d.explain ? esc(d.explain) : '<span class="muted">해설이 없는 퀴즈예요.</span>');
     if (d.error === "already") r.querySelector("b").textContent = d.correct ? "이미 맞힌 퀴즈예요 ✓" : "이미 푼 퀴즈예요. 정답은 " + (d.answer + 1) + "번이에요.";
     r.hidden = false;
@@ -680,7 +761,7 @@
     api("/api/quiz", { method:"POST", body:{ action:"solve", id:q.id, pick:pick } }).then(function(d){
       state.solved[q.id] = { ok: d.correct, pick: pick, at: new Date().toISOString() };
       if (d.stat) state.stats[q.id] = d.stat;
-      showResult(d); renderAll();
+      showResult(d); renderAll(); loadMine();
     }).catch(function(err){
       if (err.data && err.data.answer != null){ state.solved[q.id] = { ok: err.data.correct, pick: err.data.pick }; showResult(err.data); renderAll(); return; }
       $("sv-msg").textContent = errText(err.message);
@@ -734,7 +815,18 @@
       r.querySelector("input[type=text]").placeholder = "보기 " + (i + 1);
     });
   }
+  (function(){
+    var h = "";
+    for (var f = 1; f <= 6; f++){
+      h += '<optgroup label="' + FAMS[f] + '">';
+      for (var lv = (f - 1) * 5 + 1; lv <= f * 5; lv++) h += '<option value="' + lv + '">' + tierName(lv) + ' (' + quizPts(lv) + '점)</option>';
+      h += "</optgroup>";
+    }
+    $("mk-lv").innerHTML = h;
+    $("mk-lv").addEventListener("change", function(){ $("mk-lv-prev").innerHTML = tierBadge(+this.value); });
+  })();
   function resetMakeForm(){
+    $("mk-lv").value = "3"; $("mk-lv-prev").innerHTML = tierBadge(3);
     $("mk-q").value = ""; $("mk-ex").value = ""; $("mk-choices").innerHTML = "";
     mkChoiceRow("", true); mkChoiceRow(""); mkChoiceRow(""); mkChoiceRow("");
   }
@@ -755,17 +847,18 @@
     var lower = choices.map(function(c){ return c.toLowerCase(); });
     if (lower.some(function(c, i){ return lower.indexOf(c) !== i; })){ msg.textContent = "똑같은 보기가 있어요."; return; }
     $("mk-submit").disabled = true; msg.textContent = "올리는 중…"; msg.className = "msg";
-    api("/api/quiz", { method:"POST", body:{ action:"create", cat:$("mk-cat").value, q:$("mk-q").value, choices:choices, answer:answer, explain:$("mk-ex").value } })
+    api("/api/quiz", { method:"POST", body:{ action:"create", cat:$("mk-cat").value, lv:+$("mk-lv").value, q:$("mk-q").value, choices:choices, answer:answer, explain:$("mk-ex").value } })
       .then(function(d){
         state.quizzes = d.quizzes || state.quizzes; renderAll();
-        resetMakeForm(); msg.className = "msg ok"; msg.textContent = "퀴즈를 올렸어요! (+5점) 퀴즈 광장에서 확인해 보세요.";
+        resetMakeForm(); msg.className = "msg ok"; msg.textContent = "퀴즈를 올렸어요! (+5점) 퀴즈 광장에서 확인해 보세요."; loadMine();
       }).catch(function(err){ msg.className = "msg err"; msg.textContent = errText(err.message); })
       .then(function(){ $("mk-submit").disabled = false; });
   });
 
   // ---------- 랭킹 ----------
   function loadRank(){
-    $("rank-body").innerHTML = '<tr><td colspan="7" class="muted">불러오는 중…</td></tr>';
+    $("rank-body").innerHTML = '<tr><td colspan="8" class="muted">불러오는 중…</td></tr>';
+    renderTierTable(); loadMine();
     api("/api/quiz?rank=1").then(function(d){ renderRank(d.rank || []); }).catch(function(){ $("rank-body").innerHTML = ""; });
   }
   function renderRank(rows){
@@ -774,10 +867,19 @@
     $("rank-empty").hidden = rows.length > 0;
     $("rank-body").innerHTML = rows.map(function(r, i){
       var medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
-      return '<tr class="' + (r.sub === mySub() ? "me" : "") + '"><td class="medal">' + medal + '</td><td class="nm">' + esc(r.name) + '</td>' +
+      return '<tr class="' + (r.sub === mySub() ? "me" : "") + '"><td class="medal">' + medal + '</td><td>' + userBadge(r.score) + '</td><td class="nm">' + esc(r.name) + '</td>' +
         '<td><b>' + r.score + '</b></td><td>' + r.correct + '/' + r.tries + '</td><td>' + r.made + '</td><td>' + r.received + '</td>' +
         (adm ? '<td><button class="btn sm danger" data-rankdel="' + esc(r.sub) + '" data-nm="' + esc(r.name) + '">제외</button></td>' : "") + '</tr>';
     }).join("");
+  }
+  function renderTierTable(){
+    var h = "";
+    for (var f = 1; f <= 6; f++){
+      h += '<div class="col">';
+      for (var lv = (f - 1) * 5 + 1; lv <= f * 5; lv++) h += '<div>' + tierBadge(lv) + '<span>' + USER_MIN[lv - 1].toLocaleString() + '점~</span></div>';
+      h += "</div>";
+    }
+    $("tier-table").innerHTML = h;
   }
   $("rank-body").addEventListener("click", function(e){
     var b = e.target.closest("[data-rankdel]"); if (!b) return;
