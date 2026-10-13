@@ -110,6 +110,23 @@ button{font-family:inherit;cursor:pointer;border:none}
 .rk .who div{font-size:11.5px;color:#9fb6d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rk .sc{font-size:17px;color:#ffd54a}
 #rankInfo{text-align:center;color:#9fb6d0;padding:30px 10px;font-size:16px;line-height:1.6}
+#vs{background:#0b1426;align-items:stretch}
+#vsBody{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:8px;touch-action:pan-y}
+.vsOpt{display:flex;align-items:center;gap:6px;font-size:15px}
+.vsOpt>span{width:78px;color:#9fb6d0}
+.vsOpt button{flex:1;font-size:15px;padding:6px 0;border-radius:9px;background:#1c2b4b;color:#9fb6d0}
+.vsOpt button.on{background:#3b82f6;color:#fff}
+.team{border-radius:12px;padding:6px 8px;display:flex;flex-direction:column;gap:5px}
+.team.t0{background:#14284d;border:2px solid #3b82f6}
+.team.t1{background:#3a1520;border:2px solid #ef4444}
+.team h4{font-weight:normal;font-size:16px}
+.slot{display:flex;align-items:center;gap:6px;background:#0006;border-radius:9px;padding:4px 6px}
+.slot canvas{width:40px;height:40px}
+.slot .who{flex:1;min-width:0;font-size:12px;color:#9fb6d0}
+.slot .who b{display:block;font-weight:normal;font-size:15px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot select{font-family:inherit;font-size:13px;max-width:128px;background:#0b1426;color:#fff;border:1px solid #2a3d66;border-radius:7px;padding:3px}
+.slot .dice{font-size:18px;background:none;padding:2px 4px}
+#vsGo{margin:8px 12px 12px;font-size:24px}
 #rankNote{font-size:12px;color:#6f86a8;text-align:center;padding:4px}
 </style>
 </head>
@@ -123,7 +140,7 @@ button{font-family:inherit;cursor:pointer;border:none}
     <div class="sub">세계 50개 나라 · 68대의 비행기<br>정체불명 <b style="color:#ff8080">무인기 군단</b>을 막아라!</div>
     <div id="acct"></div>
     <button class="big" id="startBtn">✈️ 출격 준비</button>
-    <button class="small" id="rankBtn" style="font-size:18px;padding:8px 26px">🏆 랭킹</button>
+    <div style="display:flex;gap:10px"><button class="small" id="vsBtn" style="font-size:18px;padding:8px 20px">⚔️ CPU 대전</button><button class="small" id="rankBtn" style="font-size:18px;padding:8px 20px">🏆 랭킹</button></div>
     <div class="sub" id="titleDex" style="font-size:16px;color:#ffd54a"></div>
     <div class="keys">방향키/WASD 이동 · 자동 사격<br>Z 특수기 · X/스페이스 폭탄 · P 일시정지 · M 음악<br>📱 휴대폰: 화면을 끌어서 이동</div>
   </div>
@@ -169,6 +186,12 @@ button{font-family:inherit;cursor:pointer;border:none}
     </div>
     <div id="rankList"></div>
     <div id="rankNote">로그인하고 자기 최고 기록을 깨면 랭킹에 올라가요 · 30초마다 새로 고침</div>
+  </div>
+
+  <div id="vs" class="screen">
+    <div class="selTop"><button class="small" id="vsBack">← 처음</button><b>⚔️ CPU 대전</b></div>
+    <div id="vsBody"></div>
+    <button class="big" id="vsGo">⚔️ 대전 시작!</button>
   </div>
 
   <div id="login" class="screen">
@@ -583,6 +606,7 @@ function setMute(m) {
 // 지금 상황에 맞는 음악 고르기
 function updateMusic() {
   if (!AC) return;
+  if (V) { MUS.paused = V.state === 'pause'; if (V.state === 'play' || V.state === 'intro') playSong('boss', VSC.diff); return; }
   MUS.paused = !!(G && G.state === 'pause');
   if (!G) return playSong('title');
   if (G.state !== 'play') return;
@@ -738,6 +762,14 @@ const keys = {};
 addEventListener('keydown', e => {
   keys[e.code] = true;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  if (V) {
+    if (V.state === 'pause') { if (e.code === 'KeyP' || e.code === 'Escape') resume(); return; }
+    if (V.state !== 'play') return;
+    if (e.code === 'KeyX' || e.code === 'Space') vBomb(V.me);
+    if (e.code === 'KeyZ' || e.code === 'KeyC') vSpecial(V.me);
+    if (e.code === 'KeyP' || e.code === 'Escape') pause();
+    return;
+  }
   if (!G || G.state !== 'play') { if (G && G.state === 'pause' && (e.code === 'KeyP' || e.code === 'Escape')) resume(); return; }
   if (e.code === 'KeyX' || e.code === 'Space') useBomb();
   if (e.code === 'KeyZ' || e.code === 'KeyC') useSpecial();
@@ -764,8 +796,8 @@ addEventListener('mouseup', () => { mDown = false; });
 ['btnBomb','btnSpec','btnPause','btnMute'].forEach(id => {
   $(id).addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); $(id).click(); }, {passive:false});
 });
-$('btnBomb').onclick = () => useBomb();
-$('btnSpec').onclick = () => useSpecial();
+$('btnBomb').onclick = () => V ? (V.state === 'play' && vBomb(V.me)) : useBomb();
+$('btnSpec').onclick = () => V ? (V.state === 'play' && vSpecial(V.me)) : useSpecial();
 $('btnPause').onclick = () => pause();
 document.querySelectorAll('.muteBtn').forEach(b => b.onclick = () => { initAudio(); setMute(!MUTED); });
 setMute(MUTED);
@@ -773,6 +805,7 @@ addEventListener('keydown', e => { if (e.code === 'KeyM' && !(e.target && e.targ
 
 /* ───────────── 게임 상태 ───────────── */
 let G = null;
+let V = null;   // CPU 대전 상태
 let selPlane = 0;
 
 function newGame(planeId) {
@@ -1567,11 +1600,15 @@ function drawTitleDemo() {
 }
 
 /* ───────────── 화면 전환 ───────────── */
-function show(id) { ['title','sel','pause','over','login','rank'].forEach(s => $(s).classList.toggle('on', s === id)); $('hudBtns').classList.toggle('on', id === null); }
-function pause() { if (!G || G.state !== 'play') return; G.state = 'pause'; show('pause'); $('hudBtns').classList.remove('on'); }
-function resume() { if (!G) return; G.state = 'play'; show(null); }
+function show(id) { ['title','sel','pause','over','login','rank','vs'].forEach(s => $(s).classList.toggle('on', s === id)); $('hudBtns').classList.toggle('on', id === null); }
+function pause() {
+  if (V) { if (V.state !== 'play' && V.state !== 'intro') return; V.prev = V.state; V.state = 'pause'; show('pause'); $('hudBtns').classList.remove('on'); return; }
+  if (!G || G.state !== 'play') return; G.state = 'pause'; show('pause'); $('hudBtns').classList.remove('on');
+}
+function resume() { if (V) { V.state = V.prev || 'play'; show(null); return; } if (!G) return; G.state = 'play'; show(null); }
 function endGame(win) {
   G.state = 'over';
+  $('toSelBtn').textContent = '기체 선택으로';
   playSong(win ? 'win' : 'over');
   const P = G.plane, d = dexOf(P.id);
   const newBest = G.score > Math.max(d.best, dexInfo(P.id).best);
@@ -1600,7 +1637,9 @@ function updateButtons() {
   $('btnSpec').classList.toggle('ready', G.p.spec >= 100);
   $('btnBomb').style.opacity = G.p.bombs > 0 ? 1 : .4;
 }
+let lastMode = 'story';
 function startPlay(id) {
+  lastMode = 'story'; V = null;
   initAudio(); newGame(id); show(null);
   // 로그인했으면 게임 시작 표를 받아 둠 (끝날 때 코인 받을 때 필요)
   if (SESSION) { const g = G; api('start', {plane:id}).then(j => { g.ticket = j.ticket; }).catch(() => {}); }
@@ -1608,29 +1647,32 @@ function startPlay(id) {
 
 $('startBtn').onclick = () => { initAudio(); openSelect(); };
 refreshAcct(); loadWallet();
-$('selBack').onclick = () => { G = null; refreshTitle(); show('title'); };
-$('goBtn').onclick = () => startPlay(selPlane);
+$('selBack').onclick = () => { G = null; if (selMode === 'vs') return openVs(); refreshTitle(); show('title'); };
+$('goBtn').onclick = () => selMode === 'vs' ? openVs() : startPlay(selPlane);
 $('resumeBtn').onclick = resume;
-$('quitBtn').onclick = () => { G = null; openSelect(); };
-$('retryBtn').onclick = () => startPlay(G.plane.id);
-$('toSelBtn').onclick = () => { G = null; openSelect(); };
-$('overRank').onclick = () => { G = null; openRank('sel'); };
+$('quitBtn').onclick = () => { if (V) { V = null; return openVs(); } G = null; openSelect(); };
+$('retryBtn').onclick = () => lastMode === 'vs' ? startVs() : startPlay(G.plane.id);
+$('toSelBtn').onclick = () => { G = null; V = null; lastMode === 'vs' ? openVs() : openSelect(); };
+$('overRank').onclick = () => { G = null; V = null; openRank('sel'); };
 function refreshTitle() { $('titleDex').textContent = `🏅 도감 ${clearedCount()} / ${PLANES.length}`; }
 refreshTitle();
 
 /* ───────────── 기체 선택 화면 ───────────── */
 let curTab = 'F';
-document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+document.querySelectorAll('#sel .tabs button').forEach(b => b.onclick = () => {
   curTab = b.dataset.s;
-  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('#sel .tabs button').forEach(x => x.classList.toggle('on', x === b));
   buildGrid();
   const first = PLANES.find(p => p.series === curTab);
   if (PLANES[selPlane].series !== curTab) selectPlane(first.id);
 });
-function openSelect() {
-  G = null;
+let selMode = 'story';
+function openSelect(mode) {
+  G = null; V = null;
+  selMode = mode || 'story';
   curTab = PLANES[selPlane].series;
-  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.s === curTab));
+  document.querySelectorAll('#sel .tabs button').forEach(x => x.classList.toggle('on', x.dataset.s === curTab));
+  $('goBtn').textContent = selMode === 'vs' ? '✔ 이 기체로' : '🚀 출격!';
   buildGrid(); selectPlane(selPlane);
   $('dexCount').innerHTML = selTopText();
   show('sel');
@@ -1748,12 +1790,419 @@ $('rankBtn').onclick = () => { initAudio(); openRank('title'); };
 $('selRank').onclick = () => openRank('sel');
 $('rankBack').onclick = () => rankBack === 'sel' ? openSelect() : show('title');
 
+/* ───────────── CPU 대전 ───────────── */
+// 우리 팀(아래, 위로 쏨) vs 상대 팀(위, 아래로 쏨). CPU 도 스스로 비행기를 골라요.
+const VS_HP = 5, VS_DMG = .6;
+const VS_SUDDEN = 60 * 60, VS_LIMIT = 150 * 60;   // 1분부터 서든데스(피해가 점점 커짐), 2분 30초면 남은 체력으로 판정
+const vDmgMul = () => V.t > VS_SUDDEN ? 1 + (V.t - VS_SUDDEN) / 1200 : 1;
+const DIFF = [
+  {name:'쉬움 🐣', aim:70, dodge:.2, react:45, spec:.004, bomb:.002, pick:['B','C']},
+  {name:'보통 🙂', aim:35, dodge:.55, react:24, spec:.012, bomb:.01, pick:['A','B']},
+  {name:'어려움 🔥', aim:12, dodge:.92, react:12, spec:.04, bomb:.04, pick:['S','A']},
+];
+const VSC = {ally:0, enemy:1, diff:1, slots:[]};
+// CPU 가 고르는 비행기: 어려울수록 센 등급에서 골라요
+function cpuPick() { const pool = PLANES.filter(p => DIFF[VSC.diff].pick.includes(p.tier)); return pool[Math.random() * pool.length | 0].id; }
+function syncSlots(reroll) {
+  const old = {0:VSC.slots.filter(x => x.team === 0), 1:VSC.slots.filter(x => x.team === 1)};
+  VSC.slots = [];
+  [0, 1].forEach(team => {
+    const n = team ? VSC.enemy : VSC.ally;
+    for (let i = 0; i < n; i++) {
+      const o = old[team][i];
+      VSC.slots.push(o && !(reroll && o.auto) ? o : {team, id:cpuPick(), auto:true});
+    }
+  });
+}
+function planeOptions(sel) {
+  let h = `<option value="-1">🎲 CPU가 고르기</option>`;
+  [['F','⚔️ 전투기'],['A','💥 공격기'],['B','💣 폭격기']].forEach(([sr, lb]) => {
+    h += `<optgroup label="${lb}">` + PLANES.filter(p => p.series === sr).map(p => `<option value="${p.id}"${p.id === sel ? ' selected' : ''}>${p.tier} ${p.name} (${p.nat})</option>`).join('') + '</optgroup>';
+  });
+  return h;
+}
+function openVs() {
+  G = null; V = null;
+  if (!VSC.slots.length) syncSlots();
+  renderVs();
+  show('vs');
+}
+function renderVs() {
+  const B = $('vsBody'), me = PLANES[selPlane];
+  const opt = (label, key, vals, names) => `<div class="vsOpt"><span>${label}</span>` +
+    vals.map((v, i) => `<button data-k="${key}" data-v="${v}" class="${VSC[key] === v ? 'on' : ''}">${names ? names[i] : v + '대'}</button>`).join('') + '</div>';
+  const slotHtml = (sl, i, n) => `<div class="slot"><canvas width="80" height="80" data-p="${sl.id}"></canvas>` +
+    `<div class="who">${sl.team ? '🔴' : '🔵'} CPU ${n}${sl.auto ? ' · CPU가 골랐어요' : ''}<b>${PLANES[sl.id].name}</b>${PLANES[sl.id].nat} · ${PLANES[sl.id].tier}등급</div>` +
+    `<select data-i="${i}">${planeOptions(sl.auto ? -1 : sl.id)}</select><button class="dice" data-i="${i}" title="다시 고르기">🎲</button></div>`;
+  let n0 = 0, n1 = 0;
+  const allies = VSC.slots.map((sl, i) => sl.team === 0 ? slotHtml(sl, i, ++n0) : '').join('');
+  const foes = VSC.slots.map((sl, i) => sl.team === 1 ? slotHtml(sl, i, ++n1) : '').join('');
+  B.innerHTML = opt('아군 CPU', 'ally', [0, 1, 2]) + opt('상대 CPU', 'enemy', [1, 2, 3]) + opt('난이도', 'diff', [0, 1, 2], DIFF.map(d => d.name)) +
+    `<div class="team t0"><h4>🔵 우리 팀</h4><div class="slot"><canvas width="80" height="80" data-p="${me.id}"></canvas>` +
+    `<div class="who">👤 나${tuneOf(me.id).some(v => v) ? ' · 🔧튜닝' : ''}<b>${me.name}</b>${me.nat} · ${me.tier}등급</div><button class="small" id="vsMine">바꾸기</button></div>${allies}</div>` +
+    `<div class="team t1"><h4>🔴 상대 팀</h4>${foes}</div>` +
+    `<div style="font-size:13px;color:#9fb6d0;text-align:center;line-height:1.5">상대 팀을 모두 격추하면 승리! 내가 떨어져도 아군 CPU가 이기면 승리예요.<br>${SESSION ? '🪙 이기면 코인을 받아요 (난이도·상대 수만큼)' : '로그인하면 이길 때 코인을 받아요'}</div>`;
+  B.querySelectorAll('canvas[data-p]').forEach(c => drawPlaneIcon(c, PLANES[+c.dataset.p]));
+  B.querySelectorAll('.vsOpt button').forEach(b => b.onclick = () => { VSC[b.dataset.k] = +b.dataset.v; syncSlots(b.dataset.k === 'diff'); renderVs(); });
+  B.querySelectorAll('select').forEach(sel => sel.onchange = () => {
+    const sl = VSC.slots[+sel.dataset.i], v = +sel.value;
+    if (v < 0) { sl.auto = true; sl.id = cpuPick(); } else { sl.auto = false; sl.id = v; }
+    renderVs();
+  });
+  B.querySelectorAll('.dice').forEach(b => b.onclick = () => { const sl = VSC.slots[+b.dataset.i]; sl.auto = true; sl.id = cpuPick(); renderVs(); });
+  $('vsMine').onclick = () => openSelect('vs');
+}
+$('vsBtn').onclick = () => { initAudio(); openVs(); };
+$('vsBack').onclick = () => { V = null; show('title'); };
+$('vsGo').onclick = () => startVs();
+
+function vShip(id, team, isPlayer, label, st) {
+  const P = PLANES[id], [atk, spd, hp, rof, agi] = st, isB = P.series === 'B';
+  return {P, team, isPlayer, label, x:W / 2, y:team ? 150 : H - 110, vx:0, vy:0,
+    speed:2.2 + spd * .38, acc:.12 + agi * .06, hitR:isB ? 16 - agi * 1.5 : 7.5 - agi * .5,
+    dmg:atk, interval:Math.max(4, 17 - rof), max:(isB ? hp * 30 : hp * 10) * VS_HP, hp:0,
+    size:planeSize(P), bombs:P.fam === 'hornet' || isB ? 2 : 1, power:2, fireCd:rand(10, 40), gcd:30, tcd:0, ecd:0, volley:0,
+    spec:rand(0, 25), inv:90, buffs:{}, dead:false, kills:0, hit:0,
+    ai:{tx:W / 2, ty:team ? 150 : H - 110, t:0}};
+}
+function startVs() {
+  initAudio(); lastMode = 'vs'; G = null;
+  syncSlots(true);   // "CPU가 고르기" 칸은 판마다 새로 골라요
+  V = {state:'intro', t:0, bgY:0, bg:['sea', 'desert', 'sky'][Math.random() * 3 | 0], ships:[], bullets:[], parts:[], timers:[], carpets:[],
+    flash:0, shake:0, slowTeam:-1, slowT:0, endT:0};
+  V.me = vShip(selPlane, 0, true, '나', effStats(selPlane));
+  V.ships.push(V.me);
+  let n0 = 0, n1 = 0;
+  VSC.slots.forEach(sl => V.ships.push(vShip(sl.id, sl.team, false, 'CPU ' + (sl.team ? ++n1 : ++n0), PLANES[sl.id].st)));
+  [0, 1].forEach(team => {
+    const tm = V.ships.filter(s => s.team === team);
+    tm.forEach((s, i) => { s.x = W * (i + 1) / (tm.length + 1); s.y = team ? 130 + (i % 2) * 50 : H - 120 - (i % 2) * 50; s.ai.tx = s.x; s.ai.ty = s.y; s.hp = s.max; });
+  });
+  show(null);
+  if (SESSION) { const v = V; api('start', {plane:selPlane}).then(j => { v.ticket = j.ticket; }).catch(() => {}); }
+}
+const vAlive = team => V.ships.filter(s => !s.dead && s.team === team);
+function vFoes(s) { return V.ships.filter(o => !o.dead && o.team !== s.team && !o.buffs.stealth); }
+function vNearest(s, x, y) {
+  let best = null, bd = 1e9;
+  for (const o of vFoes(s)) { const d = (o.x - x) ** 2 + (o.y - y) ** 2; if (d < bd) { bd = d; best = o; } }
+  return best;
+}
+function vExplode(x, y, size) {
+  const n = Math.min(26, 6 + size / 2 | 0);
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, 7), sp = rand(.5, size / 10 + 1);
+    V.parts.push({x, y, vx:Math.cos(a) * sp, vy:Math.sin(a) * sp, life:rand(20, 40), max:40, r:rand(size * .15, size * .35), col:Math.random() < .5 ? '#ffb347' : '#ff6b3d'});
+  }
+  V.parts.push({x, y, vx:0, vy:0, life:14, max:14, r:size, ring:true});
+  if (V.parts.length > 700) V.parts.splice(0, V.parts.length - 700);
+}
+// 탄: ang=0 이면 자기 팀 앞쪽으로
+function vShot(s, x, y, ang, sp, dmg, o = {}) {
+  const d = s.team ? 1 : -1;
+  V.bullets.push(Object.assign({team:s.team, owner:s, x, y, vx:Math.sin(ang) * sp, vy:d * Math.cos(ang) * sp, dmg, r:4, col:'#ffe066', kind:'b', age:0}, o));
+}
+function vHoming(s, ang, dmg, o = {}) { vShot(s, s.x, s.y, ang, 4, dmg, Object.assign({kind:'m', home:true, max:9, turn:.1, col:'#ffa94d', r:5}, o)); }
+function vFire(s) {
+  const pw = s.power, d = s.dmg, dir = s.team ? 1 : -1, top = s.y + dir * 18 * s.size, x = s.x;
+  s.volley++;
+  if (s.isPlayer) snd('shot');
+  switch (s.P.fam) {
+    case 'stealth': { const n = pw + 1; for (let i = 0; i < n; i++) vShot(s, x + (i - (n - 1) / 2) * 10, top, 0, 11, d, {col:'#9ef0ff'}); break; }
+    case 'heavy': { const n = 2 * pw + 1; for (let i = 0; i < n; i++) vShot(s, x, top, (i - (n - 1) / 2) * .09, 10, d * .8, {col:'#ffd166'}); break; }
+    case 'light': { const n = pw + 1; for (let i = 0; i < n; i++) vShot(s, x + (i - (n - 1) / 2) * 6, top, 0, 13, d * .9, {col:'#b6ff7a', r:3.5}); break; }
+    case 'euro': {
+      const n = pw + 1; for (let i = 0; i < n; i++) vShot(s, x + (i - (n - 1) / 2) * 12, top, 0, 11, d * .85, {col:'#c9b6ff'});
+      if (s.volley % 4 === 0) vHoming(s, (s.volley % 8 ? 1 : -1) * .6, d * 1.6);
+      break;
+    }
+    case 'hornet': {
+      vShot(s, x - 6, top, 0, 11, d); vShot(s, x + 6, top, 0, 11, d);
+      for (let k = 1; k < pw; k++) { vShot(s, x - 8, top, -.14 * k, 10, d * .9); vShot(s, x + 8, top, .14 * k, 10, d * .9); }
+      break;
+    }
+    case 'classic': { const n = pw + 1; for (let i = 0; i < n; i++) vShot(s, x, top, (i - (n - 1) / 2) * .05, 11, d); break; }
+    case 'attack': { const n = 1 + Math.ceil(pw / 2); for (let i = 0; i < n; i++) vShot(s, x + (i - (n - 1) / 2) * 10, top, 0, 11, d * .9); break; }
+    case 'bomber': vShot(s, x - 14, top, 0, 10, d * .9, {r:5}); vShot(s, x + 14, top, 0, 10, d * .9, {r:5}); break;
+  }
+}
+function vAoe(s, x, y, r, dmg) {
+  vExplode(x, y, r * .8);
+  for (const o of V.ships) if (!o.dead && o.team !== s.team && (o.x - x) ** 2 + (o.y - y) ** 2 < (r + o.hitR + 10) ** 2) vHurt(o, dmg * VS_DMG, s);
+}
+function vCarpet(s) { V.carpets.push({s, y:s.y + (s.team ? 40 : -40), dir:s.team ? 1 : -1}); snd('bomb'); }
+function vClearBullets(team) { V.bullets = V.bullets.filter(b => b.team === team); }
+function vBomb(s) {
+  if (!s || s.dead || s.bombs <= 0) return;
+  s.bombs--; s.inv = Math.max(s.inv, 110);
+  vClearBullets(s.team);
+  if (s.P.series === 'B') return vCarpet(s);
+  snd('bomb'); V.flash = s.isPlayer ? 20 : 10; V.shake = 15;
+  for (const o of V.ships) if (!o.dead && o.team !== s.team) { vHurt(o, 90, s); vExplode(o.x + rand(-20, 20), o.y + rand(-20, 20), 30); }
+}
+function vSpecial(s) {
+  if (!s || s.dead || s.spec < 100) return;
+  s.spec = 0; const d = s.dmg, B = s.buffs;
+  if (s.isPlayer) snd('spec');
+  switch (s.P.spec) {
+    case 'stealth': B.stealth = 240; break;
+    case 'missiles': for (let i = 0; i < 10; i++) vHoming(s, (i - 4.5) * .3, d * 2.5); break;
+    case 'burner': B.burner = 300; break;
+    case 'ring': for (let k = 0; k < 3; k++) V.timers.push({t:k * 18, fn:() => { if (!s.dead) for (let i = 0; i < 24; i++) vShot(s, s.x, s.y, i * Math.PI / 12 + k * .13, 8, d * 1.5, {col:'#ff9ef0', r:5}); }}); break;
+    case 'escort': B.escort = 480; break;
+    case 'antiship': for (let i = 0; i < 4; i++) vHoming(s, (i - 1.5) * .5, d * 6, {r:7, col:'#ff6b6b'}); break;
+    case 'dash': B.dash = 120; s.inv = Math.max(s.inv, 120); break;
+    case 'gun': B.gun = 120; break;
+    case 'guided': for (let i = 0; i < 6; i++) vHoming(s, (i - 2.5) * .35, d * 5, {r:7, col:'#ff8c42'}); break;
+    case 'barrage': for (let k = 0; k < 3; k++) V.timers.push({t:10 + k * 16, fn:() => { const t = vNearest(s, rand(0, W), s.team ? H : 0); if (t) { vAoe(s, t.x + rand(-15, 15), t.y + rand(-15, 15), 60, 260); snd('boom'); } }}); break;
+    case 'rockets': for (let i = 0; i < 14; i++) vShot(s, s.x, s.y, (i - 6.5) * .065, 9, d * 2, {kind:'m', col:'#ff8c42', r:5}); break;
+    case 'cluster': for (let k = 0; k < 12; k++) V.timers.push({t:k * 4, fn:() => { vAoe(s, rand(40, W - 40), s.team ? rand(H / 2 + 40, H - 40) : rand(40, H / 2 - 40), 48, 110); }}); break;
+    case 'evade': B.evade = 240; break;
+    case 'slow': V.slowTeam = 1 - s.team; V.slowT = 300; break;
+    case 'carpet': vCarpet(s); break;
+    case 'cruise': for (let i = 0; i < 6; i++) vHoming(s, (i - 2.5) * .45, d * 5, {r:7, col:'#ff6b6b'}); break;
+  }
+}
+function vHurt(o, dmg, by) {
+  if (o.dead || o.inv > 0 || o.buffs.dash) return;
+  o.hp -= dmg * vDmgMul(); o.hit = 4;
+  if (o.isPlayer) { V.shake = 6; if (Math.random() < .3) snd('hurt'); }
+  if (o.hp <= 0) {
+    o.hp = 0; o.dead = true;
+    if (by) by.kills++;
+    vExplode(o.x, o.y, 50 * o.size); snd('big'); V.shake = 20;
+    V.bullets = V.bullets.filter(b => b.owner !== o || b.kind === 'm');
+  }
+}
+function vMove(s) {
+  const B = s.buffs;
+  let tvx = 0, tvy = 0;
+  const sp = s.speed * (B.burner ? 1.35 : 1) * (B.evade ? 1.4 : 1) * (B.dash ? 1.5 : 1) * (V.slowTeam === s.team && V.slowT ? .6 : 1);
+  if (s.isPlayer) {
+    let dx = (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0);
+    let dy = (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0);
+    if (dx && dy) { dx *= .7071; dy *= .7071; }
+    tvx = dx * sp; tvy = dy * sp;
+    if (tdx || tdy) {
+      const lim = sp * 2.2, m = Math.hypot(tdx, tdy), k = m > lim ? lim / m : 1;
+      s.x += tdx * k; s.y += tdy * k; tdx -= tdx * k; tdy -= tdy * k;
+    }
+  } else {
+    const D = DIFF[VSC.diff], ai = s.ai;
+    if (--ai.t <= 0) {
+      ai.t = D.react + rand(0, 30);
+      const foes = vFoes(s), tg = foes[Math.random() * foes.length | 0];
+      ai.tx = clamp((tg ? tg.x : rand(40, W - 40)) + rand(-D.aim, D.aim), 30, W - 30);
+      ai.ty = s.team ? rand(90, H / 2 - 60) : rand(H / 2 + 60, H - 80);
+    }
+    let gx = ai.tx - s.x, gy = ai.ty - s.y;
+    const gl = Math.hypot(gx, gy);
+    if (gl > 6) { tvx = gx / gl * sp; tvy = gy / gl * sp * .7; }
+    // 날아오는 탄 피하기
+    if (Math.random() < D.dodge) {
+      let ex = 0, ey = 0;
+      for (const b of V.bullets) {
+        if (b.team === s.team) continue;
+        const rx = s.x - b.x, ry = s.y - b.y, dd = rx * rx + ry * ry;
+        if (dd > 90 * 90 || rx * b.vx + ry * b.vy <= 0) continue;
+        const w = 1 / (Math.sqrt(dd) + 10);
+        ex += (rx >= 0 ? 1 : -1) * w * 60; ey += (ry >= 0 ? 1 : -1) * w * 20;
+      }
+      if (ex || ey) { tvx = clamp(tvx + ex * sp, -sp, sp); tvy = clamp(tvy + ey * sp, -sp, sp); }
+    }
+    if (s.spec >= 100 && Math.random() < D.spec) vSpecial(s);
+    if (s.bombs && s.hp < s.max * .35 && Math.random() < D.bomb) {
+      const near = V.bullets.filter(b => b.team !== s.team && (b.x - s.x) ** 2 + (b.y - s.y) ** 2 < 120 * 120).length;
+      if (near > 3) vBomb(s);
+    }
+  }
+  s.vx += (tvx - s.vx) * s.acc; s.vy += (tvy - s.vy) * s.acc;
+  s.x += s.vx; s.y += s.vy;
+  const m = 14 * s.size;
+  s.x = clamp(s.x, m, W - m);
+  s.y = s.team ? clamp(s.y, 70, H / 2 - 40) : clamp(s.y, H / 2 + 40, H - 30 - 14 * s.size);
+}
+function vUpdate() {
+  if (!V) return;
+  if (V.state === 'pause') return;
+  V.t++; V.bgY += 1.1;
+  if (V.flash) V.flash--;
+  if (V.shake) V.shake--;
+  if (V.slowT) V.slowT--;
+  for (const q of V.parts) { q.x += q.vx; q.y += q.vy; q.vx *= .94; q.vy *= .94; q.life--; }
+  V.parts = V.parts.filter(q => q.life > 0);
+  if (V.state === 'intro') { if (V.t > 130) { V.state = 'play'; V.t = 0; } return; }
+  if (V.state === 'over') { if (--V.endT === 0) vEnd(); return; }
+
+  for (let i = V.timers.length - 1; i >= 0; i--) if (--V.timers[i].t <= 0) { const t = V.timers[i]; V.timers.splice(i, 1); t.fn(); }
+  for (const s of V.ships) {
+    if (s.dead) continue;
+    for (const k in s.buffs) if (s.buffs[k] > 0) s.buffs[k]--;
+    if (s.inv) s.inv--;
+    if (s.hit) s.hit--;
+    vMove(s);
+    const slow = V.slowTeam === s.team && V.slowT ? 1.6 : 1;
+    if (--s.fireCd <= 0) { vFire(s); s.fireCd = s.interval * (s.buffs.burner ? .5 : 1) * slow; }
+    if (s.buffs.gun) for (let i = 0; i < 2; i++) vShot(s, s.x + rand(-6, 6), s.y + (s.team ? 20 : -20) * s.size, rand(-.03, .03), 15, s.dmg * .7, {col:'#fff3a0', r:3});
+    if (s.P.series === 'A' && --s.gcd <= 0) { s.gcd = 45; vHoming(s, (s.volley % 2 ? .4 : -.4), s.dmg * 1.2, {col:'#ff8c42'}); }
+    if (s.P.series === 'B' && --s.tcd <= 0) {
+      s.tcd = s.interval * 2;
+      const t = vNearest(s, s.x, s.y);
+      if (t) for (let k = 0; k < 2; k++) { const ox = (k - .5) * 22; vShot(s, s.x + ox, s.y, Math.atan2(t.x - (s.x + ox), (s.team ? 1 : -1) * (t.y - s.y)), 8, s.dmg * .55, {col:'#fff', r:3}); }
+    }
+    if (s.buffs.escort && --s.ecd <= 0) { s.ecd = 8; [-44, 44].forEach(ox => vShot(s, s.x + ox, s.y, 0, 11, s.dmg * .7, {col:'#9ef0ff', r:3})); }
+    s.spec = Math.min(100, s.spec + .11);
+  }
+  // 융단폭격: 상대 쪽으로 쓸고 지나감
+  for (const c of V.carpets) {
+    if (V.t % 3) continue;
+    for (let i = 0; i < 5; i++) vExplode(30 + i * 105 + rand(-20, 20), c.y + rand(-10, 10), rand(22, 34));
+    for (const o of V.ships) if (!o.dead && o.team !== c.s.team && Math.abs(o.y - c.y) < 45) vHurt(o, (40 + c.s.dmg * 4) * VS_DMG, c.s);
+    c.y += c.dir * 30;
+    if (c.y < -40 || c.y > H + 40) c.gone = true;
+  }
+  V.carpets = V.carpets.filter(c => !c.gone);
+  // 탄 이동 · 충돌
+  for (const b of V.bullets) {
+    const slow = V.slowTeam === b.team && V.slowT ? .5 : 1;
+    if (b.home) {
+      if (!b.tg || b.tg.dead || b.tg.buffs.stealth) b.tg = vNearest(b.owner, b.x, b.y);
+      const cur = Math.atan2(b.vy, b.vx), spd = Math.min(b.max, Math.hypot(b.vx, b.vy) + .3);
+      let na = cur;
+      if (b.tg) { let df = Math.atan2(b.tg.y - b.y, b.tg.x - b.x) - cur; while (df > Math.PI) df -= Math.PI * 2; while (df < -Math.PI) df += Math.PI * 2; na = cur + clamp(df, -b.turn, b.turn); }
+      b.vx = Math.cos(na) * spd; b.vy = Math.sin(na) * spd;
+      if (V.t % 2 === 0) V.parts.push({x:b.x, y:b.y, vx:0, vy:0, life:12, max:12, r:2.5, col:'#ffffff88'});
+      if (++b.age > 300) b.gone = true;
+    }
+    b.x += b.vx * slow; b.y += b.vy * slow;
+    if (b.y < -30 || b.y > H + 30 || b.x < -30 || b.x > W + 30) { b.gone = true; continue; }
+    for (const o of V.ships) {
+      if (o.dead || o.team === b.team || o.buffs.stealth) continue;
+      const hr = o.hitR * (o.buffs.evade ? .35 : 1) + 3 * o.size;
+      if ((o.x - b.x) ** 2 + (o.y - b.y) ** 2 < (hr + b.r) ** 2) {
+        b.gone = true;
+        vHurt(o, b.dmg * VS_DMG, b.owner);
+        if (b.kind === 'm') vExplode(b.x, b.y, 10);
+        break;
+      }
+    }
+  }
+  V.bullets = V.bullets.filter(b => !b.gone);
+  if (V.bullets.length > 900) V.bullets.splice(0, V.bullets.length - 900);
+  // 승패
+  const teamHp = team => V.ships.filter(x => x.team === team).reduce((a, x) => a + x.hp / x.max, 0) / V.ships.filter(x => x.team === team).length;
+  if (V.t >= VS_LIMIT && vAlive(0).length && vAlive(1).length) { V.win = teamHp(0) >= teamHp(1); V.timeUp = true; V.state = 'over'; V.endT = 110; playSong(V.win ? 'win' : 'over'); }
+  else if (!vAlive(0).length || !vAlive(1).length) { V.win = !!vAlive(0).length; V.state = 'over'; V.endT = 110; playSong(V.win ? 'win' : 'over'); }
+  $('btnSpec').classList.toggle('ready', !V.me.dead && V.me.spec >= 100);
+  $('btnBomb').style.opacity = !V.me.dead && V.me.bombs > 0 ? 1 : .4;
+}
+function vEnd() {
+  const v = V, foes = VSC.slots.filter(x => x.team === 1).length, allies = VSC.slots.filter(x => x.team === 0).length;
+  $('overT').textContent = v.win ? '🏆 승리!' : '💥 패배…';
+  $('overT').style.fontSize = '52px';
+  $('overP').innerHTML = `${DIFF[VSC.diff].name} · 🔵 ${1 + allies} vs ${foes} 🔴${v.timeUp ? ' · ⏱ 판정' : ''}<br>내 기체 ${v.me.P.name} · 내가 격추 ${v.me.kills}대` +
+    (v.me.dead ? (v.win ? '<br>나는 떨어졌지만 아군이 이겼어요!' : '') : '<br>끝까지 살아남았어요 ✨') +
+    '<br><span style="font-size:15px;color:#9fb6d0">상대: ' + v.ships.filter(s => s.team === 1).map(s => s.P.name).join(', ') + '</span>';
+  $('overCoin').textContent = '';
+  if (SESSION && v.ticket) {
+    $('overCoin').textContent = '🪙 코인 계산 중…';
+    api('vs', {ticket:v.ticket, win:v.win, enemies:foes, allies, diff:VSC.diff})
+      .then(j => { $('overCoin').textContent = `🪙 +${j.earned} 코인! (가진 코인 ${j.wallet.coins.toLocaleString()})`; refreshAcct(); })
+      .catch(() => { $('overCoin').textContent = '코인 저장에 실패했어요 😢'; });
+  } else if (!SESSION) $('overCoin').innerHTML = '<span style="font-size:15px;color:#9fb6d0">로그인하면 이길 때 코인을 받아요</span>';
+  $('toSelBtn').textContent = '대전 설정으로';
+  show('over');
+}
+function vDraw() {
+  ctx.save();
+  if (V.shake) ctx.translate(rand(-4, 4), rand(-4, 4));
+  drawBg(V.bg, V.bgY);
+  ctx.strokeStyle = '#ffffff40'; ctx.setLineDash([10, 10]); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke(); ctx.setLineDash([]);
+  for (const s of V.ships) {
+    if (s.dead) continue;
+    if (s.inv && !s.buffs.dash && Math.floor(s.inv / 4) % 2 && V.state === 'play') continue;
+    const rot = s.team ? Math.PI : 0;
+    ctx.save(); ctx.translate(14, 20); drawPlane(ctx, s.P.shape, s.x, s.y, s.size * 1.05, '#000000', '#000000', {alpha:.22, rot}); ctx.restore();
+    ctx.strokeStyle = s.team ? '#ff4d4d' : '#4da3ff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(s.x, s.y, 22 * s.size, 22 * s.size, 0, 0, 7); ctx.stroke();
+    if (s.buffs.dash) { ctx.fillStyle = '#7dd3fc55'; ctx.beginPath(); ctx.arc(s.x, s.y, 30 * s.size, 0, 7); ctx.fill(); }
+    drawPlane(ctx, s.P.shape, s.x, s.y, s.size, s.hit ? '#ffffff' : s.P.col[0], s.P.col[1], {flame:true, rot, alpha:s.buffs.stealth ? .35 : 1});
+    if (s.buffs.escort) [-44, 44].forEach(ox => drawPlane(ctx, 'stealth', s.x + ox, s.y, .55, '#6b7280', s.P.col[1], {flame:true, rot}));
+    // 이름표 · 체력바
+    const ly = s.team ? s.y - 30 * s.size - 10 : s.y + 30 * s.size + 6;
+    ctx.fillStyle = '#0008'; ctx.fillRect(s.x - 26, ly, 52, 6);
+    const r = s.hp / s.max;
+    ctx.fillStyle = r > .5 ? '#4ade80' : r > .25 ? '#facc15' : '#ef4444'; ctx.fillRect(s.x - 26, ly, 52 * r, 6);
+    ctx.fillStyle = s.isPlayer ? '#ffd54a' : '#fff'; ctx.font = '12px Jua'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(s.label, s.x, ly + 8);
+  }
+  for (const b of V.bullets) {
+    if (b.team === 1 && b.kind !== 'm') {
+      ctx.fillStyle = '#ff5050'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r + .5, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * .45, 0, 7); ctx.fill();
+      continue;
+    }
+    ctx.fillStyle = b.team === 1 ? '#ff6b6b' : b.col;
+    if (b.kind === 'm') { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx)); ctx.fillRect(-b.r * 1.4, -b.r * .4, b.r * 2.8, b.r * .8); ctx.restore(); }
+    else { ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * .7, b.r * 1.8, Math.atan2(b.vx, -b.vy), 0, 7); ctx.fill(); }
+  }
+  for (const q of V.parts) {
+    const a = q.life / q.max;
+    if (q.ring) { ctx.strokeStyle = `rgba(255,240,200,${a})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (1.3 - a), 0, 7); ctx.stroke(); }
+    else { ctx.globalAlpha = a; ctx.fillStyle = q.col; ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (.5 + a * .5), 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+  }
+  if (V.flash) { ctx.fillStyle = `rgba(255,255,255,${V.flash / 30})`; ctx.fillRect(0, 0, W, H); }
+  ctx.restore();
+  // HUD
+  const me = V.me;
+  ctx.fillStyle = '#000a'; ctx.fillRect(0, 0, W, 44);
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = '18px Jua';
+  ctx.fillStyle = '#4da3ff'; ctx.fillText(`🔵 ${vAlive(0).length}`, 12, 22);
+  const left = Math.max(0, Math.ceil((VS_LIMIT - V.t) / 60));
+  ctx.textAlign = 'center'; ctx.fillStyle = V.t > VS_SUDDEN ? (V.t % 30 < 15 ? '#ff6b6b' : '#ffd54a') : '#fff';
+  ctx.fillText(V.state === 'intro' ? `⚔️ ${DIFF[VSC.diff].name}` : `${V.t > VS_SUDDEN ? '⚡ 서든데스 ' : '⏱ '}${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`, W / 2, 22);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#ff6b6b'; ctx.fillText(`${vAlive(1).length} 🔴`, W - 12, 22);
+  const by = H - 30;
+  ctx.fillStyle = '#000a'; ctx.fillRect(0, by - 6, W, 36);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.font = '12px Jua'; ctx.fillStyle = '#fff';
+  if (me.dead) { ctx.fillText('💥 격추됐어요 · 아군을 응원해요! 📣', 10, by + 3); }
+  else {
+    ctx.fillText('체력', 8, by + 3);
+    ctx.fillStyle = '#333'; ctx.fillRect(40, by + 2, 150, 12);
+    const hr = me.hp / me.max; ctx.fillStyle = hr > .5 ? '#4ade80' : hr > .25 ? '#facc15' : '#ef4444'; ctx.fillRect(40, by + 2, 150 * hr, 12);
+    ctx.fillStyle = '#fff'; ctx.fillText('💣'.repeat(me.bombs), 196, by + 1);
+    ctx.fillText('⚡' + SPECIALS[me.P.spec][0], 250, by + 3);
+    ctx.fillStyle = '#333'; ctx.fillRect(350, by + 2, 120, 12);
+    ctx.fillStyle = me.spec >= 100 ? (V.t % 20 < 10 ? '#ffd54a' : '#ff9f1a') : '#60a5fa'; ctx.fillRect(350, by + 2, 120 * me.spec / 100, 12);
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (V.state === 'intro') {
+    const a = Math.min(1, (130 - V.t) / 20);
+    ctx.globalAlpha = a; ctx.fillStyle = '#000b'; ctx.fillRect(0, H / 2 - 110, W, 220);
+    ctx.font = '70px "Black Han Sans"'; ctx.fillStyle = '#ffd54a'; ctx.fillText('VS', W / 2, H / 2);
+    ctx.font = '15px Jua';
+    V.ships.forEach(s => {
+      const list = V.ships.filter(o => o.team === s.team), i = list.indexOf(s);
+      ctx.fillStyle = s.team ? '#ff8a8a' : '#8ac4ff';
+      ctx.fillText(`${s.label} · ${s.P.name}`, W / 2, s.team ? H / 2 - 88 + i * 20 : H / 2 + 46 + i * 20);
+    });
+    ctx.globalAlpha = 1;
+  }
+  if (V.state === 'over') {
+    ctx.fillStyle = '#0009'; ctx.fillRect(0, H / 2 - 50, W, 100);
+    ctx.font = '54px "Black Han Sans"'; ctx.fillStyle = V.win ? '#ffd54a' : '#ff6b6b';
+    ctx.fillText(V.win ? 'WIN!' : 'LOSE…', W / 2, H / 2 - (V.timeUp ? 10 : 0));
+    if (V.timeUp) { ctx.font = '16px Jua'; ctx.fillStyle = '#fff'; ctx.fillText('⏱ 시간 종료 · 남은 체력으로 판정', W / 2, H / 2 + 32); }
+  }
+}
+
 /* ───────────── 메인 루프 ───────────── */
 let last = performance.now(), acc = 0;
 function loop(now) {
   acc += Math.min(100, now - last); last = now;
-  while (acc >= 1000 / 60) { update(); acc -= 1000 / 60; }
-  draw();
+  while (acc >= 1000 / 60) { V ? vUpdate() : update(); acc -= 1000 / 60; }
+  V ? vDraw() : draw();
   updateMusic();
   requestAnimationFrame(loop);
 }

@@ -4,6 +4,7 @@
 //   wallet                           → {wallet}
 //   start  {plane}                   → {ticket}            게임 시작 표 (코인 부정 방지)
 //   finish {ticket, score, stage, clear} → {earned, wallet}
+//   vs     {ticket, win, enemies, allies, diff} → {earned, wallet}  CPU 대전 보상 (랭킹엔 안 들어감)
 //   tune   {plane, stat}             → {cost, wallet}      능력치 1단계 올리기
 // GET ?rank=all | ?rank=<기체번호>     → {list:[{name, score, plane, clear}]}  랭킹 (30초 캐시)
 //
@@ -93,6 +94,9 @@ function summarize(evs) {
       w.coins += e.coins; w.earned += e.coins; w.plays++;
       if (!(w.best[e.p] >= e.score)) w.best[e.p] = e.score;
       if (e.clear) w.clear[e.p] = 1;
+      tickets.add(e.t0);
+    } else if (e.k === 'vs') {
+      w.coins += e.coins; w.earned += e.coins; w.vs = (w.vs || 0) + 1; if (e.win) w.vsWin = (w.vsWin || 0) + 1;
       tickets.add(e.t0);
     } else if (e.k === 'tune') {
       w.coins -= e.cost;
@@ -249,6 +253,26 @@ module.exports = async (req, res) => {
         score > prevPlane ? writeRank('p' + t.p, score, t.p, rc, h, sess.name) : null,
       ]);
       res.status(200).json({ earned: coins, wallet: r.w, newBest: score > prevAll, newPlaneBest: score > prevPlane });
+      return;
+    }
+
+    if (action === 'vs') {
+      const t = verify(String(body.ticket || ''));
+      if (!t || t.k !== 't' || t.sub !== h) { res.status(400).json({ error: 'bad-ticket' }); return; }
+      const secs = (Date.now() - t.t0) / 1000;
+      const win = !!body.win;
+      const enemies = Math.max(1, Math.min(3, parseInt(body.enemies, 10) || 1));
+      const allies = Math.max(0, Math.min(2, parseInt(body.allies, 10) || 0));
+      const diff = Math.max(0, Math.min(2, parseInt(body.diff, 10) || 0));
+      // 이기면 적 수·난이도만큼, 아군 CPU 가 많으면 조금 덜. 지면 참가상 2
+      let coins = win ? Math.round((8 + enemies * 8) * [1, 1.5, 2][diff] * (1 - allies * 0.2)) : 2;
+      coins = secs < 15 ? 0 : Math.min(coins, Math.floor(secs * 0.8), 100);
+      const r = await addEvent(h, (st) => {
+        if (st.tickets.has(t.t0)) return { error: 'used' };
+        return { k: 'vs', p: t.p, coins, win: win ? 1 : 0, enemies, allies, diff, t0: t.t0, at: new Date().toISOString() };
+      });
+      if (r.error) { res.status(r.error === 'used' ? 409 : 503).json({ error: r.error }); return; }
+      res.status(200).json({ earned: coins, wallet: r.w });
       return;
     }
 
