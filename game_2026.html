@@ -1796,9 +1796,9 @@ const VS_HP = 5, VS_DMG = .6;
 const VS_SUDDEN = 60 * 60, VS_LIMIT = 150 * 60;   // 1분부터 서든데스(피해가 점점 커짐), 2분 30초면 남은 체력으로 판정
 const vDmgMul = () => V.t > VS_SUDDEN ? 1 + (V.t - VS_SUDDEN) / 1200 : 1;
 const DIFF = [
-  {name:'쉬움 🐣', aim:70, dodge:.2, react:45, spec:.004, bomb:.002, pick:['B','C']},
-  {name:'보통 🙂', aim:35, dodge:.55, react:24, spec:.012, bomb:.01, pick:['A','B']},
-  {name:'어려움 🔥', aim:12, dodge:.92, react:12, spec:.04, bomb:.04, pick:['S','A']},
+  {name:'쉬움 🐣', aim:70, dodge:.25, look:10, react:45, spec:.004, bomb:.002, pick:['B','C']},
+  {name:'보통 🙂', aim:35, dodge:.5, look:18, react:24, spec:.012, bomb:.01, pick:['A','B']},
+  {name:'어려움 🔥', aim:12, dodge:.8, look:24, react:12, spec:.04, bomb:.04, pick:['S','A']},
 ];
 const VSC = {ally:0, enemy:1, diff:1, slots:[]};
 // CPU 가 고르는 비행기: 어려울수록 센 등급에서 골라요
@@ -1989,27 +1989,54 @@ function vMove(s) {
     }
   } else {
     const D = DIFF[VSC.diff], ai = s.ai;
-    if (--ai.t <= 0) {
-      ai.t = D.react + rand(0, 30);
-      const foes = vFoes(s), tg = foes[Math.random() * foes.length | 0];
-      ai.tx = clamp((tg ? tg.x : rand(40, W - 40)) + rand(-D.aim, D.aim), 30, W - 30);
-      ai.ty = s.team ? rand(90, H / 2 - 60) : rand(H / 2 + 60, H - 80);
+    // 노릴 상대는 가끔만 바꾸고 (자주 바꾸면 갈팡질팡해요)
+    if (--ai.t <= 0 || !ai.tg || ai.tg.dead) {
+      ai.t = D.react * 3 + rand(30, 90);
+      const foes = vFoes(s);
+      ai.tg = foes[Math.random() * foes.length | 0] || null;
+      ai.off = rand(-D.aim, D.aim);
     }
-    let gx = ai.tx - s.x, gy = ai.ty - s.y;
-    const gl = Math.hypot(gx, gy);
-    if (gl > 6) { tvx = gx / gl * sp; tvy = gy / gl * sp * .7; }
-    // 날아오는 탄 피하기
-    if (Math.random() < D.dodge) {
-      let ex = 0, ey = 0;
+    // 높이는 몇 초에 한 번만 바꿔요
+    if (!(--ai.yt > 0)) { ai.yt = rand(180, 320); ai.ty = s.team ? rand(100, H / 2 - 80) : rand(H / 2 + 80, H - 90); }
+    let tx = ai.tg ? ai.tg.x + ai.off : W / 2;
+    // 같은 팀끼리 겹치지 않게 옆으로 비켜요
+    for (const o of V.ships) {
+      if (o === s || o.dead || o.team !== s.team) continue;
+      const dx = s.x - o.x;
+      if (Math.abs(dx) < 60 && Math.abs(s.y - o.y) < 90) tx += (dx >= 0 ? 1 : -1) * (60 - Math.abs(dx));
+    }
+    tx = clamp(tx, 30, W - 30);
+    const gx = tx - s.x, gy = ai.ty + Math.sin(V.t * .02 + s.label.length) * 14 - s.y;
+    // 목표에 가까울수록 천천히 → 지나쳤다 돌아오는 흔들림이 없어요
+    tvx = clamp(gx / 28, -1, 1) * sp; tvy = clamp(gy / 40, -1, 1) * sp * .6;
+    // 날아오는 탄 피하기: 앞으로 D.look 프레임 안에 실제로 맞을 탄만 봐요
+    //   한쪽으로 피하기로 정하면 잠깐 그쪽으로 쭉 가요 (매 순간 바꾸면 덜덜 떨어요)
+    if (ai.dt > 0) ai.dt--;
+    if (!(ai.dt > 0)) {
+      let threat = 0, side = 0;
+      const need0 = s.hitR + 3 * s.size + 9;
       for (const b of V.bullets) {
         if (b.team === s.team) continue;
-        const rx = s.x - b.x, ry = s.y - b.y, dd = rx * rx + ry * ry;
-        if (dd > 90 * 90 || rx * b.vx + ry * b.vy <= 0) continue;
-        const w = 1 / (Math.sqrt(dd) + 10);
-        ex += (rx >= 0 ? 1 : -1) * w * 60; ey += (ry >= 0 ? 1 : -1) * w * 20;
+        const rx = b.x - s.x, ry = b.y - s.y;
+        if (rx * rx + ry * ry > 220 * 220) continue;
+        const vv = b.vx * b.vx + b.vy * b.vy || 1, tca = -(rx * b.vx + ry * b.vy) / vv;
+        if (tca < 0 || tca > D.look) continue;
+        const cx = rx + b.vx * tca, miss = Math.hypot(cx, ry + b.vy * tca), need = need0 + b.r;
+        if (miss >= need) continue;
+        const w = (need - miss) / need * (1 - tca / D.look * .5);
+        threat += w;
+        side += (Math.abs(cx) > .5 ? -Math.sign(cx) : (s.x < W / 2 ? 1 : -1)) * w;
       }
-      if (ex || ey) { tvx = clamp(tvx + ex * sp, -sp, sp); tvy = clamp(tvy + ey * sp, -sp, sp); }
+      ai.dd = 0;
+      if (threat > .1) {
+        if (Math.random() < D.dodge) {
+          ai.dd = side >= 0 ? 1 : -1;
+          if ((s.x < 50 && ai.dd < 0) || (s.x > W - 50 && ai.dd > 0)) ai.dd = -ai.dd;   // 벽 쪽이면 반대로
+          ai.dt = 14 + rand(0, 10);
+        } else ai.dt = 12;   // 못 보고 지나침 (쉬울수록 자주)
+      }
     }
+    if (ai.dd) { tvx = ai.dd * sp; tvy *= .3; }
     if (s.spec >= 100 && Math.random() < D.spec) vSpecial(s);
     if (s.bombs && s.hp < s.max * .35 && Math.random() < D.bomb) {
       const near = V.bullets.filter(b => b.team !== s.team && (b.x - s.x) ** 2 + (b.y - s.y) ** 2 < 120 * 120).length;
