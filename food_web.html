@@ -1,0 +1,558 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>동물 200종 먹이그물</title>
+<style>
+:root{
+  --bg:#f6f5f1; --panel:#ffffff; --ink:#1d1d1b; --sub:#6b6a64; --line:#dddbd3;
+  --c-basal:#5a9a3c; --c-herb:#2f9e8f; --c-omni:#d39a1f; --c-carn:#d4622b; --c-apex:#b0304a;
+  --prey:#2f9e8f; --pred:#d4622b; --gone:#b0304a; --boom:#7a4fd0;
+  --band:#efede6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16171a; --panel:#1f2125; --ink:#ecebe6; --sub:#9b9a94; --line:#33353a;
+    --c-basal:#7cc35a; --c-herb:#4cc4b2; --c-omni:#e8b545; --c-carn:#ef8550; --c-apex:#e2577a;
+    --prey:#4cc4b2; --pred:#ef8550; --gone:#e2577a; --boom:#a283ef; --band:#1c1e22;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16171a; --panel:#1f2125; --ink:#ecebe6; --sub:#9b9a94; --line:#33353a;
+  --c-basal:#7cc35a; --c-herb:#4cc4b2; --c-omni:#e8b545; --c-carn:#ef8550; --c-apex:#e2577a;
+  --prey:#4cc4b2; --pred:#ef8550; --gone:#e2577a; --boom:#a283ef; --band:#1c1e22;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:14px}
+header{padding:20px 16px 8px;max-width:1400px;margin:0 auto}
+h1{margin:0 0 4px;font-size:22px}
+.lead{margin:0;color:var(--sub)}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:120px}
+.stat b{display:block;font-size:20px}
+.stat span{color:var(--sub);font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:1400px;margin:0 auto;padding:8px 16px}
+input[type=search]{flex:1 1 200px;max-width:280px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit}
+button{font:inherit;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--sub)}
+button.on{background:var(--ink);color:var(--bg)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;color:var(--sub);font-size:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.wrap{display:flex;gap:12px;max-width:1400px;margin:0 auto;padding:0 16px 24px;align-items:flex-start}
+.graph{flex:1;min-width:0;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;max-height:78vh}
+.side{width:320px;flex:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;position:sticky;top:12px;max-height:78vh;overflow:auto}
+@media (max-width:900px){.wrap{flex-direction:column}.side{width:100%;position:static;max-height:none}.graph{width:100%;max-height:70vh}}
+svg{display:block}
+.n{cursor:pointer}
+.n rect{stroke:none}
+.n text{font-size:12px;fill:#fff;font-weight:600;pointer-events:none}
+.n.dim{opacity:.13}
+.n.sel rect{stroke:var(--ink);stroke-width:2.5}
+.n.gone rect{fill:var(--panel)!important;stroke:var(--gone);stroke-width:1.5;stroke-dasharray:3 2}
+.n.gone text{fill:var(--gone);text-decoration:line-through}
+.n.boom rect{stroke:var(--boom);stroke-width:3}
+.e{fill:none;stroke-width:1.4;opacity:.75}
+.e.prey{stroke:var(--prey)}
+.e.pred{stroke:var(--pred)}
+.e.all{stroke:var(--sub);opacity:.07;stroke-width:1}
+.bandbg{fill:var(--band)}
+.bandlbl{fill:var(--sub);font-size:12px;font-weight:600}
+.colhd{fill:var(--ink);font-size:14px;font-weight:700}
+.colsep{stroke:var(--line)}
+.side h2{margin:0 0 2px;font-size:20px}
+.side .meta{color:var(--sub);margin-bottom:12px}
+.side h3{font-size:13px;margin:14px 0 6px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{padding:3px 9px;border-radius:12px;font-size:12px;color:#fff;cursor:pointer;border:none}
+.warn{margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--band);font-size:12.5px;line-height:1.5}
+.empty{color:var(--sub);line-height:1.6}
+.muted{color:var(--sub);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌍 동물 200종 먹이그물</h1>
+  <p class="lead">3D 생태계 게임용 먹이 관계 설계도예요. 동물을 누르면 무엇을 먹는지(아래쪽 청록색 선)와 누가 잡아먹는지(위쪽 주황색 선)가 보여요.</p>
+  <div class="stats" id="stats"></div>
+</header>
+<div class="bar">
+  <input type="search" id="q" list="names" placeholder="동물 이름 검색 (예: 사자)">
+  <datalist id="names"></datalist>
+  <button id="allBtn">전체 연결 보기</button>
+  <button id="extBtn" disabled>이 종이 사라지면?</button>
+  <button id="resetBtn">초기화</button>
+  <button id="drawBtn">🎲 입장 뽑기 테스트</button>
+  <div class="legend">
+    <span><i style="background:var(--c-basal)"></i>생산자·자원</span>
+    <span><i style="background:var(--c-herb)"></i>초식</span>
+    <span><i style="background:var(--c-omni)"></i>잡식</span>
+    <span><i style="background:var(--c-carn)"></i>육식</span>
+    <span><i style="background:var(--c-apex)"></i>최상위 포식자</span>
+  </div>
+</div>
+<div class="wrap">
+  <div class="graph" id="graph"></div>
+  <aside class="side" id="side"><p class="empty">동물을 하나 눌러 보세요.<br><br>• <b>먹이</b>: 그 동물이 먹는 것<br>• <b>천적</b>: 그 동물을 먹는 것<br>• <b>이 종이 사라지면?</b>: 먹이가 모두 사라져 함께 멸종하는 종과, 천적이 없어져 수가 폭증할 종을 보여줘요.</p></aside>
+</div>
+
+<script>
+// 이름|바이옴|식성|먹이(공백 구분)
+const RAW = `
+사자|초원|최상위|얼룩말 누 물소 기린 혹멧돼지 임팔라 가젤 들소 오릭스 타조
+치타|초원|육식|가젤 임팔라 케이프토끼 혹멧돼지 모래가젤
+표범|초원|육식|임팔라 가젤 개코원숭이 혹멧돼지 케이프토끼 큰개미핥기 자칼 서벌 카라칼
+하이에나|초원|최상위|누 얼룩말 가젤 임팔라 타조 아르마딜로 사체
+아프리카들개|초원|육식|임팔라 가젤 누 혹멧돼지
+자칼|초원|잡식|케이프토끼 초원쥐 프레리도그 미어캣 메뚜기 열매 사체 홍학
+서벌|초원|육식|초원쥐 케이프토끼 뿔닭 베짜기새 메뚜기
+카라칼|초원|육식|뿔닭 케이프토끼 초원쥐 프레리도그 가젤
+코끼리|초원|초식|풀 나뭇잎 나무껍질 열매
+기린|초원|초식|나뭇잎 열매
+얼룩말|초원|초식|풀
+누|초원|초식|풀
+물소|초원|초식|풀 수초
+코뿔소|초원|초식|풀 나뭇잎
+가젤|초원|초식|풀 나뭇잎
+임팔라|초원|초식|풀 나뭇잎 열매
+혹멧돼지|초원|잡식|풀 열매 흰개미 쇠똥구리
+타조|초원|잡식|풀 씨앗 메뚜기 아가마도마뱀
+미어캣|초원|육식|흰개미 메뚜기 쇠똥구리 아가마도마뱀 전갈
+개코원숭이|초원|잡식|풀 열매 씨앗 메뚜기 뿔닭 가젤
+케이프토끼|초원|초식|풀 씨앗
+초원쥐|초원|잡식|씨앗 풀 메뚜기
+프레리도그|초원|초식|풀 씨앗
+아르마딜로|초원|육식|흰개미 쇠똥구리 지렁이
+큰개미핥기|초원|육식|흰개미 개미
+흰개미|초원|초식|풀 나무껍질 낙엽
+메뚜기|초원|초식|풀
+쇠똥구리|초원|초식|배설물
+뿔닭|초원|잡식|씨앗 메뚜기 흰개미 쇠똥구리
+흰등수리|초원|육식|사체
+아가마도마뱀|초원|육식|메뚜기 흰개미 개미
+비서새|초원|육식|코브라 아가마도마뱀 초원쥐 메뚜기 미어캣
+코브라|초원|육식|초원쥐 프레리도그 아가마도마뱀 뿔닭 베짜기새
+베짜기새|초원|잡식|씨앗 메뚜기
+들소|초원|초식|풀
+늑대|숲|최상위|붉은사슴 엘크 무스 멧돼지 산토끼 비버 들소 고라니
+불곰|숲|최상위|열매 도토리 연어 붉은사슴 엘크 개미 꿀벌 사체
+반달가슴곰|숲|잡식|열매 도토리 개미 꿀벌 버섯
+퓨마|숲|최상위|붉은사슴 고라니 멧돼지 산토끼 너구리 엘크 오소리
+스라소니|숲|육식|산토끼 다람쥐 청설모 꿩 들쥐 고라니
+붉은여우|숲|잡식|산토끼 들쥐 꿩 다람쥐 지렁이 열매 두루미
+오소리|숲|잡식|지렁이 딱정벌레 열매 들쥐 황소개구리 꿀벌
+너구리|숲|잡식|열매 황소개구리 가재 들쥐 지렁이 도토리 자라
+담비|숲|육식|다람쥐 청설모 하늘다람쥐 들쥐 박새 열매
+족제비|숲|육식|들쥐 두더지 박새 산토끼
+울버린|숲|육식|사체 산토끼 들쥐 순록 뇌조
+스컹크|숲|잡식|딱정벌레 지렁이 열매 들쥐 꿀벌
+고슴도치|숲|육식|지렁이 딱정벌레 달팽이 나방
+두더지|숲|육식|지렁이 딱정벌레
+붉은사슴|숲|초식|풀 나뭇잎 도토리
+고라니|숲|초식|풀 나뭇잎 수초
+엘크|숲|초식|풀 나뭇잎 나무껍질
+무스|숲|초식|나뭇잎 수초 나무껍질
+멧돼지|숲|잡식|도토리 열매 지렁이 버섯 풀
+산토끼|숲|초식|풀 나무껍질
+다람쥐|숲|초식|도토리 씨앗 열매
+청설모|숲|초식|도토리 씨앗 버섯
+하늘다람쥐|숲|초식|나뭇잎 씨앗 열매
+들쥐|숲|잡식|씨앗 풀 딱정벌레
+박쥐|숲|육식|나방 모기
+수리부엉이|숲|최상위|산토끼 들쥐 꿩 청설모 고슴도치 박쥐 스컹크 족제비 담비 까마귀 밍크
+올빼미|숲|육식|들쥐 두더지 박새 박쥐 하늘다람쥐
+검독수리|숲|최상위|산토끼 꿩 붉은여우 북극토끼 고라니
+매|숲|육식|박새 어치 꿩 박쥐 딱따구리 물총새
+딱따구리|숲|육식|딱정벌레 개미
+꿩|숲|잡식|씨앗 도토리 딱정벌레 열매
+박새|숲|잡식|씨앗 나방 딱정벌레
+어치|숲|잡식|도토리 씨앗 딱정벌레 박새
+까마귀|숲|잡식|사체 씨앗 딱정벌레 지렁이
+꿀벌|숲|초식|꽃꿀
+개미|숲|잡식|씨앗 사체 꽃꿀
+딱정벌레|숲|초식|나뭇잎 나무껍질
+나방|숲|초식|나뭇잎 꽃꿀
+지렁이|숲|초식|낙엽
+달팽이|숲|초식|나뭇잎 버섯
+호랑이|정글|최상위|맥 문착 페커리 멧돼지 붉은사슴
+재규어|정글|최상위|카피바라 페커리 맥 카이만 바다거북
+검은표범|정글|육식|꼬리감는원숭이 긴팔원숭이 문착 공작 침팬지
+오셀롯|정글|육식|아구티 이구아나 앵무새 과일박쥐
+아나콘다|정글|최상위|카피바라 카이만 맥 페커리
+보아뱀|정글|육식|아구티 꼬리감는원숭이 과일박쥐 이구아나
+킹코브라|정글|육식|나무뱀 그물무늬비단뱀 카멜레온
+그물무늬비단뱀|정글|육식|문착 꼬리감는원숭이 아구티 공작
+나무뱀|정글|육식|독화살개구리 카멜레온 큰부리새
+하피수리|정글|최상위|나무늘보 꼬리감는원숭이 앵무새 이구아나
+고릴라|정글|초식|나뭇잎 열매
+침팬지|정글|잡식|열매 흰개미 꼬리감는원숭이 잎꾼개미
+오랑우탄|정글|초식|열매 나뭇잎 나무껍질
+긴팔원숭이|정글|초식|열매 나뭇잎
+꼬리감는원숭이|정글|잡식|열매 대벌레 모르포나비 씨앗
+나무늘보|정글|초식|나뭇잎
+맥|정글|초식|나뭇잎 열매 수초
+문착|정글|초식|나뭇잎 열매
+페커리|정글|잡식|열매 씨앗 지렁이
+아구티|정글|초식|씨앗 열매
+큰부리새|정글|잡식|열매 카멜레온 대벌레
+앵무새|정글|초식|씨앗 열매
+공작|정글|잡식|씨앗 대벌레 나무뱀
+과일박쥐|정글|초식|열매 꽃꿀
+카멜레온|정글|육식|대벌레 모르포나비
+독화살개구리|정글|육식|잎꾼개미
+이구아나|정글|초식|나뭇잎 열매
+모르포나비|정글|초식|꽃꿀 열매
+잎꾼개미|정글|초식|나뭇잎
+대벌레|정글|초식|나뭇잎
+사막여우|사막|잡식|사막쥐 모래도마뱀 사막메뚜기 거저리 선인장
+낙타|사막|초식|선인장 풀 나뭇잎
+오릭스|사막|초식|풀
+모래가젤|사막|초식|풀 선인장
+코요테|사막|잡식|잭토끼 캥거루쥐 모래도마뱀 메추라기 선인장 사체 힐라몬스터 로드러너
+방울뱀|사막|육식|캥거루쥐 사막쥐 모래도마뱀 메추라기
+힐라몬스터|사막|육식|메추라기 사막쥐
+전갈|사막|육식|사막메뚜기 거저리 타란툴라
+타란툴라|사막|육식|사막메뚜기 거저리
+거저리|사막|초식|씨앗 풀
+사막메뚜기|사막|초식|풀 선인장
+캥거루쥐|사막|초식|씨앗
+사막쥐|사막|초식|씨앗 풀
+잭토끼|사막|초식|풀 선인장
+도깨비도마뱀|사막|육식|수확개미
+수확개미|사막|초식|씨앗
+모래도마뱀|사막|육식|사막메뚜기 거저리 수확개미
+메추라기|사막|잡식|씨앗 사막메뚜기
+로드러너|사막|육식|방울뱀 모래도마뱀 도깨비도마뱀 전갈 사막메뚜기 사막쥐
+해리스매|사막|육식|잭토끼 캥거루쥐 메추라기 사막쥐 사막여우
+북극곰|설원|최상위|바다표범 바다코끼리 퍼핀 사체
+북극늑대|설원|최상위|사향소 순록 북극토끼 레밍 북극여우
+북극여우|설원|잡식|레밍 북극토끼 뇌조 사체 열매
+흰올빼미|설원|육식|레밍 북극토끼 뇌조 북방족제비
+흰매|설원|육식|뇌조 퍼핀
+순록|설원|초식|이끼 풀
+사향소|설원|초식|풀 이끼
+눈산양|설원|초식|풀 이끼
+북극토끼|설원|초식|풀 나무껍질
+레밍|설원|초식|풀 이끼
+뇌조|설원|초식|열매 이끼 씨앗
+바다표범|설원|육식|대구 청어 크릴
+바다코끼리|설원|육식|조개 게
+황제펭귄|설원|육식|크릴 오징어 멸치
+아델리펭귄|설원|육식|크릴 멸치
+표범물범|설원|최상위|황제펭귄 아델리펭귄 바다표범 크릴
+퍼핀|설원|육식|멸치 청어
+북방족제비|설원|육식|레밍 뇌조 북극토끼
+설표|설원|최상위|눈산양 야크 북극토끼
+야크|설원|초식|풀 이끼
+하마|강|초식|풀 수초
+나일악어|강|최상위|누 얼룩말 가젤 물소 메기 펠리컨 왜가리
+카이만|강|육식|피라냐 메기 카피바라 황소개구리 수달
+카피바라|강|초식|풀 수초
+비버|강|초식|나무껍질 수초
+수달|강|육식|연어 송어 가재 황소개구리 미꾸라지
+밍크|강|육식|가재 황소개구리 들쥐 사향쥐
+물총새|강|육식|송사리 잠자리
+흰머리수리|강|최상위|연어 송어 청둥오리 메기 사체
+물수리|강|육식|송어 메기 연어
+청둥오리|강|잡식|수초 씨앗 우렁이 잠자리
+연어|강|육식|송사리 잠자리 크릴
+송어|강|육식|잠자리 송사리 모기
+메기|강|잡식|송사리 가재 미꾸라지 사체
+피라냐|강|육식|송사리 메기 사체
+송사리|강|잡식|플랑크톤 모기
+가재|강|잡식|수초 사체 우렁이
+황소개구리|강|육식|잠자리 모기 송사리 미꾸라지
+잠자리|강|육식|모기
+모기|강|초식|꽃꿀
+두루미|습지|잡식|미꾸라지 우렁이 씨앗 황소개구리
+왜가리|습지|육식|미꾸라지 황소개구리 송사리 도롱뇽 유혈목이
+홍학|습지|잡식|플랑크톤 수초 우렁이
+자라|습지|육식|미꾸라지 우렁이 송사리
+도롱뇽|습지|육식|모기 지렁이 잠자리
+미꾸라지|습지|잡식|플랑크톤 모기
+우렁이|습지|초식|수초
+유혈목이|습지|육식|황소개구리 미꾸라지 도롱뇽
+사향쥐|습지|초식|수초 풀
+펠리컨|습지|육식|메기 송사리 미꾸라지
+범고래|바다|최상위|바다표범 물개 백상아리 혹등고래 연어 황제펭귄 오징어 해달 향유고래 흰긴수염고래 고래상어
+백상아리|바다|최상위|물개 바다표범 바다거북 참치 돌고래 귀상어
+귀상어|바다|육식|가오리 오징어 고등어 게
+고래상어|바다|잡식|플랑크톤 크릴 멸치
+흰긴수염고래|바다|육식|크릴
+혹등고래|바다|육식|크릴 청어 멸치
+향유고래|바다|최상위|대왕오징어 오징어 대구
+돌고래|바다|육식|청어 고등어 오징어 멸치
+물개|바다|육식|청어 오징어 대구 연어
+참치|바다|육식|고등어 청어 오징어 멸치
+청어|바다|잡식|플랑크톤 크릴
+고등어|바다|육식|멸치 크릴 청어
+멸치|바다|초식|플랑크톤
+대구|바다|육식|청어 멸치 크릴 게
+오징어|바다|육식|멸치 크릴 청어
+대왕오징어|바다|육식|대구 오징어
+문어|바다|육식|게 조개
+게|바다|잡식|사체 조개 해조류
+조개|바다|초식|플랑크톤
+바다거북|바다|잡식|해파리 해조류
+해파리|바다|육식|플랑크톤 크릴
+가오리|바다|육식|조개 게
+크릴|바다|초식|플랑크톤
+성게|바다|초식|해조류
+해달|바다|육식|성게 조개 게 문어
+`;
+const BASAL = ['풀','나뭇잎','열매','씨앗','도토리','나무껍질','꽃꿀','버섯','낙엽','이끼','선인장','수초','플랑크톤','해조류','사체','배설물'];
+const BIOMES = [['초원','🌾 초원'],['숲','🌲 숲'],['정글','🌴 정글'],['사막','🏜️ 사막'],['설원','❄️ 설원'],['강','🏞️ 강·호수'],['습지','🌿 습지'],['바다','🌊 바다']];
+const DIET_COLOR = {'생산자':'var(--c-basal)','초식':'var(--c-herb)','잡식':'var(--c-omni)','육식':'var(--c-carn)','최상위':'var(--c-apex)'};
+const BIOME_LABEL = Object.fromEntries(BIOMES);
+
+// 희귀도: 등급을 먼저 뽑고, 그 등급 안에서 똑같은 확률로 한 종을 뽑음
+const RARITY_DEF = [
+  ['전설', 1.5, '#d4a017', '흰긴수염고래 향유고래 대왕오징어 설표 하피수리 북극곰 호랑이 고릴라'],
+  ['영웅', 6.5, '#8e5bd0', '사자 치타 표범 코끼리 기린 코뿔소 불곰 늑대 검독수리 재규어 검은표범 아나콘다 킹코브라 오랑우탄 나무늘보 범고래 백상아리 고래상어 황제펭귄 나일악어 흰머리수리 하마'],
+  ['희귀', 22, '#3a7fd0', '하이에나 아프리카들개 서벌 카라칼 큰개미핥기 아르마딜로 비서새 코브라 들소 미어캣 퓨마 스라소니 울버린 반달가슴곰 수리부엉이 하늘다람쥐 무스 엘크 오셀롯 보아뱀 그물무늬비단뱀 침팬지 긴팔원숭이 맥 큰부리새 공작 카멜레온 독화살개구리 모르포나비 사막여우 낙타 힐라몬스터 로드러너 도깨비도마뱀 북극늑대 흰올빼미 사향소 표범물범 바다코끼리 야크 카이만 비버 수달 홍학 두루미 펠리컨 귀상어 혹등고래 돌고래 해달'],
+  ['일반', 70, '#8a8a84', ''],
+];
+const RARITY = {};
+RARITY_DEF.forEach(([r, , , list]) => list && list.split(' ').forEach(n => RARITY[n] = r));
+const RARITY_INFO = Object.fromEntries(RARITY_DEF.map(([r, pct, color]) => [r, { pct, color }]));
+
+// ---- 데이터 파싱 ----
+const N = {};
+const animals = RAW.trim().split('\n').map(l => {
+  const [name, biome, diet, prey] = l.split('|');
+  return N[name] = { name, biome, diet, prey: prey.split(' '), pred: [], basal: false };
+});
+BASAL.forEach(b => N[b] = { name: b, biome: '자원', diet: '생산자', prey: [], pred: [], basal: true });
+const errors = [];
+animals.forEach(a => a.prey.forEach(p => N[p] ? N[p].pred.push(a.name) : errors.push(`${a.name} → ${p}`)));
+Object.keys(RARITY).forEach(n => { if (!N[n]) errors.push(`희귀도 목록 → ${n}`); });
+animals.forEach(a => a.rarity = RARITY[a.name] || '일반');
+const byRarity = Object.fromEntries(RARITY_DEF.map(([r]) => [r, animals.filter(a => a.rarity === r)]));
+if (errors.length) console.warn('없는 이름:', errors);
+
+function drawAnimal() {
+  let roll = Math.random() * 100;
+  for (const [r, pct] of RARITY_DEF) {
+    if ((roll -= pct) < 0 || r === '일반') {
+      const list = byRarity[r];
+      return list[Math.floor(Math.random() * list.length)];
+    }
+  }
+}
+const rarityTag = r => `<span style="color:${RARITY_INFO[r].color};font-weight:700">${r}</span>`;
+
+// 영양 단계: 생산자=1, 동물=1+먹이 단계 평균
+Object.values(N).forEach(n => n.lvl = n.basal ? 1 : 2);
+for (let i = 0; i < 100; i++) animals.forEach(a => {
+  const ps = a.prey.filter(p => N[p]);
+  a.lvl = 1 + ps.reduce((s, p) => s + N[p].lvl, 0) / ps.length;
+});
+const bandOf = n => n.basal ? 0 : n.lvl < 2.4 ? 1 : n.lvl < 3.2 ? 2 : 3;
+const BANDS = ['생산자·자원', '1차 소비자', '2차 소비자', '3차 이상'];
+
+// ---- 통계 ----
+const edges = animals.reduce((s, a) => s + a.prey.length, 0);
+const noPred = animals.filter(a => a.pred.length === 0);
+const oneFood = animals.filter(a => a.prey.length === 1);
+document.getElementById('stats').innerHTML = [
+  [animals.length + '종', '동물'],
+  [edges + '개', '먹이 관계'],
+  [noPred.length + '종', '천적이 없는 종'],
+  [oneFood.length + '종', '먹이가 1종뿐인 종'],
+  [errors.length ? errors.length + '개 ⚠' : '0개 ✓', '잘못된 연결'],
+].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('')
++ RARITY_DEF.map(([r, pct, color]) => {
+  const n = byRarity[r].length;
+  return `<div class="stat"><b style="color:${color}">${r} ${n}종</b><span>등급 ${pct}% · 한 종당 ${(pct / n).toFixed(2)}%</span></div>`;
+}).join('');
+document.getElementById('names').innerHTML = Object.keys(N).map(n => `<option value="${n}">`).join('');
+
+// ---- 배치 ----
+const LEFT = 92, COLW = 210, PAD = 10, ROWH = 28, PILLH = 22, TOP = 40;
+const W = LEFT + COLW * BIOMES.length + 10;
+const pillW = s => s.length * 13 + 18;
+function flow(list, x0, width) { // 한 칸 안에 줄바꿈 배치, 행 수 반환
+  let x = x0 + PAD, row = 0;
+  list.forEach(n => {
+    const w = pillW(n.name);
+    if (x + w > x0 + width - PAD) { x = x0 + PAD; row++; }
+    n.w = w; n.rx = x; n.row = row; x += w + 6;
+  });
+  return list.length ? row + 1 : 0;
+}
+const sortL = (a, b) => b.lvl - a.lvl || a.name.localeCompare(b.name);
+let y = TOP;
+const bandY = [];
+for (const band of [3, 2, 1]) {
+  let rows = 1;
+  BIOMES.forEach(([b], i) => {
+    const list = animals.filter(a => a.biome === b && bandOf(a) === band).sort(sortL);
+    rows = Math.max(rows, flow(list, LEFT + i * COLW, COLW));
+    list.forEach(n => { n.x = n.rx; n.y = y + 8 + n.row * ROWH; });
+  });
+  const h = rows * ROWH + 16;
+  bandY.push([band, y, h]); y += h + 6;
+}
+const basal = BASAL.map(b => N[b]);
+const bRows = flow(basal, LEFT, W - LEFT);
+basal.forEach(n => { n.x = n.rx; n.y = y + 8 + n.row * ROWH; });
+bandY.push([0, y, bRows * ROWH + 16]); y += bRows * ROWH + 26;
+const H = y;
+
+// ---- 그리기 ----
+let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+bandY.forEach(([b, by, bh]) => {
+  svg += `<rect class="bandbg" x="0" y="${by}" width="${W}" height="${bh}" rx="6"/>`;
+  svg += `<text class="bandlbl" x="10" y="${by + bh / 2 + 4}">${BANDS[b]}</text>`;
+});
+BIOMES.forEach(([b, label], i) => {
+  const x = LEFT + i * COLW;
+  svg += `<text class="colhd" x="${x + COLW / 2}" y="26" text-anchor="middle">${label}</text>`;
+  if (i) svg += `<line class="colsep" x1="${x}" y1="${TOP}" x2="${x}" y2="${bandY[3][1]}"/>`;
+});
+svg += `<g id="edges"></g><g id="nodes">`;
+Object.values(N).forEach(n => {
+  svg += `<g class="n" data-n="${n.name}" transform="translate(${n.x},${n.y})"><rect width="${n.w}" height="${PILLH}" rx="11" fill="${DIET_COLOR[n.diet]}"/><text x="${n.w / 2}" y="15" text-anchor="middle">${n.name}</text></g>`;
+});
+svg += `</g></svg>`;
+document.getElementById('graph').innerHTML = svg;
+const elOf = {};
+document.querySelectorAll('.n').forEach(g => elOf[g.dataset.n] = g);
+
+const path = (a, b) => { // a(포식자) → b(먹이)
+  const x1 = a.x + a.w / 2, y1 = a.y + PILLH, x2 = b.x + b.w / 2, y2 = b.y;
+  const dy = Math.max(30, Math.abs(y2 - y1) / 2);
+  return `M${x1},${y1} C${x1},${y1 + dy} ${x2},${y2 - dy} ${x2},${y2}`;
+};
+const edgesEl = document.getElementById('edges');
+let showAll = false, selected = null;
+
+function drawEdges() {
+  let s = '';
+  if (showAll) animals.forEach(a => a.prey.forEach(p => s += `<path class="e all" d="${path(a, N[p])}"/>`));
+  if (selected) {
+    const n = N[selected];
+    n.prey.forEach(p => s += `<path class="e prey" d="${path(n, N[p])}"/>`);
+    n.pred.forEach(p => s += `<path class="e pred" d="${path(N[p], n)}"/>`);
+  }
+  edgesEl.innerHTML = s;
+}
+const chip = name => `<button class="chip" style="background:${DIET_COLOR[N[name].diet]}" data-go="${name}">${name}</button>`;
+
+function select(name) {
+  if (!N[name]) return;
+  clearExt();
+  selected = name;
+  const n = N[name];
+  const near = new Set([name, ...n.prey, ...n.pred]);
+  Object.entries(elOf).forEach(([k, g]) => {
+    g.classList.toggle('dim', !near.has(k));
+    g.classList.toggle('sel', k === name);
+  });
+  drawEdges();
+  const warns = [];
+  if (!n.basal && n.prey.length === 1) warns.push(`⚠ 먹이가 <b>${n.prey[0]}</b> 하나뿐이에요. 그 먹이가 줄면 바로 위험해져요.`);
+  if (!n.basal && n.pred.length === 0) warns.push('👑 천적이 없어요. 게임에서는 수명·영역 다툼·질병으로 수를 조절해야 해요.');
+  if (n.pred.length >= 6) warns.push(`🎯 천적이 ${n.pred.length}종이나 돼요. 번식이 빨라야 살아남아요.`);
+  document.getElementById('side').innerHTML = `
+    <h2>${name}</h2>
+    <div class="meta">${n.basal ? '생산자·자원' : rarityTag(n.rarity) + ' · ' + BIOME_LABEL[n.biome] + ' · ' + n.diet}${n.basal ? '' : ` · 영양 단계 ${n.lvl.toFixed(1)}`}</div>
+    ${n.basal ? '' : `<h3>🍽 먹이 (${n.prey.length})</h3><div class="chips">${n.prey.map(chip).join('')}</div>`}
+    <h3>⚔ ${n.basal ? '먹는 동물' : '천적'} (${n.pred.length})</h3>
+    <div class="chips">${n.pred.length ? n.pred.map(chip).join('') : '<span class="muted">없음</span>'}</div>
+    ${warns.map(w => `<div class="warn">${w}</div>`).join('')}`;
+  document.getElementById('extBtn').disabled = n.basal;
+  elOf[name].scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+}
+
+function clearExt() {
+  Object.values(elOf).forEach(g => g.classList.remove('gone', 'boom'));
+}
+function extinction() {
+  if (!selected || N[selected].basal) return;
+  const gone = new Set([selected]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    animals.forEach(a => {
+      if (!gone.has(a.name) && a.prey.every(p => gone.has(p))) { gone.add(a.name); changed = true; }
+    });
+  }
+  const boom = animals.filter(a => !gone.has(a.name) && a.pred.length && a.pred.every(p => gone.has(p)));
+  const weak = animals.filter(a => !gone.has(a.name) && a.prey.some(p => gone.has(p)) && !boom.includes(a));
+  Object.entries(elOf).forEach(([k, g]) => {
+    g.classList.remove('sel');
+    g.classList.toggle('gone', gone.has(k));
+    g.classList.toggle('boom', boom.some(b => b.name === k));
+    g.classList.toggle('dim', !gone.has(k) && !boom.some(b => b.name === k) && !weak.some(w => w.name === k));
+  });
+  edgesEl.innerHTML = '';
+  const lost = [...gone].filter(x => x !== selected);
+  document.getElementById('side').innerHTML = `
+    <h2>${selected} 멸종 시뮬레이션</h2>
+    <div class="meta">먹이가 전부 사라진 종은 함께 멸종해요.</div>
+    <h3>💀 함께 멸종 (${lost.length})</h3>
+    <div class="chips">${lost.length ? lost.map(chip).join('') : '<span class="muted">없음. 다른 먹이로 버틸 수 있어요.</span>'}</div>
+    <h3>📈 천적이 사라져 폭증 위험 (${boom.length})</h3>
+    <div class="chips">${boom.length ? boom.map(b => chip(b.name)).join('') : '<span class="muted">없음</span>'}</div>
+    <h3>😟 먹이가 줄어드는 종 (${weak.length})</h3>
+    <div class="chips">${weak.length ? weak.map(b => chip(b.name)).join('') : '<span class="muted">없음</span>'}</div>
+    <div class="warn">그래프에서 <b style="color:var(--gone)">점선</b>은 멸종, <b style="color:var(--boom)">보라 테두리</b>는 폭증 위험이에요.</div>`;
+}
+
+function reset() {
+  selected = null; clearExt();
+  Object.values(elOf).forEach(g => g.classList.remove('dim', 'sel'));
+  drawEdges();
+  document.getElementById('extBtn').disabled = true;
+  document.getElementById('q').value = '';
+}
+
+document.getElementById('nodes').addEventListener('click', e => {
+  const g = e.target.closest('.n'); if (g) select(g.dataset.n);
+});
+document.getElementById('side').addEventListener('click', e => {
+  const c = e.target.closest('[data-go]'); if (c) select(c.dataset.go);
+});
+document.getElementById('q').addEventListener('change', e => select(e.target.value.trim()));
+document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') select(e.target.value.trim()); });
+document.getElementById('allBtn').addEventListener('click', e => {
+  showAll = !showAll; e.target.classList.toggle('on', showAll); drawEdges();
+});
+document.getElementById('extBtn').addEventListener('click', extinction);
+document.getElementById('resetBtn').addEventListener('click', reset);
+document.getElementById('drawBtn').addEventListener('click', () => {
+  const a = drawAnimal();
+  select(a.name);
+  document.getElementById('side').insertAdjacentHTML('afterbegin',
+    `<div class="warn" style="margin:0 0 12px">🎲 입장! 이번 생은 ${rarityTag(a.rarity)} <b>${a.name}</b>입니다.</div>`);
+});
+</script>
+</body>
+</html>
