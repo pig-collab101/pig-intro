@@ -132,7 +132,9 @@ body:not([data-mode="world"]) #gauges,body:not([data-mode="world"]) #prompt,body
 #mateBtn{position:fixed;display:none;z-index:5;width:60px;height:60px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(255,120,160,.25);font-size:24px;right:100px;bottom:126px}
 body.touch[data-adult="1"] #mateBtn{display:block}
 body:not([data-mode="world"]) #missions,body:not([data-mode="world"]) #mateBtn{display:none!important}
-#ecop .muteBtn,#ecop .rankOpen{padding:4px 8px}
+#ecop .muteBtn,#ecop .rankOpen,#ecop .viewBtn{padding:4px 8px}
+#cross{position:fixed;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;border:2px solid rgba(255,255,255,.85);box-shadow:0 0 4px rgba(0,0,0,.6);pointer-events:none;display:none;z-index:3}
+body[data-mode="world"][data-view="fp"] #cross{display:block}
 #start .row2{display:flex;gap:8px;justify-content:center;margin-top:10px}
 #start .row2 button.sub{margin:0;font-size:13.5px;padding:8px 14px}
 #start .acct{margin-top:14px;font-size:13px;color:var(--hud-sub)}
@@ -203,7 +205,8 @@ body.touch #help{display:none}
 <body>
 <canvas id="c"></canvas>
 <div class="panel" id="where"><div class="me" id="me"></div><div class="b">…</div><div class="s"></div><div class="s" id="dayHud"></div></div>
-<div class="panel" id="ecop"><button id="ecoBtn">📊 생태계 <small>P</small></button> <button class="muteBtn" title="소리 (N)">🔊</button> <button class="rankOpen" title="랭킹">🏆</button><div class="body"></div></div>
+<div class="panel" id="ecop"><button id="ecoBtn">📊 생태계 <small>P</small></button> <button class="muteBtn" title="소리 (N)">🔊</button> <button class="rankOpen" title="랭킹">🏆</button> <button class="viewBtn" title="시점 바꾸기 (V)">👁️ 3인칭</button><div class="body"></div></div>
+<div id="cross"></div>
 <div class="panel" id="near"></div>
 <div id="log"></div>
 <div class="panel" id="mapbox">
@@ -1354,7 +1357,32 @@ function resetLife() {
 }
 resetLife();
 let PL = null;   // { sp, info, s, model, rig }
-const cam = { yaw: Math.PI * 0.85, pitch: 0.42, dist: 18, zoom: 1 };
+// view: third 3인칭(뒤에서) · fp 1인칭(동물 눈) · second 2인칭(앞에서 나를 봄)
+const cam = { yaw: Math.PI * 0.85, pitch: 0.42, dist: 18, zoom: 1, view: 'third', fpPitch: -0.1, off2: 0 };
+try { const v = localStorage.getItem('eco3d_view'); if (v === 'fp' || v === 'second') cam.view = v; } catch (e) {}
+const VIEW_NAMES = { third: '3인칭', fp: '1인칭', second: '2인칭' };
+function applyView(show) {
+  const fp = cam.view === 'fp' && mode === 'world';
+  if (PL) PL.model.visible = !fp;                    // 1인칭에선 내 몸을 숨김
+  camera.near = fp ? 0.06 : 0.5;                     // 작은 동물 눈높이에서도 땅이 안 잘리게
+  camera.updateProjectionMatrix();
+  document.body.dataset.view = cam.view;
+  document.querySelectorAll('.viewBtn').forEach(b => b.textContent = '👁️ ' + VIEW_NAMES[cam.view]);
+  try { localStorage.setItem('eco3d_view', cam.view); } catch (e) {}
+  if (show) showToast(`👁️ ${VIEW_NAMES[cam.view]} 시점`, {
+    third: '뒤에서 따라가며 봐요',
+    fp: '동물의 눈으로 봐요 · 드래그로 둘러보기',
+    second: '앞에서 나를 마주 봐요 · A/D 몸 돌리기, W/S 앞뒤',
+  }[cam.view]);
+}
+function cycleView() {
+  cam.view = { third: 'fp', fp: 'second', second: 'third' }[cam.view];
+  if (cam.view === 'fp') { cam.fpPitch = -0.1; if (PL) cam.yaw = P.yaw + Math.PI; }   // 보던 방향 그대로
+  if (cam.view === 'second') cam.off2 = 0;
+  if (cam.view === 'third' && PL) cam.yaw = P.yaw + Math.PI;
+  snapCamera = true;
+  applyView(true);
+}
 const keys = {};
 const joy = { x: 0, y: 0 };
 let jumpPressed = false, downPressed = false, drinkPressed = false;
@@ -1381,9 +1409,13 @@ function setPlayerAnimal(sp) {
   renderMissions();
   document.body.dataset.thirst = needsWater() ? '1' : '0';
   cam.zoom = 1;
+  // 1인칭 카메라를 둘 눈 위치 (크기 1 기준, 몸 앞쪽 위)
+  const bb = new THREE.Box3().setFromObject(model);
+  PL.eye = new THREE.Vector3(0, bb.min.y + (bb.max.y - bb.min.y) * 0.8, bb.max.z * 0.75);
+  applyView(false);
   document.body.dataset.dom = info.dom;
   document.getElementById('help').innerHTML = DOM_HELP[info.dom] + '<br><b>E</b> 먹기·사냥' +
-    (info.dom === 'water' || info.dom === 'bottom' ? '' : ' · <b>Q</b> 물 마시기 (물가에서)') + ' · <b>드래그</b> 시점 · <b>휠</b> 확대';
+    (info.dom === 'water' || info.dom === 'bottom' ? '' : ' · <b>Q</b> 물 마시기 (물가에서)') + ' · <b>V</b> 시점 바꾸기 · <b>드래그</b> 둘러보기 · <b>휠</b> 확대';
   document.getElementById('jump').textContent = info.dom === 'air' ? '⬆ 날기' : info.dom === 'water' ? '⬆ 위로' : '점프';
   document.getElementById('me').innerHTML = `나: <b style="color:${RARITY_COLOR[sp.rarity]}">${sp.name}</b> <small>${sp.rarity} · ${DOM_TEXT[info.dom]}</small>`;
 }
@@ -1588,6 +1620,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyE' && !e.repeat) P.wantEat = true;
   if (e.code === 'KeyR' && !e.repeat) P.wantMate = true;
   if (e.code === 'KeyN' && !e.repeat) { audioInit(); setMute(!SND.muted); }
+  if (e.code === 'KeyV' && !e.repeat && mode === 'world') cycleView();
 });
 addEventListener('keyup', e => keys[e.code] = false);
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -1602,10 +1635,21 @@ canvas.addEventListener('pointerdown', e => {
 });
 canvas.addEventListener('pointermove', e => {
   if (e.pointerId !== dragId) return;
-  const C = mode === 'gallery' ? gcam : cam;
-  C.yaw -= (e.clientX - lastX) * 0.006;
-  C.pitch = clamp(C.pitch + (e.clientY - lastY) * 0.005, 0.05, 1.35);
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
   lastX = e.clientX; lastY = e.clientY;
+  if (mode === 'world' && cam.view === 'fp') {           // 1인칭: 고개 돌리기
+    cam.yaw -= dx * 0.005;
+    cam.fpPitch = clamp(cam.fpPitch - dy * 0.005, -1.3, 1.3);
+    return;
+  }
+  if (mode === 'world' && cam.view === 'second') {       // 2인칭: 앞쪽에서 조금 옆으로 돌아보기
+    cam.off2 = clamp(cam.off2 - dx * 0.006, -1.4, 1.4);
+    cam.pitch = clamp(cam.pitch + dy * 0.005, 0.05, 1.35);
+    return;
+  }
+  const C = mode === 'gallery' ? gcam : cam;
+  C.yaw -= dx * 0.006;
+  C.pitch = clamp(C.pitch + dy * 0.005, 0.05, 1.35);
 });
 const endDrag = e => {
   if (e.pointerId !== dragId) return;
@@ -2786,6 +2830,7 @@ document.querySelectorAll('.rankOpen').forEach(b => b.onclick = () => {
   openRank();
 });
 document.querySelectorAll('.muteBtn').forEach(b => b.onclick = () => { audioInit(); setMute(!SND.muted); });
+document.querySelectorAll('.viewBtn').forEach(b => b.onclick = () => { if (mode === 'world') cycleView(); });
 setMute(SND.muted);
 
 // 한 생이 끝났을 때 기록 저장 (로그인: 서버, 손님: 이 기기)
@@ -2828,6 +2873,7 @@ function setMode(m) {
   document.getElementById('ginfo').style.display = 'none';
   gSelected = null;
   if (m === 'world') { curBiome = -1; snapCamera = true; }
+  applyView(false);
   if (m === 'menu') renderAccount();
   if (m === 'gallery') {
     if (!gallery) gallery = buildGallery();
@@ -2861,8 +2907,15 @@ function update(dt) {
   if (P.action) ix = iz = 0;
   const il = Math.hypot(ix, iz);
   if (il > 1) { ix /= il; iz /= il; }
-  const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw);
-  const mx = fx * iz - fz * ix, mz = fz * iz + fx * ix;
+  let mx, mz;
+  if (cam.view === 'second') {
+    // 2인칭: 카메라가 앞에서 보니까 카메라 기준이면 방향이 거꾸로 → A/D 몸 돌리기, W/S 앞뒤
+    P.yaw -= ix * dt * 2.6;
+    mx = Math.sin(P.yaw) * iz; mz = Math.cos(P.yaw) * iz;
+  } else {
+    const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw);
+    mx = fx * iz - fz * ix; mz = fz * iz + fx * ix;
+  }
   const mlen = Math.hypot(mx, mz);
   const run = keys.ShiftLeft || keys.ShiftRight || Math.hypot(joy.x, joy.y) > 0.92;
   const up = keys.Space || jumpPressed, down = keys.KeyC || keys.ControlLeft || downPressed;
@@ -2879,10 +2932,13 @@ function update(dt) {
     if (playerCanBe(nx, nz)) { P.x = nx; P.z = nz; }
     else if (playerCanBe(nx, P.z)) P.x = nx;          // 벽(물가)을 따라 미끄러지기
     else if (playerCanBe(P.x, nz)) P.z = nz;
-    const want = Math.atan2(mx, mz);
-    let d = want - P.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
-    P.yaw += d * Math.min(1, dt * 10);
+    if (cam.view === 'third') {        // 3인칭: 가는 방향으로 몸을 돌림 (1인칭은 보는 방향, 2인칭은 A/D)
+      const want = Math.atan2(mx, mz);
+      let d = want - P.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+      P.yaw += d * Math.min(1, dt * 10);
+    }
   }
+  if (cam.view === 'fp') P.yaw = cam.yaw + Math.PI;
   const g = heightAt(P.x, P.z);
   if (dom === 'air') {
     if (up) P.alt = Math.min(60, P.alt + 10 * dt);
@@ -2923,35 +2979,49 @@ function update(dt) {
   PL.model.scale.setScalar(s);
   animateRig(PL.rig, performance.now() / 1000, mlen > 0.01 || P.flying);
 
-  // 카메라 (동물 크기에 맞춰 거리 조절, 물속 동물은 물속까지)
-  cam.dist = (4 + s * 7) * cam.zoom;
-  target.set(P.x, P.y + s * 1.1 + 0.4, P.z);
-  desired.set(
-    target.x + Math.sin(cam.yaw) * Math.cos(cam.pitch) * cam.dist,
-    target.y + Math.sin(cam.pitch) * cam.dist,
-    target.z + Math.cos(cam.yaw) * Math.cos(cam.pitch) * cam.dist
-  );
-  const underOK = dom === 'water' || dom === 'bottom';
-  const minY = underOK ? heightAt(desired.x, desired.z) + 0.6 : Math.max(heightAt(desired.x, desired.z), 0) + 0.8;
-  if (desired.y < minY) desired.y = minY;
-  // 나무가 나를 가리면: 먼저 더 위에서 내려다보고, 그래도 막히면 나무 앞으로 당김
-  const minFrac = Math.min(1, (s * 2.5 + 1.5) / cam.dist);
-  let tb = firstTreeBlock(desired, minFrac);
-  if (tb < 1) {
-    for (const extra of [0.35, 0.7]) {
-      const p = Math.min(1.4, cam.pitch + extra);
-      altView.set(
-        target.x + Math.sin(cam.yaw) * Math.cos(p) * cam.dist,
-        target.y + Math.sin(p) * cam.dist,
-        target.z + Math.cos(cam.yaw) * Math.cos(p) * cam.dist
-      );
-      if (firstTreeBlock(altView, minFrac) >= 1) { desired.copy(altView); tb = 1; break; }
+  // 카메라
+  if (cam.view === 'fp') {
+    // 1인칭: 동물 눈 위치에서, 드래그한 방향을 봄
+    const e = PL.eye, c = Math.cos(P.yaw), sn = Math.sin(P.yaw);
+    desired.set(P.x + (e.x * c + e.z * sn) * s, P.y + e.y * s, P.z + (-e.x * sn + e.z * c) * s);
+    if (snapCamera) { camera.position.copy(desired); snapCamera = false; }
+    else camera.position.lerp(desired, 1 - Math.exp(-dt * 25));
+    const p = cam.fpPitch;
+    target.set(camera.position.x - Math.sin(cam.yaw) * Math.cos(p), camera.position.y + Math.sin(p), camera.position.z - Math.cos(cam.yaw) * Math.cos(p));
+    camera.lookAt(target);
+  } else {
+    // 3인칭은 뒤에서, 2인칭은 동물 앞에서 마주 봄 (동물 크기에 맞춰 거리 조절, 물속 동물은 물속까지)
+    const second = cam.view === 'second';
+    const vyaw = second ? P.yaw + cam.off2 : cam.yaw;
+    cam.dist = (second ? 3 + s * 5 : 4 + s * 7) * cam.zoom;
+    target.set(P.x, P.y + s * (second ? 0.8 : 1.1) + 0.4, P.z);
+    desired.set(
+      target.x + Math.sin(vyaw) * Math.cos(cam.pitch) * cam.dist,
+      target.y + Math.sin(cam.pitch) * cam.dist,
+      target.z + Math.cos(vyaw) * Math.cos(cam.pitch) * cam.dist
+    );
+    const underOK = dom === 'water' || dom === 'bottom';
+    const minY = underOK ? heightAt(desired.x, desired.z) + 0.6 : Math.max(heightAt(desired.x, desired.z), 0) + 0.8;
+    if (desired.y < minY) desired.y = minY;
+    // 나무가 나를 가리면: 먼저 더 위에서 내려다보고, 그래도 막히면 나무 앞으로 당김
+    const minFrac = Math.min(1, (s * 2.5 + 1.5) / cam.dist);
+    let tb = firstTreeBlock(desired, minFrac);
+    if (tb < 1) {
+      for (const extra of [0.35, 0.7]) {
+        const p = Math.min(1.4, cam.pitch + extra);
+        altView.set(
+          target.x + Math.sin(vyaw) * Math.cos(p) * cam.dist,
+          target.y + Math.sin(p) * cam.dist,
+          target.z + Math.cos(vyaw) * Math.cos(p) * cam.dist
+        );
+        if (firstTreeBlock(altView, minFrac) >= 1) { desired.copy(altView); tb = 1; break; }
+      }
+      if (tb < 1) desired.lerpVectors(target, desired, Math.max(minFrac, tb - 0.08));
     }
-    if (tb < 1) desired.lerpVectors(target, desired, Math.max(minFrac, tb - 0.08));
+    if (snapCamera) { camera.position.copy(desired); snapCamera = false; }
+    else camera.position.lerp(desired, 1 - Math.exp(-dt * 9));
+    camera.lookAt(target);
   }
-  if (snapCamera) { camera.position.copy(desired); snapCamera = false; }
-  else camera.position.lerp(desired, 1 - Math.exp(-dt * 9));
-  camera.lookAt(target);
 
   // 해 그림자가 플레이어를 따라감
   sun.position.set(P.x, 0, P.z).add(SUN_OFFSET);
