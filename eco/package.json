@@ -1,0 +1,7 @@
+{
+  "name": "eco3d",
+  "private": true,
+  "dependencies": {
+    "@vercel/blob": "^2.5.0"
+  }
+}
