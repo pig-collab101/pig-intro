@@ -1,0 +1,3 @@
+# 자기소개 사이트(files 프로젝트)에서 빼는 폴더
+# eco/ 는 별도 사이트 eco3d.vercel.app (Vercel 프로젝트 eco3d, Root Directory=eco)
+/eco
