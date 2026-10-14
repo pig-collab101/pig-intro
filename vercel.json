@@ -1,6 +1,7 @@
 {
   "redirects": [
     { "source": "/eco", "destination": "https://eco3d.vercel.app/", "permanent": false },
+    { "source": "/eco/", "destination": "https://eco3d.vercel.app/", "permanent": false },
     { "source": "/eco/:path*", "destination": "https://eco3d.vercel.app/:path*", "permanent": false }
   ]
 }
