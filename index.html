@@ -115,6 +115,13 @@ header{text-align:center;margin-bottom:22px;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
 .secret-btn{display:inline-block;margin-top:16px;background:rgba(255,255,255,.4);border:2px dashed #b48aff;border-radius:50px;padding:6px 20px;cursor:pointer;font-size:.88rem;color:#8a60c0;transition:transform .2s,background .2s;}
 .secret-btn:hover{background:rgba(180,138,255,.2);transform:scale(1.05);}
+/* 내가 만든 게임 링크 */
+.game-link{display:flex;align-items:center;gap:14px;margin-top:16px;padding:14px 18px;border-radius:18px;background:linear-gradient(135deg,#2e7a36,#5aa0d2);color:#fff;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.15);transition:transform .2s,box-shadow .2s;}
+.game-link:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 8px 22px rgba(0,0,0,.22);}
+.game-link .gl-emoji{font-size:2.4rem;line-height:1;}
+.game-link .gl-title{font-size:1.15rem;}
+.game-link .gl-desc{font-size:.85rem;opacity:.92;margin-top:2px;}
+.game-link .gl-go{margin-left:auto;font-size:1.4rem;}
 
 /* ━━━ 도끼 커서 ━━━ */
 #axe-cursor{position:fixed;pointer-events:none;z-index:20000;font-size:2.2rem;transform:translate(-10px,-32px) rotate(-35deg);display:none;transition:none;filter:drop-shadow(2px 2px 4px rgba(0,0,0,.4));}
@@ -1819,6 +1826,14 @@ input[type=number], input[type=text], select{
     <div style="text-align:center;margin-top:14px">
       <span class="secret-btn" onclick="easterEgg()">🔒 비밀 코드 실행하기</span>
     </div>
+    <a class="game-link" href="eco3d.html" onclick="soundClick()">
+      <span class="gl-emoji">🌍</span>
+      <span>
+        <div class="gl-title">내가 만든 게임: 생태계 3D</div>
+        <div class="gl-desc">동물 200종 중 하나로 랜덤하게 태어나서 살아남기! 🦁🐟🦅</div>
+      </span>
+      <span class="gl-go">▶</span>
+    </a>
   </div>
 
   <!-- 음식 TOP3 패널 -->
