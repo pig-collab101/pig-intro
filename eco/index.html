@@ -92,6 +92,13 @@ body:not([data-mode="world"]) #joy,body:not([data-mode="world"]) #jump,body:not(
 #gauges .g-food i{background:#f2a33c}
 #gauges .g-water i{background:#4ab0f0}
 #gauges .g.low .bar{animation:lowblink .8s infinite}
+#gauges .gab{font-size:11.5px;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gauges .gab kbd{display:inline-block;padding:0 5px;border-radius:4px;background:var(--accent);color:#1c1c1c;font:inherit;font-weight:800;font-size:11px}
+#gauges .gab .ok{color:#8ee05c}
+#gauges .gab .cd{color:var(--hud-sub)}
+#abilBtn{position:fixed;display:none;z-index:5;width:60px;height:60px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(240,180,60,.3);font-size:24px;right:30px;bottom:266px}
+body.touch #abilBtn{display:block}
+body:not([data-mode="world"]) #abilBtn{display:none!important}
 @keyframes lowblink{50%{background:rgba(255,80,80,.45)}}
 body[data-thirst="0"] #gauges .g-water{display:none}
 #prompt{position:fixed;left:50%;bottom:122px;transform:translateX(-50%);display:none;background:var(--hud);backdrop-filter:blur(6px);border-radius:10px;padding:7px 14px;font-size:13.5px;text-align:center;pointer-events:none;line-height:1.6}
@@ -232,7 +239,9 @@ body.touch #help{display:none}
   <div class="g g-hp"><span>❤️</span><div class="bar"><i></i></div></div>
   <div class="g g-food"><span>🍖</span><div class="bar"><i></i></div></div>
   <div class="g g-water"><span>💧</span><div class="bar"><i></i></div></div>
+  <div class="gab" id="gab"></div>
 </div>
+<button id="abilBtn">✨</button>
 <div id="prompt"></div>
 <div id="deadp"><div class="card">
   <div class="dtitle" id="dtitle"></div>
@@ -240,7 +249,7 @@ body.touch #help{display:none}
   <div class="dscore" id="dscore"></div>
   <div class="dstats" id="dstats"></div>
   <div class="dsave" id="dsave"></div>
-  <p class="dnote">다음 생은 또 201종 중 랜덤이에요.</p>
+  <p class="dnote">다음 생은 또 202종 중 랜덤이에요.</p>
   <button id="again">🎲 다시 태어나기</button>
   <button class="rankOpen sub">🏆 랭킹</button>
 </div></div>
@@ -254,14 +263,14 @@ body.touch #help{display:none}
 </div></div>
 <div id="start"><div class="card">
   <h1>🌍 생태계 3D</h1>
-  <p>8개 바이옴에 201종 동물이 살아가는 대륙이에요.<br>입장하면 <b>201종 중 한 동물로 랜덤하게</b> 태어나요.<br>고를 수도, 다시 뽑을 수도 없어요!</p>
+  <p>8개 바이옴에 202종 동물이 살아가는 대륙이에요.<br>입장하면 <b>202종 중 한 동물로 랜덤하게</b> 태어나요.<br>고를 수도, 다시 뽑을 수도 없어요!</p>
   <button id="go" disabled>세계를 만드는 중…</button>
   <div class="row2">
     <button id="dex" class="sub" disabled>📖 동물 도감</button>
     <button class="sub rankOpen">🏆 랭킹</button>
     <button class="sub muteBtn" title="소리 (N)">🔊</button>
   </div>
-  <a class="foodweb" href="food_web.html">🕸️ 201종 먹이그물 보기</a>
+  <a class="foodweb" href="food_web.html">🕸️ 202종 먹이그물 보기</a>
   <div class="acct" id="acctLine"></div>
   <div class="note" id="stat"></div>
 </div></div>
@@ -1434,7 +1443,8 @@ function setPlayerAnimal(sp) {
   PL = { sp, adult, base: adult.s, s: adult.s * 0.55 };
   P.alt = info.dom === 'air' ? 4 : 0;
   P.vy = 0;
-  Object.assign(P, { hp: 100, food: 80, water: 80, dead: false, action: null, eatCd: 0, wantEat: false, wantMate: false, hitT: 0, safeT: 15, grow: 0, mateCd: 0 });
+  Object.assign(P, { hp: 100, food: 80, water: 80, dead: false, action: null, eatCd: 0, wantEat: false, wantMate: false, hitT: 0, safeT: 15, grow: 0, mateCd: 0,
+    abCd: 0, hideT: 0, curlT: 0, venomT: 0, constrictT: 0, swarmT: 0, glideT: 0, dash: null, showOff: false, ghost: false });
   resetLife();
   cam.zoom = 1;
   setPlayerBody(info);
@@ -1448,6 +1458,7 @@ function setPlayerBody(info) {
   const model = info.larva ? buildTadpole(sp) : buildAnimal(sp);
   scene.add(model);
   Object.assign(PL, { info, model, rig: model.userData.rig });
+  P.ghost = false;
   // 1인칭 카메라를 둘 눈 위치 (크기 1 기준, 몸 앞쪽 위)
   const bb = new THREE.Box3().setFromObject(model);
   PL.eye = new THREE.Vector3(0, bb.min.y + (bb.max.y - bb.min.y) * 0.8, bb.max.z * 0.75);
@@ -1455,7 +1466,7 @@ function setPlayerBody(info) {
   document.body.dataset.thirst = needsWater() ? '1' : '0';
   document.body.dataset.dom = info.dom;
   document.getElementById('help').innerHTML = DOM_HELP[info.dom] + '<br><b>E</b> 먹기·사냥' +
-    (info.dom === 'water' || info.dom === 'bottom' ? '' : ' · <b>Q</b> 물 마시기 (물가에서)') + ' · <b>R</b> 짝짓기·알 · <b>V</b> 시점 · <b>드래그</b> 둘러보기 · <b>휠</b> 확대';
+    (info.dom === 'water' || info.dom === 'bottom' ? '' : ' · <b>Q</b> 물 마시기 (물가에서)') + ' · <b>R</b> 짝짓기·알 · <b>F</b> 특기 · <b>V</b> 시점 · <b>드래그</b> 둘러보기 · <b>휠</b> 확대';
   document.getElementById('jump').textContent = info.dom === 'air' ? '⬆ 날기' : info.dom === 'water' ? '⬆ 위로' : '점프';
   document.getElementById('me').innerHTML = `나: <b style="color:${RARITY_COLOR[sp.rarity]}">${sp.name}${info.larva ? ' 올챙이' : ''}</b> <small>${sp.rarity} · ${DOM_TEXT[info.dom]}</small>`;
 }
@@ -1548,21 +1559,7 @@ function doAction(act) {
     return;
   }
   if (act.type === 'hunt') {
-    const b = act.target, ts = ageScale(b);
-    b.hp = (b.hp ?? 1) - clamp(PL.s / ts * 0.6, 0.15, 1);    // 나보다 큰 먹잇감은 여러 번 물어야 함
-    sfx('bite');
-    if (b.hp > 0) {
-      popText('콱!', 'bite');
-      if (b.state !== 'flee') { b.state = 'flee'; b.target = P; b.timer = 4; }
-      return;
-    }
-    die(b, 'killed');
-    LIFE.hunts++;
-    LIFE.huntsBy[b.info.sp.name] = (LIFE.huntsBy[b.info.sp.name] || 0) + 1;
-    if (isNight()) LIFE.nightHunts++;
-    eat(40 + 60 * Math.min(1, ts / PL.s));
-    sfx('hunt');
-    logEvent(`🍖 내가 ${jo(b.info.sp.name, '을', '를')} 사냥했어요! +40`);
+    huntBite(act.target);    // 나보다 큰 먹잇감은 여러 번 물어야 함 (독·조이기 특기를 쓰면 훨씬 셈)
   } else if (act.type === 'corpse') {
     act.target.meat--; LIFE.corpses++;
     eat(35); sfx('eat');
@@ -1614,7 +1611,10 @@ function updateVitals(dt, moving, running) {
 // 천적에게 물림
 function playerHit(a) {
   if (P.dead) return;
-  const dmg = clamp(30 * a.info.s / PL.s, 8, 100);
+  // 특기로 막기: 몸 말기는 끄떡없고, 독이 오른 몸을 물면 천적이 쓰러짐
+  if (P.curlT > 0) { stun(a, 2); a.cool = 15; popText('🛡️ 끄떡없어요!'); return; }
+  if (P.venomT > 0) { stun(a, 5); a.confT = 12; P.venomT = 0; popText(`☠️ ${jo(a.info.sp.name, '이', '가')} 독에 쏘였어요!`, 'mission'); return; }
+  const dmg = clamp(30 * a.info.s / PL.s, 8, 100) * (a.venomT > 0 || a.constrictT > 0 ? 2 : 1);
   P.hp -= dmg; P.hitT = 0.35;
   popText(`-${Math.round(dmg)} ❤️`, 'hurt');
   sfx('hurt');
@@ -1636,7 +1636,8 @@ function playerDie(cause, killer = '') {
   corpses.push({ x: P.x, z: P.z, mesh: m, meat: 3, t: 90 });
   scene.remove(PL.model);
   const parts = lifeParts(), secs = parts.secs, mult = survivalMult(PL.sp), score = scoreOf(PL.sp, parts);
-  const why = cause === '사냥당함' ? `${killer}에게 사냥당했어요` : cause === '굶주림' ? '굶주려 쓰러졌어요' : '목이 말라 쓰러졌어요';
+  const why = cause === '사냥당함' ? `${killer}에게 사냥당했어요` : cause === '공격' ? `${killer}에게 공격당해 쓰러졌어요`
+    : cause === '독' ? `${killer}의 독에 쓰러졌어요` : cause === '굶주림' ? '굶주려 쓰러졌어요' : '목이 말라 쓰러졌어요';
   document.getElementById('dtitle').innerHTML = `💀 ${PL.sp.name}의 삶이 끝났어요`;
   document.getElementById('dwhy').textContent = `${STAGE(P.grow)} · ${why}`;
   document.getElementById('dscore').innerHTML = `${score.toLocaleString()}<small>점</small>`;
@@ -1674,6 +1675,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyM') document.getElementById('mapbox').classList.toggle('big');
   if (e.code === 'KeyE' && !e.repeat) P.wantEat = true;
   if (e.code === 'KeyR' && !e.repeat) P.wantMate = true;
+  if (e.code === 'KeyF' && !e.repeat && mode === 'world') playerAbility();
   if (e.code === 'KeyN' && !e.repeat) { audioInit(); setMute(!SND.muted); }
   if (e.code === 'KeyV' && !e.repeat && mode === 'world') cycleView();
 });
@@ -1738,6 +1740,7 @@ jumpBtn.addEventListener('pointerup', () => jumpPressed = false);
 jumpBtn.addEventListener('pointercancel', () => jumpPressed = false);
 document.getElementById('eatBtn').addEventListener('pointerdown', () => P.wantEat = true);
 document.getElementById('mateBtn').addEventListener('pointerdown', () => P.wantMate = true);
+document.getElementById('abilBtn').addEventListener('pointerdown', () => { if (mode === 'world') playerAbility(); });
 const drinkBtn = document.getElementById('drinkBtn');
 drinkBtn.addEventListener('pointerdown', () => drinkPressed = true);
 drinkBtn.addEventListener('pointerup', () => drinkPressed = false);
@@ -1806,7 +1809,8 @@ function updateHud() {
   const d = PL ? PL.info.dom : 'land';
   const st = d === 'air' ? (P.flying ? `날고 있음 · 높이 ${Math.round(P.alt)}m · ` : '땅에 내려앉음 · ')
     : d === 'water' ? `물속 ${Math.max(0, Math.round(-P.y))}m · ` : d === 'bottom' ? '바다 밑 · ' : P.swim ? '헤엄치는 중 · ' : '';
-  whereS.textContent = `${st}고도 ${Math.round(h)}m · (${Math.round(P.x)}, ${Math.round(P.z)})`;
+  const v = P.speedNow || 0;
+  whereS.textContent = `${v > 0.2 ? `🏃 시속 ${fmtKmh(realKmh(v))}km · ` : ''}${st}고도 ${Math.round(h)}m · (${Math.round(P.x)}, ${Math.round(P.z)})`;
 }
 
 // ================= 모델 도감 (전체 종 전시장) =================
@@ -1890,6 +1894,8 @@ function focusItem(it) {
     ['실제 몸길이', sp.size >= 1 ? sp.size + 'm' : Math.round(sp.size * 100) + 'cm'],
     ['게임 크기', '×' + gameScale(sp.size).toFixed(2)],
     ['먹이 / 천적', `${sp.prey.length}종 / ${sp.pred.length}종`],
+    ['실제 속도', speedText(SPI[sp.name])],
+    ['특기', `${AB_EMOJI[abilityOf(sp).type]} ${abilityOf(sp).name}`],
     ['무늬', { none: '없음', stripe: '줄무늬', spot: '점무늬', belly: '배 색 다름' }[sp.pattern]],
     ['희귀도', sp.rarity],
   ];
@@ -1977,6 +1983,51 @@ function mergeModel(model) {
 }
 function disposeModel(m) { m.traverse(o => { if (o.isMesh) o.geometry.dispose(); }); }
 
+// ---- 실제 최고 속도 (시속 km) ----
+// 땅 동물: 달리기[/헤엄]   하늘: 날기[/헤엄][/내리꽂기]   물속·바다 밑: 헤엄·기어가기   물과 땅: 땅/헤엄
+const REAL_SPEED_TEXT = `
+사자 80/3, 치타 110, 표범 58/5, 하이에나 60, 아프리카들개 66, 자칼 56, 서벌 80, 카라칼 80, 코끼리 40/5, 기린 60,
+얼룩말 65, 누 80/4, 물소 57/5, 코뿔소 50, 가젤 90, 임팔라 90, 혹멧돼지 55, 타조 70, 미어캣 32, 개코원숭이 45,
+케이프토끼 70, 초원쥐 13, 프레리도그 18, 아르마딜로 30, 큰개미핥기 30, 흰개미 0.1, 메뚜기 8, 쇠똥구리 1, 뿔닭 25, 흰등수리 60,
+아가마도마뱀 20, 비서새 30, 코브라 7, 베짜기새 40, 들소 56,
+늑대 60/6, 불곰 56/10, 반달가슴곰 40/5, 퓨마 80, 스라소니 70, 붉은여우 50, 오소리 30, 너구리 30, 담비 32, 족제비 24,
+울버린 48, 스컹크 16, 고슴도치 6, 두더지 4, 붉은사슴 75/6, 고라니 45/6, 엘크 72/6, 무스 56/10, 멧돼지 48/5, 산토끼 72,
+다람쥐 20, 청설모 30, 하늘다람쥐 20, 들쥐 10, 박쥐 35, 수리부엉이 60, 올빼미 40, 검독수리 110/0/320, 매 110/0/390, 딱따구리 32,
+꿩 16, 박새 30, 어치 32, 까마귀 50, 꿀벌 25, 개미 0.3, 딱정벌레 2, 나방 20, 지렁이 0.02, 달팽이 0.05,
+호랑이 65/8, 재규어 80/8, 검은표범 58, 오셀롯 61, 아나콘다 8/16, 보아뱀 1.6, 킹코브라 12, 그물무늬비단뱀 1.6/5, 나무뱀 10, 하피수리 80/0/130,
+고릴라 40, 침팬지 40, 오랑우탄 5, 긴팔원숭이 30, 꼬리감는원숭이 30, 나무늘보 0.27/1, 맥 40/6, 문착 40, 페커리 35, 아구티 30,
+큰부리새 40, 앵무새 56, 공작 16, 과일박쥐 40, 카멜레온 0.2, 독화살개구리 1.5, 이구아나 35/5, 모르포나비 20, 잎꾼개미 0.3, 대벌레 0.3,
+사막여우 32, 낙타 65, 오릭스 60, 모래가젤 80, 코요테 65, 방울뱀 3, 힐라몬스터 2.4, 전갈 1.5, 타란툴라 1.8, 거저리 1.5,
+사막메뚜기 10, 캥거루쥐 20, 사막쥐 15, 잭토끼 64, 도깨비도마뱀 1, 수확개미 0.3, 모래도마뱀 20, 메추라기 15, 로드러너 32, 해리스매 60/0/150,
+북극곰 40/10, 북극늑대 60/6, 북극여우 48, 흰올빼미 80, 흰매 110/0/200, 순록 80/10, 사향소 60, 눈산양 30, 북극토끼 64, 레밍 5,
+뇌조 15, 바다표범 35, 바다코끼리 35, 황제펭귄 2.5/9, 아델리펭귄 4/15, 표범물범 40, 퍼핀 5/10, 북방족제비 32, 설표 65, 야크 40,
+하마 30/8, 나일악어 17/30, 카이만 17/25, 카피바라 35/8, 비버 8/8, 수달 29/11, 밍크 24/6, 물총새 40, 흰머리수리 70/0/160, 물수리 64/0/130,
+청둥오리 5/3.5, 연어 13, 송어 20, 메기 15, 피라냐 25, 송사리 2, 가재 2/8, 황소개구리 10/5, 잠자리 54, 모기 2,
+두루미 20/3, 왜가리 8/2, 홍학 20/4, 자라 4/8, 도롱뇽 1/2, 미꾸라지 3, 우렁이 0.05/0.05, 유혈목이 8/4, 사향쥐 10/5, 펠리컨 8/6,
+범고래 56, 백상아리 56, 귀상어 32, 고래상어 5, 흰긴수염고래 40, 혹등고래 27, 향유고래 37, 돌고래 55, 물개 35, 참치 75,
+청어 15, 고등어 30, 멸치 10, 대구 10, 오징어 40, 대왕오징어 10, 문어 25, 게 3, 조개 0.01, 바다거북 30,
+해파리 0.3, 가오리 10, 크릴 0.7, 성게 0.01, 해달 9/9, 두꺼비 1.6/1.5, 물총고기 8`;
+const REAL_SPEED = {};
+REAL_SPEED_TEXT.split(',').forEach(t => {
+  const m = t.trim().match(/^(\S+) ([\d.]+)(?:\/([\d.]+))?(?:\/([\d.]+))?$/);
+  if (m) REAL_SPEED[m[1]] = [+m[2], m[3] !== undefined ? +m[3] : null, m[4] !== undefined ? +m[4] : null];
+});
+// 실제 속도(km/h) → 게임 속도(m/s). 그대로 쓰면 달팽이와 치타가 2천 배 차이라 놀 수가 없어서
+// 차이를 줄이되 빠르고 느린 순서·느낌은 그대로 (치타 28, 사자 23, 쥐 8, 나무늘보 0.8, 달팽이 0.3)
+const gameSpeed = kmh => 3.6 * Math.pow(Math.max(kmh, 0.005) / 3.6, 0.6);
+// 지구력: 오래 쫓는 사냥꾼 / 짧게 덮치는 고양이과
+const ENDURANCE = new Set(['늑대', '북극늑대', '아프리카들개', '하이에나', '코요테', '자칼']);
+const AMBUSH = new Set(['사자', '치타', '표범', '서벌', '카라칼', '퓨마', '스라소니', '호랑이', '재규어', '검은표범', '오셀롯', '설표']);
+
+const realKmh = v => 3.6 * Math.pow(v / 3.6, 1 / 0.6);   // 게임 속도 → 실제 시속(km)
+const fmtKmh = k => k >= 10 ? Math.round(k) : k >= 1 ? +k.toFixed(1) : +k.toPrecision(1);
+function speedText(i) {
+  const d = REAL_SPEED[i.sp.name] || [];
+  if (i.dom === 'air') return `날기 시속 ${fmtKmh(i.kmh)}km${d[2] ? ` · 내리꽂기 ${fmtKmh(d[2])}km` : ''}`;
+  if (i.dom === 'water' || i.dom === 'bottom') return `${i.dom === 'water' ? '헤엄' : '기어가기'} 시속 ${fmtKmh(i.kmh)}km`;
+  return `달리기 시속 ${fmtKmh(i.kmh)}km · 헤엄 ${fmtKmh(i.swimKmh)}km`;
+}
+
 function initSpecies() {
   for (const sp of ECO.species) {
     const model = buildAnimal(sp), rig = model.userData.rig;
@@ -1998,12 +2049,17 @@ function initSpecies() {
       hungerTime: { 초식: 100, 잡식: 150, 육식: 240, 최상위: 240 }[sp.diet],
       minH: -0.6, alt: 0, walk: 0, run: 0,
     };
-    if (dom === 'air') { i.walk = sp.tpl === 'iv' ? 3 : 6 + s * 3; i.run = i.walk * 1.8; i.alt = sp.tpl === 'iv' ? 1.5 : sp.parts.includes('bat') ? 4 : 8; }
-    else if (dom === 'water') { i.walk = 2.5 + s * 1.6; i.run = i.walk * 2.2; }
-    else if (dom === 'bottom') { i.walk = 0.6 + s; i.run = i.walk * 1.5; }
-    else { i.walk = Math.min(9, 2 + s * 2.2); i.run = i.walk * 2.3; }
-    if (sp.diet === '육식' || sp.diet === '최상위') i.run *= 1.15;
-    if (sp.parts.includes('clam') || sp.parts.includes('urchin')) { i.walk = 0.15; i.run = 0.2; }
+    // 실제 최고 속도로 달리기·걷기·헤엄·내리꽂기 속도
+    const [v0, v1, v2] = REAL_SPEED[sp.name] || [10, null, null];
+    i.kmh = v0;
+    i.run = gameSpeed(v0);
+    i.walk = i.run * (v0 < 3 ? 0.6 : 0.35);                      // 아주 느린 동물은 늘 비슷한 속도
+    i.swimKmh = dom === 'water' || dom === 'bottom' ? v0 : v1 || Math.min(3, v0);   // 헤엄 속도 없으면 땅보다 빠르진 않게
+    i.swimRun = gameSpeed(i.swimKmh);
+    i.dive = gameSpeed(v2 || v0);
+    i.groundWalk = gameSpeed(4);                                  // 새가 땅에서 걷는 속도
+    i.sprint = ENDURANCE.has(sp.name) ? 80 : AMBUSH.has(sp.name) ? 15 : 25;   // 전력질주 버티는 시간(초)
+    if (dom === 'air') i.alt = sp.tpl === 'iv' ? 1.5 : sp.parts.includes('bat') ? 4 : 8;
     i.inst = new THREE.InstancedMesh(i.geo, farMat, i.cap);
     i.inst.count = 0;
     i.inst.frustumCulled = false;
@@ -2140,42 +2196,56 @@ function think(a, dt) {
   a.search = false;
   if (a.age > a.life) return die(a, 'old');
   a.breedCd -= dt; a.cool -= dt;
-  if (a.state === 'eat') return;
+  if (a.state === 'eat' || a.stunT > 0 || a.dash) return;
+  if ((a.curlT > 0 || a.hideT > 0) && a.state === 'idle') return;        // 몸 말기·숨기 중엔 가만히
   // 1) 천적이 가까우면 도망 (밤에는 먹잇감이 천적을 늦게 알아챔)
   const night = isNight();
   let threat = null, td = i.sight * 0.8 * (night && !i.hunts ? 0.7 : 1);
   nearby(a.x, a.z, td, b => {
-    if (b === a || b.dead || !b.info.preySet.has(i.sp.name)) return;
+    if (b === a || b.dead || !b.info.preySet.has(i.sp.name) || b.confT > 0) return;
     const d = Math.hypot(b.x - a.x, b.z - a.z);
-    if (d < td && validPos(b.info, a.x, a.z)) { td = d; threat = b; }
+    if (b.hideT > 0 && d > 3) return;                                     // 숨은 천적(검은표범 등)은 못 봄
+    if (d < (b.stalk ? td * 0.4 : td) && validPos(b.info, a.x, a.z)) { td = d; threat = b; }   // 살금살금 다가오는 천적은 늦게 알아챔
   });
   // 플레이어 동물이 나를 먹는 종이면 플레이어에게서도 도망
-  if (!threat && mode === 'world' && PL && PL.info.preySet.has(i.sp.name) && Math.hypot(P.x - a.x, P.z - a.z) < Math.min(td, 22)) threat = P;
-  if (threat) { a.state = 'flee'; a.target = threat; a.timer = 3; a.altT = i.alt; return; }
+  if (!threat && mode === 'world' && PL && !(P.hideT > 0) && PL.info.preySet.has(i.sp.name) && Math.hypot(P.x - a.x, P.z - a.z) < Math.min(td, 22)) threat = P;
+  if (threat) {
+    if (aiDefend(a, threat)) return;                                      // 특기로 막기 (몸 말기·발차기·냄새 등)
+    a.state = 'flee'; a.target = threat; a.timer = 3; a.altT = i.alt; return;
+  }
   if (a.state === 'flee' && a.timer > 0) return;
-  // 2) 하던 사냥 / 사체 찾기는 계속
+  // 2) 하던 사냥 / 사체 찾기는 계속 (숨거나 몸을 만 먹잇감, 떼 속 먹잇감은 놓칠 수 있음)
   if (a.state === 'hunt') {
-    if (a.target && !a.target.dead && a.chase < 12) return;
+    const t = a.target, tp = t === P;
+    const lost = !t || t.dead || a.confT > 0 || (tp ? P.curlT > 0 || (P.hideT > 0 && Math.hypot(P.x - a.x, P.z - a.z) > 3) || (P.swarmT > 0 && Math.random() < 0.15)
+      : t.curlT > 0 || (t.hideT > 0 && Math.hypot(t.x - a.x, t.z - a.z) > 3) || (t.swarmT > 0 && Math.random() < 0.15));
+    if (!lost && a.chase < (i.sprint > 60 ? 45 : 12)) return;              // 늑대·들개는 오래 쫓음
     a.state = 'wander'; a.cool = 8; a.target = null;
   }
   if (a.state === 'scav' && a.target && a.target.meat > 0) return;
   if (a.state === 'egg' && a.target && !a.target.gone && a.target.count > 0) return;
   // 3) 배고프면 먹이 찾기 — 먹이그물 그대로 (밤엔 사냥꾼이 더 일찍 사냥에 나섬)
   if (a.hunger > (night && i.hunts ? 0.35 : 0.45)) {
-    if (a.cool <= 0) {
-      let best = null, bd = i.sight;
+    if (a.cool <= 0 && !(a.confT > 0)) {
+      let best = null, bd = i.sight * (a.sightBoostT > 0 ? 2 : 1);      // 초음파·냄새 특기를 쓰면 두 배 멀리
       nearby(a.x, a.z, bd, b => {
-        if (b.dead || !i.preySet.has(b.info.sp.name)) return;
+        if (b.dead || !i.preySet.has(b.info.sp.name) || b.curlT > 0) return;
         const d = Math.hypot(b.x - a.x, b.z - a.z);
-        if (d < bd && canReach(a, b)) { bd = d; best = b; }
+        if (b.hideT > 0 && d > 3) return;
+        if (d < bd && (canReach(a, b) || (isShooter(i) && d < SHOOT_RANGE))) { bd = d; best = b; }   // 물총고기는 물 밖 벌레도 노림
       });
-      // 플레이어도 먹잇감 — 조금 더 잘 노림
-      if (mode === 'world' && PL && !P.dead && P.safeT <= 0 && i.preySet.has(PL.sp.name)) {
+      // 플레이어도 먹잇감 — 조금 더 잘 노림 (숨거나 몸을 말면 못 찾음)
+      if (mode === 'world' && PL && !P.dead && P.safeT <= 0 && !(P.curlT > 0) && i.preySet.has(PL.sp.name)) {
         const d = Math.hypot(P.x - a.x, P.z - a.z) * 0.8;
-        if (d < bd && validPos(i, P.x, P.z) && (i.dom === 'air' || PL.info.dom !== 'air' || P.alt < 1.2)) best = P;
+        if (!(P.hideT > 0 && d > 3) && d < bd && validPos(i, P.x, P.z) && (i.dom === 'air' || PL.info.dom !== 'air' || P.alt < 1.2)) best = P;
       }
       if (best) { a.state = 'hunt'; a.target = best; a.chase = 0; return; }
+      // 먹이가 안 보이면 탐지 특기 (박쥐 초음파, 돌고래 반향정위, 메기 수염 …)
+      if (abilityOf(i.sp).type === 'echo' && aiAbility(a)) return;
     }
+    // 도구·똥 굴리기·거품 그물로 먹이 얻기
+    const at = abilityOf(i.sp).type;
+    if ((at === 'tool' || at === 'roll' || at === 'net') && aiAbility(a)) { a.state = 'eat'; a.timer = 3; a.food = 0.3; return; }
     // 알 찾기 (다른 종의 알)
     if (i.eatsEggs && clutches.length && (i.hunts || Math.random() < 0.5)) {
       let best = null, bd = i.sight;
@@ -2209,8 +2279,12 @@ function think(a, dt) {
       if (validPos(i, x, z)) { addAgent(i, x, z, 0); ecoStats.born++; }
     }
   }
-  // 5) 쉬거나 돌아다니기
+  // 5) 쉬거나 돌아다니기 — 플레이어 근처에선 가끔 특기를 보여줌 (사자 포효, 공작 꼬리, 늑대 하울링 …)
   if (a.state === 'idle' && a.timer > 0) return;
+  if (mode === 'world' && Math.random() < 0.006 && Math.hypot(a.x - P.x, a.z - P.z) < 50) {
+    const t = abilityOf(i.sp).type;
+    if (['roar', 'call', 'display', 'echo', 'leap', 'swarm', 'tool', 'roll'].includes(t) && aiAbility(a)) return;
+  }
   if (Math.random() < 0.06) { a.state = 'idle'; a.timer = 3 + Math.random() * 6; if (i.dom === 'air') a.altT = 0; return; }
   a.state = 'wander'; a.altT = i.alt;
   a.yaw += (Math.random() - 0.5) * 0.9;
@@ -2239,6 +2313,9 @@ function addCorpse(a, meat) {
   if (corpses.length > 80) { scene.remove(corpses[0].mesh); corpses.shift(); }
 }
 function kill(a, t) {
+  // 특기로 막기: 몸을 만 먹잇감은 못 먹고, 독이 오른 먹잇감을 물면 천적이 쓰러짐
+  if (t.curlT > 0) { stun(a, 2); a.cool = 12; a.target = null; return; }
+  if (t.venomT > 0) { stun(a, 5); a.confT = 12; t.venomT = 0; return; }
   die(t, 'killed');
   if (a.model && a.model.userData.rig.tongue) a.model.userData.rig.tongueT = 0.25;   // 개구리는 혀로 휙
   a.state = 'eat'; a.timer = 5; a.food = 1; a.target = null; a.altT = 0;
@@ -2252,6 +2329,12 @@ function moveAgent(a, dt) {
   if (a.info.larva && a.age > 75) metamorph(a);     // 올챙이 → 개구리
   const i = a.info;
   a.age += dt;
+  if (tickAbilities(a, dt)) return;                 // 돌진·덮치기·점프 중
+  if (a.stunT > 0 || ((a.curlT > 0 || a.hideT > 0) && a.state === 'idle')) {   // 쓰러짐·몸 말기·숨기: 멈춤
+    a.speed = 0;
+    a.y += (groundY(a) - a.y) * Math.min(1, dt * 10);
+    return;
+  }
   a.biteCd = (a.biteCd || 0) - dt;
   let want = a.yaw, spd = 0;
   switch (a.state) {
@@ -2274,8 +2357,22 @@ function moveAgent(a, dt) {
       if (!t || t.dead || (isP && mode !== 'world')) { a.state = 'wander'; a.target = null; break; }
       const dx = t.x - a.x, dz = t.z - a.z, d = Math.hypot(dx, dz);
       want = Math.atan2(dx, dz); spd = i.run;
-      if (i.dom === 'air') a.altT = d < 14 ? Math.max(t.y - Math.max(heightAt(a.x, a.z), 0), -2) : i.alt;   // 내리꽂기
+      // 고양이과는 멀리서는 몸을 낮추고 살금살금 다가가다가 가까워지면 덮침
+      a.stalk = AMBUSH.has(i.sp.name) && d > 18;
+      if (a.stalk) spd = i.walk;
+      if (i.dom === 'air') {
+        a.altT = d < 14 ? Math.max(t.y - Math.max(heightAt(a.x, a.z), 0), -2) : i.alt;
+        if (d < 20) spd = i.dive;      // 매·독수리는 내리꽂으며 엄청 빨라짐
+      }
       if (isP && d < dangerD) { dangerD = d; dangerWho = i.sp.name; }
+      // 사냥 특기: 덮치기·다이빙은 가까워지면 휙, 혀는 몇 m 앞에서 낚아채고, 독·조이기는 물기 직전에
+      if ((a.abCd || 0) <= 0) {
+        const at = abilityOf(i.sp).type;
+        if (at === 'shoot' && d < SHOOT_RANGE && !isP) { if (aiAbility(a, { target: t })) break; }
+        else if ((at === 'pounce' && d < 12 && d > 3) || (at === 'dive' && d < 35 && d > 4) || (at === 'charge' && d < 15 && d > 4)) { if (aiAbility(a, { target: t })) break; }
+        else if (at === 'tongue' && d < 6 && !isP) { if (aiAbility(a)) break; }
+        else if ((at === 'venom' || at === 'constrict') && d < 6) aiAbility(a);
+      }
       const r = (ageScale(a) + (isP ? PL.s : ageScale(t))) * 0.9 + 0.4;
       if (d < r && Math.abs(a.y - t.y) < r + 1) {
         if (!isP) kill(a, t);
@@ -2305,6 +2402,14 @@ function moveAgent(a, dt) {
   let d = want - a.yaw;
   d = Math.atan2(Math.sin(d), Math.cos(d));
   a.yaw += clamp(d, -4 * dt, 4 * dt);
+  if (a.state !== 'hunt') a.stalk = false;
+  // 지침: 전력질주는 오래 못 함 (늑대·들개는 오래, 고양이과는 짧게)
+  if (spd >= i.run * 0.99 && spd > i.walk) {
+    a.stam = (a.stam ?? 1) - dt / i.sprint;
+    if (a.stam <= 0) spd = Math.min(spd, i.walk * 1.4);
+  } else a.stam = Math.min(1, (a.stam ?? 1) + dt / (i.sprint * 0.8));
+  // 물에 들어간 땅·물과 땅 동물은 헤엄 속도로
+  if ((i.dom === 'land' || i.dom === 'amphi') && heightAt(a.x, a.z) < -0.4 * ageScale(a) - 0.3) spd = spd > 0 ? i.swimRun * Math.min(1, spd / i.run) : 0;
   a.speed += (spd - a.speed) * Math.min(1, dt * 4);
   if (a.speed > 0.05) {
     const nx = a.x + Math.sin(a.yaw) * a.speed * dt, nz = a.z + Math.cos(a.yaw) * a.speed * dt;
@@ -2321,7 +2426,13 @@ function moveAgent(a, dt) {
 
 // ---- 그리기: 가까운 동물은 움직이는 모델, 먼 동물은 한 덩어리 모형 ----
 const _m4 = new THREE.Matrix4(), _q4 = new THREE.Quaternion(), _p4 = new THREE.Vector3(), _s4 = new THREE.Vector3();
-function renderAgents(t) {
+// 다리·날개·꼬리 움직임 빠르기 = 실제 이동 속도에 맞춤 (몸 크기 대비)
+function animRate(i, speed, s) {
+  if (i.dom === 'air') return 0.6 + speed / (s * 30);
+  if (i.dom === 'water') return 0.4 + speed / (s * 8);
+  return 0.4 + speed / (s * 6);
+}
+function renderAgents(t, dt = 1 / 60) {
   for (const n in SPI) SPI[n].n = 0;
   for (const L of LARVAE) L.n = 0;
   let full = 0;
@@ -2333,11 +2444,15 @@ function renderAgents(t) {
       if (!a.model.parent) scene.add(a.model);
       // 개구리는 폴짝폴짝 뛰며 움직임
       const rg = a.model.userData.rig;   // 두꺼비는 짧게 폴짝
-      const hop = rg.kind === 'hop' && a.speed > 0.3 ? Math.abs(Math.sin((t + a.id) * 5)) * s * (rg.toad ? 0.2 : 0.5) : 0;
-      a.model.position.set(a.x, a.y + hop, a.z);
+      const hop = (rg.kind === 'hop' && a.speed > 0.3 ? Math.abs(Math.sin((t + a.id) * 5)) * s * (rg.toad ? 0.2 : 0.5) : 0) + (a.hop || 0);
+      const dug = a.hideT > 0 && abilityOf(i.sp).type === 'dig' ? -s * 0.5 : 0;   // 땅파고 숨으면 반쯤 묻힘
+      a.model.position.set(a.x, a.y + hop + dug, a.z);
       a.model.rotation.y = a.yaw;
-      a.model.scale.setScalar(s);
-      animateRig(a.model.userData.rig, t + a.id * 0.37, a.speed > 0.3 || (i.dom === 'air' && a.alt > 0.5));
+      a.model.scale.set(s, a.curlT > 0 ? s * 0.6 : s, s);                         // 몸 말기
+      if (a.stunT > 0) a.model.rotation.z = 0.5;                                   // 쓰러짐
+      else a.model.rotation.z = 0;
+      a.animT = (a.animT ?? a.id * 0.37) + dt * animRate(i, a.speed, s);
+      animateRig(a.model.userData.rig, a.animT, a.speed > 0.1 || (i.dom === 'air' && a.alt > 0.5));
       full++;
       continue;
     }
@@ -2368,7 +2483,7 @@ function updateEco(dt, t) {
     c.t -= dt;
     if (c.t <= 0 || c.meat <= 0) { scene.remove(c.mesh); corpses.splice(k, 1); }
   }
-  renderAgents(t);
+  renderAgents(t, dt);
 }
 
 // ---- 생태계 HUD ----
@@ -2418,13 +2533,19 @@ const GRAZE_WORD = { 풀: '풀 뜯기', 나뭇잎: '잎 먹기', 열매: '열매
   꽃꿀: '꿀 빨기', 버섯: '버섯 먹기', 낙엽: '낙엽 먹기', 이끼: '이끼 먹기', 선인장: '선인장 먹기', 수초: '수초 먹기', 플랑크톤: '플랑크톤 먹기', 해조류: '해조류 먹기', 배설물: '똥 굴리기' };
 const promptEl = document.getElementById('prompt'), dangerEl = document.getElementById('danger');
 const bars = ['hp', 'food', 'water'].map(k => [k, document.querySelector(`#gauges .g-${k} i`), document.querySelector(`#gauges .g-${k}`)]);
-const scoreEl = document.getElementById('gscore'), growEl = document.getElementById('ggrow');
+const scoreEl = document.getElementById('gscore'), growEl = document.getElementById('ggrow'), abEl = document.getElementById('gab');
 function updateSurvivalHud() {
   for (const [k, fill, row] of bars) {
     fill.style.width = Math.max(0, P[k]) + '%';
     row.classList.toggle('low', P[k] < 25);
   }
   scoreEl.textContent = `⭐ ${scoreOf(PL.sp, lifeParts()).toLocaleString()}점`;
+  // 특기 상태
+  const A = abilityOf(PL.sp);
+  const active = P.curlT > 0 ? `몸 말기 중 ${Math.ceil(P.curlT)}초 · F로 펴기` : P.hideT > 0 ? `숨는 중 ${Math.ceil(P.hideT)}초`
+    : P.venomT > 0 ? `독 준비됨 ${Math.ceil(P.venomT)}초` : P.constrictT > 0 ? `조일 준비됨 ${Math.ceil(P.constrictT)}초` : '';
+  const st = active || (PL.info.larva ? '개구리가 되면' : P.abCd > 0 ? `${Math.ceil(P.abCd)}초 뒤` : '준비됨');
+  abEl.innerHTML = `<kbd>F</kbd> ${AB_EMOJI[A.type]} ${A.name} <span class="${active || P.abCd <= 0 ? 'ok' : 'cd'}">${st}</span>`;
   growEl.textContent = P.grow >= 1 ? '🌳 어른' : `🌱 ${STAGE(P.grow)} · 어른까지 ${Math.round(P.grow * 100)}%`;
   document.body.dataset.adult = P.grow >= 1 ? '1' : '0';
   let text = '';
@@ -2438,6 +2559,11 @@ function updateSurvivalHud() {
     else if (act && act.type === 'eggs') text = `<kbd>E</kbd> 🥚 ${act.target.sp.name} 알 먹기 · ${act.target.count.toLocaleString()}개`;
     else if (act) text = `<kbd>E</kbd> ${grazeWord || '먹기'}`;
     if (needsWater() && P.water < 98 && waterNear()) text += `${text ? ' · ' : ''}<kbd>Q</kbd> 물 마시기`;
+    if (isShooter(PL.info) && P.abCd <= 0) {      // 물총고기: 쏠 수 있는 벌레가 있으면 알려줌
+      let tgt = null;
+      nearby(P.x, P.z, SHOOT_RANGE, b => { if (!tgt && !b.dead && PL.info.preySet.has(b.info.sp.name) && Math.hypot(b.x - P.x, b.z - P.z) < SHOOT_RANGE) tgt = b; });
+      if (tgt) text += `${text ? ' · ' : ''}<kbd>F</kbd> 💦 물총 쏘기 · ${tgt.info.sp.name}`;
+    }
     const mate = findMate();
     if (mate) text += `${text ? ' · ' : ''}<kbd>R</kbd> ${!eggPlan(PL.sp) ? '짝짓기 💕' : isBird(PL.sp) ? '둥지 짓고 알 낳기 🪺' : '알 낳기 🥚'}`;
   }
@@ -2463,6 +2589,7 @@ const EGG_PLAN = {
   이구아나: [20, 70, 'ground', 75], 카멜레온: [10, 40, 'ground', 70], 힐라몬스터: [2, 12, 'ground', 70],
   독화살개구리: [5, 15, 'leaf', 35], 황소개구리: [15000, 20000, 'water', 35], 도롱뇽: [50, 150, 'water', 40],
   두꺼비: [3000, 8000, 'water', 35],   // 두꺼비 알은 긴 끈처럼 이어져 있음
+  물총고기: [20000, 150000, 'water', 35],
   연어: [2500, 5000, 'water', 45], 송어: [1000, 4000, 'water', 40], 송사리: [10, 30, 'water', 30], 대구: [500000, 3000000, 'water', 40],
   참치: [1000000, 10000000, 'water', 40], 청어: [20000, 40000, 'water', 35], 멸치: [10000, 20000, 'water', 30],
   고등어: [100000, 400000, 'water', 35], 메기: [5000, 20000, 'water', 40], 피라냐: [2000, 5000, 'water', 35], 미꾸라지: [5000, 10000, 'water', 35],
@@ -2686,7 +2813,8 @@ function larvaInfo(i) {
   if (i.larvaInfo) return i.larvaInfo;
   const model = buildTadpole(i.sp);
   const L = Object.assign({}, i, {
-    larva: true, adult: i, dom: 'water', s: Math.max(0.22, i.s * 0.7), walk: 2, run: 3.6, alt: 0, minH: -0.6,
+    larva: true, adult: i, dom: 'water', s: Math.max(0.22, i.s * 0.7), alt: 0, minH: -0.6,
+    kmh: 1, run: gameSpeed(1), walk: gameSpeed(1) * 0.6, swimKmh: 1, swimRun: gameSpeed(1), dive: gameSpeed(1), sprint: 25,   // 올챙이: 시속 1km
     preySet: new Set(['수초', '플랑크톤']), grazes: true, hunts: false, scavenges: false, eatsEggs: false, sight: 12, hungerTime: 100,
     count: 0, cap: 40, n: 0, pool: biomeSpots[RIVER], geo: mergeModel(model),
   });
@@ -2711,6 +2839,616 @@ function metamorphPlayer() {
   setPlayerBody(PL.adult);
   sfx('grow');
   showToast(`🐸 다리가 나와 ${PL.sp.name}${(PL.sp.name.charCodeAt(PL.sp.name.length - 1) - 0xac00) % 28 ? '이' : '가'} 됐어요!`, '이제 땅에도 올라갈 수 있어요 · 폴짝폴짝 뛰어다녀요');
+}
+
+// ================= 특기: 동물마다 실제로 하는 행동 =================
+// 이름|종류|특기 이름|설명|다시 쓰기까지(초)
+const ABILITY_TEXT = `
+사자|roar|포효|크게 울부짖어 주변 동물과 천적을 쫓아내요|25
+치타|pounce|순간 가속 덮치기|가까운 먹잇감에게 번개처럼 달려들어요|12
+표범|pounce|매복 덮치기|숨어 있다가 한 번에 덮쳐요|12
+하이에나|roar|웃음소리|웃음 같은 소리로 무리를 부르고 경쟁자를 쫓아내요|25
+아프리카들개|echo|무리 사냥 신호|무리와 신호를 주고받아 먹잇감 위치를 알아내요|20
+자칼|pounce|덮치기|작은 동물에게 뛰어올라 잡아요|12
+서벌|pounce|3m 높이뛰기 사냥|높이 뛰어올라 날아가는 새도 낚아채요|12
+카라칼|pounce|점프 새 사냥|공중으로 뛰어 새를 잡아요|12
+코끼리|spray|코로 물 뿜기|물가에서 코로 물을 뿜어 목을 축이고 천적을 쫓아요|20
+기린|kick|긴 다리 발차기|사자도 쓰러뜨리는 발차기예요|15
+얼룩말|kick|뒷발차기|쫓아오는 천적을 뒷발로 차요|15
+누|swarm|대이동 떼짓기|무리에 섞여 천적이 누구를 쫓을지 헷갈리게 해요|25
+물소|charge|뿔로 들이받기|천적에게 돌진해 들이받아요|20
+코뿔소|charge|돌진|무서운 속도로 들이받아요|20
+가젤|display|통통 뛰기(스토팅)|제자리에서 통통 뛰어 '난 빨라서 못 잡아'라고 알려 천적이 포기해요|20
+임팔라|leap|3m 높이뛰기|높이 멀리 뛰어 도망쳐요|12
+혹멧돼지|dig|굴로 숨기|뒷걸음으로 굴에 들어가 숨어요|25
+타조|kick|강력한 발차기|발톱 달린 발로 세게 차요|15
+미어캣|call|보초 경고|보초를 서다가 천적을 발견하면 모두에게 알려요|15
+개코원숭이|roar|송곳니 위협|큰 송곳니를 드러내 위협해요|20
+케이프토끼|leap|지그재그 도망|갑자기 방향을 꺾으며 멀리 뛰어요|10
+초원쥐|dig|굴로 숨기|땅굴에 쏙 숨어요|20
+프레리도그|call|짖어서 경고|천적이 누군지까지 알려주는 경고 소리를 내요|15
+아르마딜로|curl|공처럼 몸 말기|딱딱한 껍데기로 몸을 둥글게 말아요|20
+큰개미핥기|tongue|60cm 긴 혀|긴 혀로 개미와 흰개미를 핥아 먹어요|8
+흰개미|swarm|흰개미 떼|수많은 일개미가 함께 움직여요|20
+메뚜기|leap|멀리뛰기|몸길이의 20배를 뛰어요|8
+쇠똥구리|roll|똥 굴리기|똥을 동그랗게 빚어 굴려 먹이를 얻어요|20
+뿔닭|call|경고 울음|시끄럽게 울어 무리에게 알려요|15
+흰등수리|echo|하늘에서 사체 찾기|높이 날며 멀리 있는 사체와 먹이를 찾아요|20
+아가마도마뱀|display|머리 까딱 뽐내기|머리를 까딱여 뽐내고 천적을 놀래켜요|15
+비서새|kick|뱀 밟기|긴 다리로 뱀을 세게 밟아요|12
+코브라|spray|독 뿜기|천적의 눈에 독을 뿜어요|20
+베짜기새|call|경고 울음|무리에게 위험을 알려요|15
+들소|charge|들이받기|큰 머리로 들이받아요|20
+늑대|roar|하울링|울부짖어 무리를 모으고 경쟁자를 쫓아요|25
+불곰|roar|일어서서 으르렁|뒷발로 서서 크게 위협해요|25
+반달가슴곰|roar|으르렁|일어서서 위협해요|25
+퓨마|pounce|덮치기|높은 곳에서 뛰어내려 덮쳐요|12
+스라소니|pounce|눈 위 덮치기|큰 발로 눈 위를 달려 덮쳐요|12
+붉은여우|pounce|눈 속 쥐 다이빙|높이 뛰어 머리부터 내리꽂아 쥐를 잡아요|10
+오소리|dig|굴 파기|빠르게 땅을 파고 숨어요|20
+너구리|camo|죽은 척하기|쓰러져 죽은 척해서 천적이 관심을 잃게 해요|25
+담비|pounce|나무 위 덮치기|재빠르게 덮쳐요|12
+족제비|pounce|번개 물기|재빠르게 달려들어 물어요|10
+울버린|roar|사나운 위협|자기보다 큰 동물도 쫓아내요|25
+스컹크|spray|고약한 냄새 뿌리기|지독한 냄새로 천적을 쫓아내요|20
+고슴도치|curl|가시 공|몸을 말아 가시를 세워요|15
+두더지|dig|땅속으로|땅속으로 파고들어 숨어요|15
+붉은사슴|display|울음 뽐내기|크게 울며 뿔을 뽐내요|20
+고라니|leap|껑충 도망|높이 뛰어 수풀로 도망쳐요|12
+엘크|display|뿔 뽐내기|큰 뿔과 울음으로 뽐내요|20
+무스|kick|앞발차기|날카로운 발굽으로 차요|15
+멧돼지|charge|엄니 돌진|엄니를 앞세워 돌진해요|20
+산토끼|leap|지그재그 도망|갑자기 꺾으며 멀리 뛰어요|10
+다람쥐|call|찍찍 경고|날카로운 소리로 알려요|15
+청설모|leap|나무 사이 점프|훌쩍 뛰어 도망쳐요|10
+하늘다람쥐|glide|활공|다리 사이 막을 펼쳐 멀리 날아가요|12
+들쥐|dig|굴로 숨기|굴에 숨어요|15
+박쥐|echo|초음파로 찾기|소리 메아리로 어둠 속 먹이를 찾아요|15
+수리부엉이|pounce|소리 없이 덮치기|소리 없이 날아 덮쳐요|12
+올빼미|echo|소리로 먹이 찾기|귀로 숨은 먹이 위치를 알아내요|15
+검독수리|dive|내리꽂기|높은 곳에서 내리꽂아 낚아채요|12
+매|dive|급강하|시속 390km로 내리꽂아요|10
+딱따구리|echo|나무 두드려 벌레 찾기|나무를 두드려 속에 숨은 벌레를 찾아요|12
+꿩|leap|푸드덕 날아오르기|갑자기 날아올라 도망쳐요|12
+박새|call|경고 울음|천적을 알려요|12
+어치|call|흉내 경고|다른 새 소리를 흉내 내며 알려요|12
+까마귀|tool|도구 쓰기|나뭇가지로 먹이를 꺼내 먹어요|25
+꿀벌|venom|벌침|침으로 쏴요|15
+개미|swarm|개미 떼|함께 몰려 싸워요|15
+딱정벌레|curl|딱딱한 껍질|껍질 속에 몸을 숨겨요|15
+나방|camo|나무껍질 위장|나무껍질처럼 보여요|20
+지렁이|dig|흙 속으로|흙 속으로 들어가요|10
+달팽이|curl|껍데기 속으로|껍데기에 쏙 들어가요|10
+호랑이|pounce|매복 덮치기|수풀에 숨었다 덮쳐요|12
+재규어|constrict|한 번에 무는 턱|가장 센 턱으로 한 번에 물어요|15
+검은표범|camo|어둠 속 숨기|어두운 털로 그늘에 숨어요|20
+오셀롯|pounce|덮치기|재빠르게 덮쳐요|12
+아나콘다|constrict|조이기|몸으로 감아 조여요|15
+보아뱀|constrict|조이기|감아서 조여요|15
+킹코브라|venom|맹독|코끼리도 쓰러뜨리는 독이에요|15
+그물무늬비단뱀|constrict|조이기|큰 동물도 감아 조여요|15
+나무뱀|venom|독니|독니로 물어요|15
+하피수리|dive|나무 사이 내리꽂기|원숭이를 낚아채요|12
+고릴라|roar|가슴 두드리기|가슴을 두드려 위협해요|25
+침팬지|tool|흰개미 낚시|나뭇가지로 흰개미를 낚아 먹어요|25
+오랑우탄|tool|나뭇가지 도구|도구로 열매를 따 먹어요|25
+긴팔원숭이|call|노래하기|큰 노래로 영역을 알리고 경고해요|15
+꼬리감는원숭이|tool|돌로 열매 깨기|돌로 딱딱한 열매를 깨 먹어요|20
+나무늘보|camo|이끼 위장|털에 자란 이끼로 숨어요|20
+맥|camo|물속에 숨기|물이나 수풀에 숨어요|20
+문착|call|개 짖는 경고|개처럼 짖어 알려요|15
+페커리|swarm|무리 방어|무리가 모여 함께 지켜요|20
+아구티|leap|껑충 도망|높이 뛰어 도망쳐요|10
+큰부리새|display|큰 부리 뽐내기|화려한 부리로 놀래켜요|15
+앵무새|call|흉내 내기|여러 소리를 흉내 내 알려요|12
+공작|display|꼬리 펼치기|화려한 꼬리깃을 펼쳐 뽐내요|15
+과일박쥐|call|무리 울음|시끄럽게 울어 알려요|12
+카멜레온|camo|몸 색 바꾸기|주변 색으로 몸 색을 바꿔요|15
+독화살개구리|venom|독 피부|피부의 독으로 천적을 막아요|15
+이구아나|leap|물로 뛰어들기|높은 곳에서 물로 뛰어들어요|12
+모르포나비|display|번쩍이는 날개|파란 날개를 번쩍여 놀래켜요|12
+잎꾼개미|swarm|잎 나르기 행렬|함께 잎을 나르며 몰려가요|15
+대벌레|camo|나뭇가지 흉내|나뭇가지처럼 꼼짝 안 해요|15
+사막여우|dig|모래 굴 파기|모래를 파고 숨어요|15
+낙타|spray|침 뱉기|위협하면 침을 뱉어요|20
+오릭스|charge|긴 뿔 돌진|칼 같은 뿔로 들이받아요|20
+모래가젤|leap|껑충 도망|높이 뛰어 도망쳐요|12
+코요테|roar|울부짖기|울부짖어 무리를 불러요|25
+방울뱀|call|방울 소리 경고|꼬리 방울을 흔들어 다가오지 말라고 해요|15
+힐라몬스터|venom|독니|독이 있는 침으로 물어요|15
+전갈|venom|독침|꼬리 독침으로 찔러요|15
+타란툴라|spray|가시털 날리기|배의 털을 날려 따갑게 해요|15
+거저리|spray|냄새 뿜기|물구나무서서 고약한 액체를 뿜어요|15
+사막메뚜기|swarm|메뚜기 떼|수많은 메뚜기가 함께 날아요|20
+캥거루쥐|kick|모래 차기|뱀 얼굴에 모래를 차요|12
+사막쥐|dig|굴로 숨기|굴에 숨어요|15
+잭토끼|leap|지그재그 도망|크게 뛰어 도망쳐요|10
+도깨비도마뱀|curl|가시 세우기|가시투성이 몸으로 막아요|15
+수확개미|swarm|개미 떼|함께 몰려요|15
+모래도마뱀|dig|모래 속 헤엄|모래 속으로 파고들어요|12
+메추라기|leap|푸드덕 날아오르기|갑자기 날아올라요|12
+로드러너|pounce|뱀 잡기|재빠르게 달려들어 뱀도 잡아요|12
+해리스매|dive|무리 사냥|함께 몰아 내리꽂아요|12
+북극곰|pounce|얼음 위 덮치기|숨 쉬러 올라온 물범을 덮쳐요|15
+북극늑대|roar|하울링|울부짖어 무리를 모아요|25
+북극여우|pounce|눈 속 다이빙|눈 아래 레밍 소리를 듣고 머리부터 뛰어들어요|10
+흰올빼미|pounce|덮치기|소리 없이 덮쳐요|12
+흰매|dive|급강하|빠르게 내리꽂아요|10
+순록|swarm|대이동 떼짓기|큰 무리로 움직여요|25
+사향소|swarm|둥근 방어진|어른들이 둥글게 서서 새끼를 지켜요|25
+눈산양|leap|절벽 뛰기|가파른 절벽을 뛰어올라요|12
+북극토끼|camo|하얀 털 위장|눈과 같은 색으로 숨어요|15
+레밍|swarm|레밍 떼|떼로 몰려다녀요|20
+뇌조|camo|눈 속 위장|하얀 깃털로 숨어요|15
+바다표범|dig|얼음 구멍 숨기|얼음 아래로 숨어요|15
+바다코끼리|charge|엄니 돌진|긴 엄니로 밀어붙여요|20
+황제펭귄|swarm|허들|서로 모여 추위와 천적을 이겨요|25
+아델리펭귄|leap|물 밖으로 튀어오르기|물에서 얼음 위로 튀어올라요|10
+표범물범|pounce|물속 매복|얼음 가장자리에서 덮쳐요|12
+퍼핀|dive|잠수 사냥|물속으로 뛰어들어 물고기를 잡아요|10
+북방족제비|pounce|번개 물기|재빠르게 물어요|10
+설표|pounce|절벽 위 덮치기|높은 곳에서 덮쳐요|12
+야크|charge|들이받기|큰 뿔로 들이받아요|20
+하마|roar|하품 위협|큰 입을 쩍 벌려 위협해요|20
+나일악어|constrict|죽음의 회전|물고 빙글빙글 돌아 큰 먹잇감도 잡아요|15
+카이만|constrict|죽음의 회전|물고 빙글빙글 돌아요|15
+카피바라|camo|물속에 숨기|코만 내놓고 물속에 숨어요|20
+비버|call|꼬리로 물 치기|꼬리로 물을 쳐서 위험을 알려요|15
+수달|pounce|물속 사냥|물속으로 빠르게 덮쳐요|10
+밍크|pounce|덮치기|재빠르게 덮쳐요|10
+물총새|dive|총알 다이빙|총알처럼 물속에 뛰어들어 물고기를 잡아요|8
+흰머리수리|dive|내리꽂기|물 위로 내리꽂아 물고기를 낚아채요|12
+물수리|dive|발부터 다이빙|발부터 물에 뛰어들어 물고기를 잡아요|10
+청둥오리|leap|물 박차고 날기|물을 박차고 날아올라요|10
+연어|leap|폭포 거슬러 뛰어오르기|물 위로 높이 뛰어올라요|10
+송어|leap|뛰어오르기|물 위로 뛰어올라요|10
+메기|echo|수염으로 찾기|수염으로 흙탕물 속 먹이를 찾아요|15
+피라냐|swarm|떼 공격|떼로 몰려 공격해요|15
+송사리|swarm|송사리 떼|떼로 헤엄쳐요|15
+가재|kick|집게|집게로 꽉 집어요|12
+황소개구리|tongue|혀 낚아채기|끈끈한 혀로 낚아채요|6
+잠자리|pounce|공중 낚아채기|날면서 벌레를 낚아채요|8
+모기|venom|피 빨기|침으로 찔러 피를 빨아요|10
+두루미|display|짝 춤|날개를 펼치고 춤을 춰요|15
+왜가리|pounce|부리 찌르기|긴 부리로 번개처럼 찔러요|10
+홍학|display|무리 춤|무리가 함께 행진하며 춤춰요|15
+자라|dig|진흙 속 숨기|진흙에 몸을 묻어요|15
+도롱뇽|camo|낙엽 위장|낙엽 사이에 숨어요|15
+미꾸라지|dig|진흙 속으로|진흙에 파고들어요|12
+우렁이|curl|뚜껑 닫기|껍데기 뚜껑을 닫아요|12
+유혈목이|venom|독니와 목 독샘|두꺼비 독을 모아 목에서 독을 내요|15
+사향쥐|dig|굴로 숨기|물가 굴로 숨어요|15
+펠리컨|dive|부리 주머니로 퍼 담기|물속으로 뛰어들어 부리 주머니로 물고기를 퍼 담아요|12
+범고래|charge|파도 밀어내기|함께 헤엄쳐 큰 파도로 먹잇감을 밀어내요|20
+백상아리|pounce|아래에서 솟구치기|아래에서 솟구쳐 덮쳐요|12
+귀상어|echo|전기 감각|모래 속에 숨은 먹이의 전기를 느껴요|15
+고래상어|net|빨아들이기|큰 입으로 작은 물고기와 크릴을 빨아들여요|20
+흰긴수염고래|net|크게 한 입|크릴을 한입에 엄청 삼켜요|20
+혹등고래|net|거품 그물|거품으로 물고기를 가두고 한입에 먹어요|20
+향유고래|echo|딸깍 소리|세상에서 가장 큰 소리로 먹이를 찾아요|15
+돌고래|echo|반향정위|딸깍 소리 메아리로 먹이를 찾아요|12
+물개|leap|물 위 점프|물 위로 튀어올라 도망쳐요|10
+참치|charge|전속력 돌진|빠르게 돌진해요|15
+청어|swarm|물고기 떼|큰 떼를 지어 천적을 헷갈리게 해요|15
+고등어|swarm|물고기 떼|떼를 지어 헤엄쳐요|15
+멸치|swarm|물고기 공|공처럼 뭉쳐 천적을 헷갈리게 해요|12
+대구|swarm|떼짓기|떼로 다녀요|15
+오징어|spray|먹물 뿜기|먹물을 뿜고 도망쳐요|15
+대왕오징어|constrict|빨판 촉수|긴 촉수로 감아요|15
+문어|spray|먹물과 위장|먹물을 뿜고 몸 색을 바꿔 숨어요|15
+게|kick|집게|집게로 꽉 집어요|12
+조개|curl|껍데기 닫기|껍데기를 꽉 닫아요|10
+바다거북|curl|등딱지 숨기|등딱지로 몸을 지켜요|15
+해파리|venom|독침 촉수|촉수의 독침으로 쏴요|12
+가오리|venom|꼬리 독침|꼬리 독침으로 찔러요|15
+크릴|swarm|크릴 떼|엄청난 떼로 몰려다녀요|12
+성게|curl|가시 세우기|가시로 몸을 지켜요|10
+해달|tool|돌로 조개 깨기|배 위에 돌을 놓고 조개를 깨 먹어요|20
+두꺼비|venom|독샘|눈 뒤 독샘으로 천적을 막아요|15
+물총고기|shoot|물총 쏘기|입으로 물줄기를 쏴서 물 밖 나뭇잎·공중의 벌레를 떨어뜨려 잡아요|5`;
+const ABILITY = {};
+ABILITY_TEXT.trim().split('\n').forEach(l => { const [n, type, name, desc, cd] = l.split('|'); ABILITY[n] = { type, name, desc, cd: +cd }; });
+const AB_EMOJI = { roar: '📣', spray: '💨', kick: '🦵', charge: '💥', pounce: '🐾', leap: '🦘', dive: '🎯', echo: '📡', call: '📢', display: '✨',
+  venom: '☠️', constrict: '🌀', curl: '🛡️', camo: '🫥', dig: '⛏️', tool: '🪨', tongue: '👅', glide: '🪂', swarm: '🐟', net: '🫧', roll: '🟤', shoot: '💦' };
+// 물총 쏘기: 물속에서 물 밖(공중·물가) 먹이도 맞혀 떨어뜨릴 수 있는 거리
+const SHOOT_RANGE = 10;
+const isShooter = i => abilityOf(i.sp).type === 'shoot';
+const abilityOf = sp => ABILITY[sp.name] || { type: 'leap', name: '도망치기', desc: '재빨리 뛰어 도망쳐요', cd: 12 };
+const DEFENSIVE = new Set(['roar', 'spray', 'kick', 'charge', 'curl', 'camo', 'dig', 'leap', 'swarm', 'call', 'display', 'venom', 'glide']);
+const SPRAY_COLOR = { 스컹크: '#c8d870', 오징어: '#141414', 문어: '#141414', 코브라: '#a0d040', 낙타: '#eee8d8', 타란툴라: '#8a6a4a', 거저리: '#d0c070', 코끼리: '#9fd0ff' };
+
+// ---- 특기 효과 그림 (잠깐 나타났다 사라짐) ----
+const fxList = [];
+function fxAdd(obj, dur, upd) { scene.add(obj); fxList.push({ obj, t: 0, dur, upd }); }
+function updateFx(dt) {
+  for (let k = fxList.length - 1; k >= 0; k--) {
+    const f = fxList[k];
+    f.t += dt;
+    const p = f.t / f.dur;
+    if (p >= 1) {
+      scene.remove(f.obj);
+      f.obj.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+      fxList.splice(k, 1);
+      continue;
+    }
+    f.upd(f.obj, p);
+  }
+}
+const fxMat = (color, op = 0.6) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false });
+function fxRing(x, y, z, color, r) {
+  const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 6, 40).rotateX(Math.PI / 2), fxMat(color, 0.8));
+  m.position.set(x, y + 0.4, z);
+  fxAdd(m, 1, (o, p) => { o.scale.setScalar(0.5 + p * r); o.material.opacity = 0.8 * (1 - p); });
+}
+function fxCloud(x, y, z, color, size, dur = 3) {
+  const g = new THREE.Group();
+  g.position.set(x, y, z);
+  for (let k = 0; k < 10; k++) {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), fxMat(color, 0.55));
+    m.position.set((Math.random() - 0.5) * size, Math.random() * size * 0.5, (Math.random() - 0.5) * size);
+    g.add(m);
+  }
+  fxAdd(g, dur, (o, p) => o.children.forEach(m => { m.scale.setScalar(size * (0.2 + p * 0.35)); m.material.opacity = 0.55 * (1 - p); }));
+}
+function fxSplash(x, y, z, size = 1) {
+  const g = new THREE.Group();
+  g.position.set(x, y, z);
+  for (let k = 0; k < 10; k++) {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.18 * size, 0), fxMat('#e8f6ff', 0.85));
+    m.userData.v = [(Math.random() - 0.5) * 3 * size, 4 + Math.random() * 4 * size, (Math.random() - 0.5) * 3 * size];
+    g.add(m);
+  }
+  fxAdd(g, 1.1, (o, p) => o.children.forEach(m => {
+    const [vx, vy, vz] = m.userData.v, t = p * 1.1;
+    m.position.set(vx * t, vy * t - 9 * t * t, vz * t);
+    m.material.opacity = 0.85 * (1 - p);
+  }));
+}
+function fxText(x, y, z, text, dur = 2.2) {
+  const c = document.createElement('canvas');
+  c.width = 384; c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(20,24,28,.82)'; g.fillRect(4, 8, 376, 48);
+  g.font = 'bold 26px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffe08a';
+  g.fillText(text, 192, 33);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false, depthWrite: false }));
+  s.scale.set(3.6, 0.6, 1);
+  s.position.set(x, y, z);
+  fxAdd(s, dur, (o, p) => { o.position.y = y + p * 1.2; o.material.opacity = p > 0.7 ? (1 - p) / 0.3 : 1; });
+}
+// 초음파·경고로 찾아낸 동물 위에 표시 (플레이어만 봄)
+const marks = [];
+function markAgent(b, color, secs) {
+  if (marks.length > 40 || marks.some(m => m.b === b)) return;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = color; g.beginPath(); g.moveTo(8, 10); g.lineTo(56, 10); g.lineTo(32, 54); g.closePath(); g.fill();
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, depthWrite: false }));
+  s.scale.set(1.1, 1.1, 1);
+  scene.add(s);
+  marks.push({ b, s, t: secs });
+}
+function updateMarks(dt) {
+  for (let k = marks.length - 1; k >= 0; k--) {
+    const m = marks[k];
+    m.t -= dt;
+    if (m.t <= 0 || m.b.dead) { scene.remove(m.s); m.s.material.map.dispose(); m.s.material.dispose(); marks.splice(k, 1); continue; }
+    m.s.position.set(m.b.x, m.b.y + ageScale(m.b) * 1.6 + 1.2 + Math.sin(performance.now() / 200) * 0.15, m.b.z);
+  }
+}
+
+// ---- 특기 효과 (AI·플레이어 같이 씀) ----
+// u = { x, y, z, yaw, s, sp, info, agent(AI면), player(플레이어면) }
+const agentUser = a => ({ x: a.x, y: a.y, z: a.z, yaw: a.yaw, s: ageScale(a), sp: a.info.sp, info: a.info, agent: a });
+const playerUser = () => ({ x: P.x, y: P.y, z: P.z, yaw: P.yaw, s: PL.s, sp: PL.sp, info: PL.info, player: true });
+function eachNear(u, r, fn) {
+  nearby(u.x, u.z, r, b => {
+    if (b === u.agent || b.dead) return;
+    const d = Math.hypot(b.x - u.x, b.z - u.z);
+    if (d < r) fn(b, d);
+  });
+}
+const isFoeOf = (b, sp) => b.info.preySet.has(sp.name);
+function scare(b, u, secs, confuse = 0) {
+  b.state = 'flee'; b.target = { x: u.x, z: u.z }; b.timer = secs; b.altT = b.info.alt;
+  if (confuse) b.confT = Math.max(b.confT || 0, confuse);
+}
+function stun(b, secs) { b.stunT = Math.max(b.stunT || 0, secs); b.state = 'idle'; b.timer = secs; b.target = null; b.cool = Math.max(b.cool || 0, secs + 6); }
+// 플레이어가 AI 특기에 맞았을 때
+function playerHurt(dmg, who, cause = '공격') {
+  if (P.dead || P.curlT > 0) return;
+  P.hp -= dmg; P.hitT = 0.35;
+  popText(`-${Math.round(dmg)} ❤️`, 'hurt'); sfx('hurt');
+  if (P.hp <= 0) playerDie(cause, who);
+}
+// AI·플레이어 공통 효과. 쓸 수 없는 상황이면 false
+function abilityEffect(u, A) {
+  const s = u.s, sp = u.sp;
+  switch (A.type) {
+    case 'roar': {        // 주변의 작거나 비슷한 동물, 나를 노리던 천적이 물러남
+      const r = 15 + s * 12;
+      eachNear(u, r, b => { if (ageScale(b) <= s * 1.3 || (b.state === 'hunt' && (b.target === u.agent || (u.player && b.target === P)))) scare(b, u, 5, 8); });
+      fxRing(u.x, u.y, u.z, '#ffcc66', r);
+      return true;
+    }
+    case 'spray': {       // 냄새·먹물·독·침: 천적이 질려서 도망
+      const r = 8 + s * 5, col = SPRAY_COLOR[sp.name] || '#d8d0a0';
+      if (sp.name === '코끼리') {
+        if (u.player && !waterNear()) { showToast('물가에서 쓸 수 있어요', '코로 물을 빨아들여야 해요'); return false; }
+        if (u.player) { P.water = 100; popText('+💧 물 뿜기'); }
+      }
+      eachNear(u, r, b => { if (isFoeOf(b, sp) || b.state === 'hunt') scare(b, u, 6, 10); });
+      if (sp.tpl === 'iv' && (sp.parts.includes('squid') || sp.parts.includes('octopus'))) { if (u.player) P.hideT = 4; else u.agent.hideT = 4; }
+      fxCloud(u.x - Math.sin(u.yaw) * s, u.y + s * 0.4, u.z - Math.cos(u.yaw) * s, col, 2 + s * 2.5);
+      return true;
+    }
+    case 'kick': {        // 가장 가까운 천적(없으면 먹잇감)을 차거나 집음
+      let best = null, bd = 2.5 * s + 3;
+      eachNear(u, bd, (b, d) => { if ((isFoeOf(b, sp) || u.info.preySet.has(b.info.sp.name)) && d < bd) { bd = d; best = b; } });
+      if (best) {
+        if (isFoeOf(best, sp)) { stun(best, 4); best.confT = 12; }   // 맞은 천적은 잠깐 쓰러졌다가 한동안 사냥을 못 함
+        else if (u.player) huntBite(best, 2);
+        fxRing(best.x, best.y, best.z, '#ffffff', 2 + s);
+        return true;
+      }
+      if (!u.player && Math.hypot(P.x - u.x, P.z - u.z) < 2.5 * s + 3 && PL && PL.info.preySet.has(sp.name)) {
+        playerHurt(clamp(18 * s / PL.s, 6, 60), sp.name); return true;
+      }
+      if (u.player) showToast('너무 멀어요', '가까이 있는 동물에게 쓸 수 있어요');
+      return false;
+    }
+    case 'charge': case 'pounce': case 'leap': case 'dive': case 'glide':
+      return startDash(u, A);
+    case 'echo': {        // 초음파·냄새·전기 감각: 멀리 있는 먹이를 찾아냄
+      let n = 0;
+      eachNear(u, 90, b => { if (u.info.preySet.has(b.info.sp.name)) { n++; if (u.player) markAgent(b, '#8ee05c', 10); } });
+      if (u.player) {
+        for (const c of corpses) if (u.info.scavenges && Math.hypot(c.x - u.x, c.z - u.z) < 90) n++;
+        showToast(`${AB_EMOJI.echo} 먹이 ${n}마리를 찾았어요`, '초록 화살표를 따라가 보세요');
+      } else u.agent.sightBoostT = 10;
+      fxRing(u.x, u.y, u.z, '#8ee05c', 25);
+      return true;
+    }
+    case 'call': {        // 경고 울음: 같은 종이 함께 도망, 플레이어는 천적 위치를 봄
+      let n = 0;
+      eachNear(u, 70, b => {
+        if (b.info.sp === sp) { const t = b; t.state = 'flee'; t.target = { x: u.x + (Math.random() - 0.5), z: u.z }; t.timer = 3; }
+        if (isFoeOf(b, sp)) { n++; if (u.player) markAgent(b, '#ff5a5a', 8); }
+      });
+      if (u.player) showToast(`${AB_EMOJI.call} 천적 ${n}마리 발견!`, n ? '빨간 화살표가 있는 쪽을 피해요' : '근처에 천적이 없어요');
+      fxRing(u.x, u.y, u.z, '#ff9a5a', 20);
+      return true;
+    }
+    case 'display': {     // 뽐내기: 천적이 포기하고, 짝짓기가 바로 가능해짐
+      eachNear(u, 25, b => { if (isFoeOf(b, sp)) { b.cool = 15; if (b.state === 'hunt') { b.state = 'wander'; b.target = null; } } });
+      if (u.player) { P.mateCd = 0; P.showOff = true; }
+      fxCloud(u.x, u.y + s, u.z, '#ffe08a', 1 + s, 1.5);
+      return true;
+    }
+    case 'venom': case 'constrict': {   // 다음 공격이 아주 강해짐 (독은 물리면 천적도 쓰러짐)
+      if (u.player) { if (A.type === 'venom') P.venomT = 10; else P.constrictT = 10; }
+      else if (A.type === 'venom') u.agent.venomT = 10; else u.agent.constrictT = 10;
+      fxCloud(u.x, u.y + s * 0.5, u.z, A.type === 'venom' ? '#9a50d0' : '#d8a050', 0.8 + s, 1.2);
+      return true;
+    }
+    case 'curl': {
+      if (u.player) P.curlT = 8; else { u.agent.curlT = 8; u.agent.state = 'idle'; u.agent.timer = 8; }
+      fxRing(u.x, u.y, u.z, '#cfcfcf', 2 + s);
+      return true;
+    }
+    case 'camo': case 'dig': {
+      if (u.player) P.hideT = 12; else { u.agent.hideT = 12; u.agent.state = 'idle'; u.agent.timer = 6; }
+      if (A.type === 'dig') fxCloud(u.x, u.y, u.z, '#8a6a42', 1 + s, 1.2);
+      return true;
+    }
+    case 'tool': case 'roll': {
+      if (u.player) {
+        if (P.food > 95) { showToast('배가 불러요', '배고플 때 써요'); return false; }
+        eat(35);
+      } else u.agent.hunger = Math.max(0, u.agent.hunger - 0.5);
+      if (A.type === 'roll') fxRoll(u); else fxCloud(u.x, u.y + s * 0.5, u.z, '#a08a6a', 0.6 + s * 0.5, 1);
+      return true;
+    }
+    case 'tongue': {      // 긴 혀: 몇 m 떨어진 작은 먹이를 바로 잡아먹음
+      let best = null, bd = 6 + s * 2;
+      eachNear(u, bd, (b, d) => { if (u.info.preySet.has(b.info.sp.name) && ageScale(b) <= s * 2 && d < bd) { bd = d; best = b; } });
+      if (!best) {
+        if (u.player && u.info.grazes) { eat(25); LIFE.grazes++; }   // 개미핥기: 개미·흰개미 핥기
+        else if (u.player) { showToast('혀가 닿는 먹이가 없어요', '조금 더 가까이 가요'); return false; }
+      } else if (u.player) huntBite(best, 99);
+      else kill(u.agent, best);
+      if (u.player && PL.rig.tongue) PL.rig.tongueT = 0.25;
+      return true;
+    }
+    case 'swarm': {       // 떼짓기: 같은 종이 모이고, 천적이 헷갈려 놓침
+      eachNear(u, 40, b => {
+        if (b.info.sp === sp) { b.swarmT = 10; if (u.player) { b.yaw = Math.atan2(u.x - b.x, u.z - b.z); b.state = 'wander'; } }
+        if (b.state === 'hunt' && Math.random() < 0.6) { b.state = 'wander'; b.target = null; b.cool = 6; }
+      });
+      if (u.player) P.swarmT = 10; else u.agent.swarmT = 10;
+      fxRing(u.x, u.y, u.z, '#9fd0ff', 18);
+      return true;
+    }
+    case 'shoot': {       // 물총고기: 물줄기를 쏴서 물 밖 벌레를 떨어뜨려 잡음
+      let best = null, bd = SHOOT_RANGE;
+      eachNear(u, bd, (b, d) => { if (u.info.preySet.has(b.info.sp.name) && d < bd) { bd = d; best = b; } });
+      if (!best && u.agent && u.target && u.target !== P) best = u.target;
+      const tx = best ? best.x : u.x + Math.sin(u.yaw) * 6, tz = best ? best.z : u.z + Math.cos(u.yaw) * 6;
+      const ty = best ? best.y + ageScale(best) * 0.5 : Math.max(heightAt(tx, tz), 0) + 1.5;
+      fxJet(u.x + Math.sin(u.yaw) * s * 0.6, Math.max(u.y, -0.3), u.z + Math.cos(u.yaw) * s * 0.6, tx, ty, tz);
+      if (!best) { if (u.player) showToast('💦 물총을 쐈어요', `${SHOOT_RANGE}m 안의 벌레를 노려 봐요`); return true; }
+      if (u.player) {
+        if (best.curlT > 0 || best.venomT > 0) return true;
+        die(best, 'killed');                        // 물에 떨어진 벌레를 바로 받아먹음
+        LIFE.hunts++; LIFE.shots = (LIFE.shots || 0) + 1;
+        LIFE.huntsBy[best.info.sp.name] = (LIFE.huntsBy[best.info.sp.name] || 0) + 1;
+        eat(30); sfx('hunt');
+        logEvent(`💦 물총으로 ${jo(best.info.sp.name, '을', '를')} 맞혀 떨어뜨렸어요!`);
+      } else kill(u.agent, best);
+      fxSplash(best.x, Math.max(best.y, 0), best.z, 0.4);
+      return true;
+    }
+    case 'net': {         // 거품 그물·크게 한 입: 주변 작은 먹이를 한꺼번에
+      let n = 0;
+      eachNear(u, 10 + s * 3, b => { if (n < 6 && u.info.preySet.has(b.info.sp.name) && ageScale(b) < s) { n++; if (u.player) { die(b, 'killed'); LIFE.hunts++; } else kill(u.agent, b); } });
+      if (u.player) { eat(15 + n * 15); showToast(`${AB_EMOJI.net} ${n ? `${n}마리를 한입에!` : '플랑크톤을 한입에!'}`, A.desc); }
+      fxRing(u.x, u.y, u.z, '#e8f6ff', 10 + s * 3);
+      fxSplash(u.x, Math.max(u.y, -0.2), u.z, 1 + s * 0.3);
+      return true;
+    }
+  }
+  return false;
+}
+function fxJet(x0, y0, z0, x1, y1, z1) {   // 물총: 입에서 목표까지 휘어지는 물줄기
+  const g = new THREE.Group(), n = 14;
+  for (let k = 0; k < n; k++) g.add(new THREE.Mesh(new THREE.IcosahedronGeometry(0.09, 0), fxMat('#cfeeff', 0.9)));
+  fxAdd(g, 0.7, (o, p) => o.children.forEach((m, k) => {
+    const f = Math.min(1, p * 2.2 - k / n * 0.8);
+    if (f <= 0) { m.visible = false; return; }
+    m.visible = true;
+    m.position.set(x0 + (x1 - x0) * f, y0 + (y1 - y0) * f + Math.sin(f * Math.PI) * 1.2, z0 + (z1 - z0) * f);
+    m.material.opacity = 0.9 * (1 - p);
+  }));
+}
+function fxRoll(u) {   // 쇠똥구리: 똥 공이 앞으로 굴러감
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.35 * Math.max(0.5, u.s), 1), new THREE.MeshStandardMaterial({ color: '#6a4a2a', flatShading: true }));
+  const x0 = u.x, z0 = u.z, dx = Math.sin(u.yaw), dz = Math.cos(u.yaw);
+  fxAdd(m, 3, (o, p) => { const x = x0 + dx * p * 4, z = z0 + dz * p * 4; o.position.set(x, heightAt(x, z) + 0.3, z); o.rotation.x += 0.15; });
+}
+// 돌진·덮치기·점프·다이빙·활공: 짧게 휙 이동
+function startDash(u, A) {
+  const s = u.s;
+  let tx = null, tz = null, target = null;
+  if (A.type === 'pounce' || A.type === 'dive') {
+    let bd = A.type === 'dive' ? 40 : 15;
+    eachNear(u, bd, (b, d) => { if (u.info.preySet.has(b.info.sp.name) && d < bd && (!u.agent || canReach(u.agent, b))) { bd = d; target = b; } });
+    if (!u.agent && u.target) target = u.target;
+    if (target) { tx = target.x; tz = target.z; }
+    else if (u.player && A.type === 'dive') { showToast('아래에 먹잇감이 없어요', '물고기나 작은 동물 가까이에서 써요'); return false; }
+  }
+  if (u.agent && u.target) { target = u.target; tx = target.x; tz = target.z; }
+  let dx = Math.sin(u.yaw), dz = Math.cos(u.yaw), dist = { charge: 14 + s * 4, pounce: 9, leap: 10 * s + 6, dive: 20, glide: 25 + s * 10 }[A.type];
+  if (tx !== null) { const d = Math.hypot(tx - u.x, tz - u.z); dx = (tx - u.x) / (d || 1); dz = (tz - u.z) / (d || 1); dist = d; }
+  if (u.agent && A.type === 'leap' && u.agent.target) { const t = u.agent.target, d = Math.hypot(u.x - t.x, u.z - t.z) || 1; dx = (u.x - t.x) / d; dz = (u.z - t.z) / d; }   // 도망 점프
+  const dur = { charge: 1.4, pounce: 0.45, leap: 0.6, dive: 0.7, glide: 3 }[A.type];
+  const dash = { t: dur, dur, vx: dx * dist / dur, vz: dz * dist / dur, type: A.type, target, arc: A.type === 'leap' ? 1.5 + s * 1.5 : A.type === 'pounce' ? 1 + s : 0 };
+  if (u.player) {
+    P.dash = dash; P.yaw = Math.atan2(dx, dz);
+    if (A.type === 'glide' || (A.type === 'leap' && PL.info.dom === 'land' && P.ground)) { P.vy = 8 + s * 3; P.ground = false; }
+    if (A.type === 'glide') P.glideT = dur;
+  } else { u.agent.dash = dash; u.agent.yaw = Math.atan2(dx, dz); }
+  if (A.type === 'dive') fxSplash(u.x, u.y, u.z, 0.5);
+  return true;
+}
+// 돌진 끝·덮치기 착지 때: 닿은 동물에게 효과
+function dashHit(u, dash) {
+  const s = u.s;
+  if (dash.type === 'charge') {
+    eachNear(u, s + 2, b => {
+      if (u.player && u.info.preySet.has(b.info.sp.name)) huntBite(b, 2);
+      else if (b !== u.agent) { stun(b, 3); scare(b, u, 5, 8); }
+    });
+    if (!u.player && PL && !P.dead && Math.hypot(P.x - u.x, P.z - u.z) < s + 2 && mode === 'world') playerHurt(clamp(22 * s / PL.s, 8, 70), u.sp.name);
+  }
+  if ((dash.type === 'pounce' || dash.type === 'dive') && dash.target === P) {     // AI가 플레이어를 덮침
+    if (!P.dead && mode === 'world' && Math.hypot(P.x - u.x, P.z - u.z) < s + PL.s + 1.5) playerHit(u.agent);
+    return;
+  }
+  if ((dash.type === 'pounce' || dash.type === 'dive') && dash.target && !dash.target.dead) {
+    const t = dash.target, r = s + ageScale(t) * 0.9 + 1.5;
+    if (Math.hypot(t.x - u.x, t.z - u.z) < r) {
+      if (u.player) huntBite(t, dash.type === 'dive' ? 99 : 2);
+      else kill(u.agent, t);
+      if (t.y < -0.2) fxSplash(t.x, -0.1, t.z, 1);
+    }
+  }
+}
+// AI가 특기를 씀 (쿨다운·화면 표시 포함)
+function aiAbility(a, extra) {
+  const A = abilityOf(a.info.sp);
+  if ((a.abCd || 0) > 0 || a.info.larva) return false;
+  const u = agentUser(a);
+  if (extra) Object.assign(u, extra);
+  if (!abilityEffect(u, A)) return false;
+  a.abCd = A.cd * (0.8 + Math.random() * 0.4);
+  if (mode === 'world' && Math.hypot(a.x - P.x, a.z - P.z) < 45) {
+    fxText(a.x, a.y + u.s * 1.8 + 0.8, a.z, `${AB_EMOJI[A.type]} ${a.info.sp.name}: ${A.name}`);
+    sfx('ability', A.type);
+  }
+  return true;
+}
+// 쫓길 때: 막는 특기를 쓸지 (true 면 도망 대신 그 행동)
+function aiDefend(a, threat) {
+  const A = abilityOf(a.info.sp);
+  if (!DEFENSIVE.has(A.type) || (a.abCd || 0) > 0 || Math.random() > 0.5) return false;
+  const tS = threat === P ? PL.s : ageScale(threat), d = Math.hypot(threat.x - a.x, threat.z - a.z), s = ageScale(a);
+  if (A.type === 'kick' && d > 2.5 * s + 3) return false;
+  if ((A.type === 'charge' || A.type === 'roar') && s < tS * 0.7) return false;
+  a.target = threat;
+  if (!aiAbility(a, A.type === 'charge' ? { target: threat } : null)) return false;
+  return ['curl', 'camo', 'dig', 'charge', 'leap', 'glide', 'display'].includes(A.type);
+}
+// 매 프레임: AI 특기 상태 시간 줄이기 + 돌진 이동
+function tickAbilities(a, dt) {
+  for (const k of ['abCd', 'stunT', 'confT', 'hideT', 'curlT', 'venomT', 'constrictT', 'swarmT', 'sightBoostT']) if (a[k] > 0) a[k] -= dt;
+  const D = a.dash;
+  if (!D) return false;
+  D.t -= dt;
+  const nx = a.x + D.vx * dt, nz = a.z + D.vz * dt;
+  if (validPos(a.info, nx, nz)) { a.x = nx; a.z = nz; }
+  a.hop = D.arc ? Math.sin((1 - D.t / D.dur) * Math.PI) * D.arc : 0;
+  if (D.t <= 0) { a.dash = null; a.hop = 0; dashHit(agentUser(a), D); }
+  a.y += (groundY(a) - a.y) * Math.min(1, dt * 10);
+  return true;
+}
+// 플레이어가 F 키로 특기 사용
+function playerAbility() {
+  if (!PL || P.dead || P.action || P.dash) return;
+  const A = abilityOf(PL.sp);
+  if (PL.info.larva) return showToast('아직 올챙이예요', '개구리가 되면 특기를 쓸 수 있어요');
+  if (P.curlT > 0 && A.type === 'curl') { P.curlT = 0; return; }     // 다시 누르면 몸 펴기
+  if (P.abCd > 0) return showToast(`${AB_EMOJI[A.type]} ${A.name}`, `${Math.ceil(P.abCd)}초 뒤에 다시 쓸 수 있어요`);
+  if (!abilityEffect(playerUser(), A)) return;
+  P.abCd = A.cd;
+  LIFE.abilities = (LIFE.abilities || 0) + 1;
+  popText(`${AB_EMOJI[A.type]} ${A.name}!`, 'mission');
+  sfx('ability', A.type);
+}
+// 플레이어의 사냥 한 번 물기 (mult: 특기로 강해진 정도, 99 = 한 번에)
+function huntBite(b, mult = 1) {
+  const ts = ageScale(b);
+  if (b.curlT > 0) { popText('🛡️ 딱딱해서 못 물어요!', 'hurt'); P.hp -= 3; return; }
+  if (b.venomT > 0) { popText('☠️ 독에 쏘였어요!', 'hurt'); playerHurt(15, b.info.sp.name, '독'); b.venomT = 0; return; }
+  const m = mult * (P.venomT > 0 ? 3 : 1) * (P.constrictT > 0 ? 4 : 1);
+  if (P.venomT > 0 || P.constrictT > 0) { P.venomT = P.constrictT = 0; }
+  b.hp = (b.hp ?? 1) - clamp(PL.s / ts * 0.6, 0.15, 1) * m;
+  sfx('bite');
+  if (b.hp > 0) {
+    popText('콱!', 'bite');
+    if (b.state !== 'flee') { b.state = 'flee'; b.target = P; b.timer = 4; }
+    return;
+  }
+  die(b, 'killed');
+  LIFE.hunts++;
+  LIFE.huntsBy[b.info.sp.name] = (LIFE.huntsBy[b.info.sp.name] || 0) + 1;
+  if (isNight()) LIFE.nightHunts++;
+  eat(40 + 60 * Math.min(1, ts / PL.s));
+  sfx('hunt');
+  logEvent(`🍖 내가 ${jo(b.info.sp.name, '을', '를')} 사냥했어요! +40`);
+}
+// 위장·몸 말기 중인 플레이어 모델 모습
+const ghostCache = {};
+function setGhost(model, on) {
+  model.traverse(o => {
+    if (!o.isMesh) return;
+    if (on && !o.userData.mat0) {
+      o.userData.mat0 = o.material;
+      const key = o.material.color.getHexString();
+      o.material = ghostCache[key] || (ghostCache[key] = new THREE.MeshStandardMaterial({ color: o.material.color, flatShading: true, transparent: true, opacity: 0.3, depthWrite: false }));
+    } else if (!on && o.userData.mat0) { o.material = o.userData.mat0; o.userData.mat0 = null; }
+  });
 }
 
 // ================= 입장 룰렛 =================
@@ -2793,6 +3531,8 @@ function showResult(sp) {
   rInfo.innerHTML = `
     <div class="rrow"><b>🍖 먹을 수 있는 것</b><div class="chips">${chipList(sp.prey)}</div></div>
     <div class="rrow"><b>⚠️ 조심할 천적</b><div class="chips">${sp.pred.length ? chipList(sp.pred) : '<span class="chip none">없어요! 👑</span>'}</div></div>
+    <div class="rrow"><b>${AB_EMOJI[abilityOf(sp).type]} 특기: ${abilityOf(sp).name} <span style="font-weight:400;color:var(--hud-sub)">(F 키)</span></b><div class="rhelp" style="margin:0">${abilityOf(sp).desc}</div></div>
+    <div class="rrow"><b>🏃 실제 속도</b><div class="rhelp" style="margin:0">${speedText(i)}</div></div>
     <div class="rrow"><b>🎯 이번 생 점수</b><div class="rhelp" style="margin:0">살아남은 1초마다 ${(10 * survivalMult(sp)).toFixed(0)}점 (천적이 많을수록 높아요) · 사냥 +40 · 새끼 +150 · 미션 +200</div></div>
     <div class="rhelp">${DOM_HELP[i.dom]}</div>
     ${dexMap()[sp.name] ? `<div class="rhelp">📖 ${dexMap()[sp.name].plays + 1}번째 삶 · 내 최고 ${dexMap()[sp.name].best.toLocaleString()}점</div>` : '<div class="rhelp new">📖 처음 살아보는 동물이에요! 도감에 등록돼요</div>'}`;
@@ -2840,6 +3580,7 @@ const SPECIAL_MISSIONS = {
   올빼미: () => M_('밤에 사냥하기', 1, () => LIFE.nightHunts),
   흰올빼미: () => M_('밤에 사냥하기', 1, () => LIFE.nightHunts),
   두꺼비: () => M_('밤에 벌레 사냥하기', 1, () => LIFE.nightHunts),
+  물총고기: () => M_('물총으로 벌레 3마리 떨어뜨리기', 3, () => LIFE.shots || 0),
 };
 function makeMissions(sp) {
   const i = SPI[sp.name], list = [M_('3분 동안 살아남기', 180, () => LIFE.secs)];
@@ -2935,6 +3676,7 @@ const LAY_TEXT = {
 function finishMating(mate) {
   if (eggPlan(PL.sp)) {
     const c = layEggs(PL.info, P.x, P.z, true);
+    if (c && P.showOff) { c.count = c.total = Math.round(c.count * 1.5); refreshEggLabel(c); P.showOff = false; popText('✨ 뽐낸 덕분에 알이 더 많아요!'); }
     if (!c) return showToast('알을 낳지 못했어요', '알 낳을 곳이 없어요');
     LIFE.babies++; P.food -= 20; P.mateCd = 60; mate.breedCd = 90;
     popText(`${LAY_TEXT[c.place](c.count.toLocaleString(), PL.sp)} +150`, 'mission');
@@ -2942,7 +3684,8 @@ function finishMating(mate) {
     sfx('birth');
     return;
   }
-  const n = PL.info.sp.diet === '초식' ? 2 : 1;
+  const n = (PL.info.sp.diet === '초식' ? 2 : 1) + (P.showOff ? 1 : 0);   // 뽐내기(공작 꼬리 등) 뒤엔 한 마리 더
+  P.showOff = false;
   for (let k = 0; k < n && agents.length < MAX_AGENTS + 50; k++) addAgent(PL.info, P.x + (Math.random() - 0.5) * 2, P.z + (Math.random() - 0.5) * 2, 0);
   LIFE.babies++; P.food -= 20; P.mateCd = 60; mate.breedCd = 90;
   popText(`💕 새끼 ${n}마리가 태어났어요! +150`, 'mission');
@@ -3056,6 +3799,23 @@ function sfx(name, arg) {
     case 'grow': [67, 71, 74, 79].forEach((n, k) => tone(NOTE(n), 0.3, 'sine', 0.2, k * 0.1)); break;
     case 'birth': for (let k = 0; k < 6; k++) tone(NOTE(84 + [0, 4, 7, 12, 7, 4][k]), 0.18, 'sine', 0.12, k * 0.06); break;
     case 'hunt': [60, 67].forEach((n, k) => tone(NOTE(n), 0.2, 'square', 0.1, k * 0.08)); break;
+    case 'ability':   // 특기 소리
+      switch (arg) {
+        case 'roar': tone(110, 0.8, 'sawtooth', 0.22, 0, SND.fx, 55); noiseHit(0.7, 0.3, 300); break;
+        case 'spray': case 'net': noiseHit(0.9, 0.35, arg === 'net' ? 500 : 2200); break;
+        case 'kick': case 'charge': tone(90, 0.2, 'square', 0.25, 0, SND.fx, 45); noiseHit(0.15, 0.5, 700); break;
+        case 'pounce': case 'leap': case 'dive': case 'glide': noiseHit(0.35, 0.3, 1600, 0, SND.fx, 'highpass'); tone(500, 0.25, 'sine', 0.08, 0, SND.fx, 1400); break;
+        case 'echo': for (let k = 0; k < 6; k++) tone(3200, 0.03, 'square', 0.05, k * 0.08); break;
+        case 'call': for (let k = 0; k < 3; k++) tone(1400 + k * 200, 0.12, 'triangle', 0.12, k * 0.15); break;
+        case 'display': [72, 76, 79, 84, 88].forEach((n, k) => tone(NOTE(n), 0.25, 'sine', 0.1, k * 0.06)); break;
+        case 'venom': case 'constrict': noiseHit(0.6, 0.25, 4000); tone(220, 0.5, 'sawtooth', 0.06, 0, SND.fx, 180); break;
+        case 'curl': case 'camo': case 'dig': tone(300, 0.3, 'sine', 0.12, 0, SND.fx, 150); noiseHit(0.3, 0.2, 400); break;
+        case 'tool': case 'roll': for (let k = 0; k < 3; k++) noiseHit(0.06, 0.4, 1200, k * 0.18); break;
+        case 'tongue': tone(900, 0.12, 'sine', 0.12, 0, SND.fx, 300); break;
+        case 'shoot': noiseHit(0.25, 0.4, 3000, 0, SND.fx, 'highpass'); tone(1200, 0.08, 'sine', 0.1, 0.2, SND.fx, 600); break;
+        case 'swarm': for (let k = 0; k < 8; k++) tone(180 + Math.random() * 60, 0.08, 'sawtooth', 0.04, k * 0.05); break;
+      }
+      break;
   }
 }
 // 배경음악: 낮엔 밝은 5음계, 밤엔 낮고 느린 단조, 쫓기면 북소리가 빨라짐
@@ -3294,7 +4054,8 @@ function update(dt) {
   // 입력 → 카메라 기준 이동 방향 (풀 뜯는 중엔 멈춤)
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + joy.x;
   let iz = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) - joy.y;
-  if (P.action) ix = iz = 0;
+  for (const k of ['abCd', 'hideT', 'curlT', 'venomT', 'constrictT', 'swarmT', 'glideT']) if (P[k] > 0) P[k] -= dt;
+  if (P.action || P.curlT > 0 || P.dash) ix = iz = 0;       // 몸 말기·돌진 중엔 조작 안 됨
   const il = Math.hypot(ix, iz);
   if (il > 1) { ix /= il; iz /= il; }
   let mx, mz;
@@ -3313,10 +4074,14 @@ function update(dt) {
   P.swim = (dom === 'land' || dom === 'amphi') && h0 < -0.45 * s - 0.3;
   P.flying = dom === 'air' && P.alt > 0.4;
   // 속도: 그 동물의 AI 속도보다 조금 빠르게 (최소 속도는 보장)
-  let walk = Math.max(2.5, i.walk * 1.25), runS = Math.max(4, i.run * 1.2);
-  if (dom === 'air' && !P.flying) { walk = Math.max(1.5, walk * 0.25); runS = walk * 1.6; }   // 새는 땅에선 느리게
-  if (P.swim) { const k = dom === 'amphi' ? 0.9 : 0.45; walk *= k; runS *= k; }
-  const speed = run ? runS : walk;
+  // 실제 속도대로 (아주 느린 동물도 조금은 움직일 수 있게 최소 속도만 보장)
+  let runS = i.run, walk = i.walk;
+  if (dom === 'air' && !P.flying) { walk = i.groundWalk * 0.5; runS = i.groundWalk; }   // 새는 땅에선 느리게 걸음
+  if (P.swim) { runS = i.swimRun; walk = i.swimRun * 0.5; }                              // 헤엄 속도
+  const diving = dom === 'air' && P.flying && down && mlen > 0.01;
+  if (diving) runS = walk = i.dive;                                                       // 매·독수리 내리꽂기
+  runS = Math.max(0.8, runS); walk = Math.max(0.5, Math.min(walk, runS));
+  const speed = (run ? runS : walk) * (0.75 + 0.25 * P.grow) * (P.hideT > 0 ? 0.5 : 1);   // 새끼는 조금 느림, 숨은 채로는 살금살금
   if (mlen > 0.01) {
     const nx = P.x + mx * speed * dt, nz = P.z + mz * speed * dt;
     if (playerCanBe(nx, nz)) { P.x = nx; P.z = nz; }
@@ -3329,10 +4094,21 @@ function update(dt) {
     }
   }
   if (cam.view === 'fp') P.yaw = cam.yaw + Math.PI;
+  // 특기 이동 (돌진·덮치기·점프·다이빙·활공)
+  if (P.dash) {
+    const D = P.dash;
+    D.t -= dt;
+    const nx = P.x + D.vx * dt, nz = P.z + D.vz * dt;
+    if (playerCanBe(nx, nz)) { P.x = nx; P.z = nz; }
+    const landJump = dom === 'land' && (D.type === 'leap' || D.type === 'glide');   // 땅 동물 점프는 진짜로 뜀
+    P.arcY = D.arc && !landJump ? Math.sin((1 - D.t / D.dur) * Math.PI) * D.arc : 0;
+    if (D.type === 'dive' && dom === 'air') P.alt = Math.max(0, P.alt * Math.max(0, D.t / D.dur));   // 내리꽂으며 내려감
+    if (D.t <= 0) { P.dash = null; P.arcY = 0; dashHit(playerUser(), D); }
+  }
   const g = heightAt(P.x, P.z);
   if (dom === 'air') {
     if (up) P.alt = Math.min(60, P.alt + 10 * dt);
-    if (down) P.alt = Math.max(0, P.alt - 14 * dt);
+    if (down) P.alt = Math.max(0, P.alt - (diving ? 30 : 14) * dt);
     P.y += (Math.max(g, 0) + P.alt - P.y) * Math.min(1, dt * 8);
   } else if (dom === 'water') {
     if (up) P.y += 5 * dt;
@@ -3344,7 +4120,8 @@ function update(dt) {
     P.y += (-0.45 * s - P.y) * Math.min(1, dt * 6); P.vy = 0; P.ground = true;
   } else {
     if (up && P.ground) { P.vy = 7 + s * 4; P.ground = false; }
-    P.vy -= 30 * dt;
+    P.vy -= (P.glideT > 0 ? 6 : 30) * dt;
+    if (P.glideT > 0) P.vy = Math.max(P.vy, -2.5);           // 활공: 천천히 내려옴
     P.y += P.vy * dt;
     if (P.y <= g) { P.y = g; P.vy = 0; P.ground = true; }
     else if (P.y - g > 0.3) P.ground = false;
@@ -3365,10 +4142,14 @@ function update(dt) {
   checkMissions(dt);
   // 몸 움직임 (물리면 잠깐 움찔, 풀 뜯을 땐 고개 숙이듯 살짝 내려감)
   const hop = PL.rig.kind === 'hop' && mlen > 0.01 && P.ground && !P.swim ? Math.abs(Math.sin(performance.now() / 1000 * 6)) * s * (PL.rig.toad ? 0.2 : 0.5) : 0;
-  PL.model.position.set(P.x, P.y - (P.action ? s * 0.08 : 0) + hop, P.z);
+  const dug = P.hideT > 0 && abilityOf(PL.sp).type === 'dig' ? -s * 0.5 : 0;   // 땅파고 숨으면 반쯤 묻힘
+  PL.model.position.set(P.x, P.y - (P.action ? s * 0.08 : 0) + hop + (P.arcY || 0) + dug, P.z);
   PL.model.rotation.y = P.yaw + (P.hitT > 0 ? Math.sin(P.hitT * 60) * 0.15 : 0);
-  PL.model.scale.setScalar(s);
-  animateRig(PL.rig, performance.now() / 1000, mlen > 0.01 || P.flying);
+  PL.model.scale.set(s, P.curlT > 0 ? s * 0.6 : s, s);                            // 몸 말기
+  if ((P.hideT > 0) !== P.ghost) { P.ghost = P.hideT > 0; setGhost(PL.model, P.ghost); }   // 위장: 반투명
+  P.animT = (P.animT || 0) + dt * animRate(i, step / Math.max(dt, 1e-4), s);
+  P.speedNow = step / Math.max(dt, 1e-4);
+  animateRig(PL.rig, P.animT, mlen > 0.01 || P.flying);
 
   // 카메라
   if (cam.view === 'fp') {
@@ -3457,6 +4238,8 @@ function loop(now) {
     if (mode === 'dead') updateDeadCam(dt);
     if (mode === 'roulette') { updateRoulette(dt); renderPreview(now / 1000); }
     updateEco(dt, now / 1000);
+    updateFx(dt);
+    updateMarks(dt);
     renderer.render(scene, camera);
   }
   updateSound(dt);

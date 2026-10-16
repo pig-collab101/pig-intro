@@ -210,6 +210,7 @@ const LOOK = `
 성게|iv|0.08|#4a2a4a|#2a1a2a|none|urchin
 해달|s4|1.2|#5a4232|#c8b8a0|none|slim,shortleg
 두꺼비|am|0.12|#7a6448|#4e3e2a|spot|toad
+물총고기|fi|0.25|#d8dcc8|#1e1e1e|stripe|deep
 `.trim();
 
 const file = `// 생태계 3D — 동물 200종 데이터
