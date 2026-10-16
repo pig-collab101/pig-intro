@@ -1474,6 +1474,8 @@ function setPlayerAnimal(sp) {
     abCd: 0, hideT: 0, curlT: 0, venomT: 0, constrictT: 0, swarmT: 0, glideT: 0, dash: null, showOff: false, ghost: false });
   resetLife();
   cam.zoom = 1;
+  agents.forEach(a => { if (a.leader === P) a.leader = null; if (a.mom === P) a.mom = null; });   // 새 삶: 예전 무리·새끼와는 남남
+  P.followerN = 0;
   setPlayerBody(info);
   missions = makeMissions(sp);
   renderMissions();
@@ -1493,7 +1495,7 @@ function setPlayerBody(info) {
   document.body.dataset.thirst = needsWater() ? '1' : '0';
   document.body.dataset.dom = info.dom;
   document.getElementById('help').innerHTML = DOM_HELP[info.dom] + '<br><b>E</b> 먹기·사냥' +
-    (info.dom === 'water' || info.dom === 'bottom' ? '' : ' · <b>Q</b> 물 마시기 (물가에서)') + ' · <b>R</b> 짝짓기·알 · <b>F</b> 특기 · <b>Z</b> 잠 · <b>X</b> 울기 · <b>K</b> 먹이그물 · <b>V</b> 시점 · <b>드래그</b> 둘러보기 · <b>휠</b> 확대';
+    (info.dom === 'water' || info.dom === 'bottom' ? '' : ' · <b>Q</b> 물 마시기 (물가에서)') + ' · <b>R</b> 짝짓기·알 · <b>F</b> 특기 · <b>Z</b> 잠 · <b>X</b> 울어서 무리 모으기(Shift+X 흩어지기) · <b>K</b> 먹이그물 · <b>V</b> 시점 · <b>드래그</b> 둘러보기 · <b>휠</b> 확대';
   document.getElementById('jump').textContent = info.dom === 'air' ? '⬆ 날기' : info.dom === 'water' ? '⬆ 위로' : '점프';
   document.getElementById('me').innerHTML = `나: <b style="color:${RARITY_COLOR[sp.rarity]}">${sp.name}${info.larva ? ' 올챙이' : ''}</b> <small>${sp.rarity} · ${DOM_TEXT[info.dom]}</small>`;
 }
@@ -1583,17 +1585,18 @@ function doAction(act) {
     eat(c.total > 30 ? 20 : 12 * n);
     sfx('eat');
     logEvent(`🥚 ${c.sp.name} 알 ${n.toLocaleString()}개를 먹었어요${c.count > 0 ? ` (남은 알 ${c.count.toLocaleString()}개)` : ' — 다 먹었어요!'}`);
+    mimic('eat');
     return;
   }
   if (act.type === 'hunt') {
     huntBite(act.target);    // 나보다 큰 먹잇감은 여러 번 물어야 함 (독·조이기 특기를 쓰면 훨씬 셈)
   } else if (act.type === 'corpse') {
     act.target.meat--; LIFE.corpses++;
-    eat(35); sfx('eat');
+    eat(35); sfx('eat'); mimic('eat');
   } else {
     P.action = { type: 'graze', t: 1.2 };
     LIFE.grazes++;
-    sfx('graze');
+    sfx('graze'); mimic('eat');
   }
 }
 function updateVitals(dt, moving, running) {
@@ -1621,7 +1624,7 @@ function updateVitals(dt, moving, running) {
     if ((keys.KeyQ || drinkPressed) && waterNear()) {
       if (P.water < 99.5 && Math.floor(P.water / 10) !== Math.floor((P.water + dt * 35) / 10)) { popText('+💧'); sfx('drink'); }
       P.water = Math.min(100, P.water + dt * 35);
-      if (!P.drinking) LIFE.drinks++;
+      if (!P.drinking) { LIFE.drinks++; mimic('drink'); }
       P.drinking = true;
     } else {
       P.drinking = false;
@@ -1706,7 +1709,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyR' && !e.repeat) P.wantMate = true;
   if (e.code === 'KeyF' && !e.repeat && mode === 'world') playerAbility();
   if (e.code === 'KeyZ' && !e.repeat && mode === 'world') togglePlayerSleep();
-  if (e.code === 'KeyX' && !e.repeat && mode === 'world') playerCall();
+  if (e.code === 'KeyX' && !e.repeat && mode === 'world') playerCall(e.shiftKey);   // Shift+X: 무리 흩어지기
   if (e.code === 'KeyN' && !e.repeat) { audioInit(); setMute(!SND.muted); }
   if (e.code === 'KeyV' && !e.repeat && mode === 'world') cycleView();
 });
@@ -1990,7 +1993,7 @@ const DIET_DOT = { 초식: '#8ee05c', 잡식: '#f2c14e', 육식: '#f27b3d', 최�
 const START_COUNT = { 초식: 5, 잡식: 3, 육식: 2, 최상위: 1 };
 const STATE_TEXT = { wander: '돌아다니는 중', idle: '쉬는 중', hunt: '사냥 중', flee: '도망치는 중', eat: '먹는 중', scav: '사체를 찾는 중', egg: '알을 노리는 중',
   sleep: '💤 자는 중', drink: '🫗 물 마시러 가는 중', drinking: '🫗 물 마시는 중', follow: '👣 엄마 따라가는 중', come: '🗣️ 부르는 소리에 오는 중',
-  play: '🎈 장난치는 중', spar: '🤼 힘겨루기 중', groom: '🪮 털 고르는 중', bask: '☀️ 햇볕 쬐는 중' };
+  play: '🎈 장난치는 중', spar: '🤼 힘겨루기 중', groom: '🪮 털 고르는 중', bask: '☀️ 햇볕 쬐는 중', mimic: '🐾 나를 따라하는 중' };
 const NEAR = 45, FAR = 300, MAX_FULL = 50, CELL_AI = 25, ADULT = 60, MAX_AGENTS = 1200;
 const SPI = {};                 // 종별 실행 정보
 const agents = [], corpses = [];
@@ -2249,6 +2252,16 @@ function think(a, dt) {
     a.state = 'flee'; a.target = threat; a.timer = 3; a.altT = i.alt; return;
   }
   if (a.state === 'flee' && a.timer > 0) return;
+  // 내 무리(X로 부름): 플레이어를 따라다니며 행동을 따라함
+  if (a.leader === P) {
+    if (P.dead || mode !== 'world' || !PL || PL.sp !== i.sp || ecoClock > a.leadUntil || Math.hypot(P.x - a.x, P.z - a.z) > 150) a.leader = null;
+    else {
+      if (a.state === 'hunt' && a.target && !a.target.dead && a.chase < 12) return;   // 같이 사냥 중
+      if (a.state === 'drinking' && a.timer > 0) return;
+      a.state = P.sleep ? 'sleep' : 'mimic';                                           // 내가 자면 같이 잠
+      return;
+    }
+  }
   // 하던 생활 행동은 계속 (자다가 배고프거나 잘 시간이 끝나면 깸)
   if (a.state === 'sleep') { if (a.hunger < 0.75 && sleepTime(i)) return; a.state = 'wander'; }
   if (['groom', 'bask', 'spar', 'drinking', 'play', 'come'].includes(a.state) && a.timer > 0) return;
@@ -2423,6 +2436,14 @@ function moveAgent(a, dt) {
       }
       break;
     }
+    case 'mimic': {                                                           // 내 무리: 내 둘레 자리로, 나와 같은 속도로
+      if (a.leader !== P || P.dead) { a.state = 'wander'; break; }
+      const [tx, tz] = mimicSlot(a), dx = tx - a.x, dz = tz - a.z, d = Math.hypot(dx, dz);
+      if (d > 1.2) { want = Math.atan2(dx, dz); spd = Math.min(i.run, d * 1.6 + (P.speedNow || 0)); }
+      else want = P.yaw;                                                      // 자리에 오면 나와 같은 쪽을 봄
+      if (i.dom === 'air') a.altT = Math.max(0, P.y - Math.max(heightAt(a.x, a.z), 0));
+      break;
+    }
     case 'sleep': case 'groom': case 'bask': a.timer -= dt; break;          // 가만히
     case 'drinking':                                                          // 고개 숙여 물 마시기
       a.timer -= dt;
@@ -2485,6 +2506,7 @@ function moveAgent(a, dt) {
   a.yaw += clamp(d, -4 * dt, 4 * dt);
   if (a.state !== 'hunt') a.stalk = false;
   if (a.state !== 'play' && a.hop && !a.dash) a.hop = 0;
+  if (a.jumpT > 0) { a.jumpT -= dt; a.hop = Math.sin((1 - a.jumpT / 0.6) * Math.PI) * (1 + ageScale(a)); }   // 같이 점프
   if (isNight() && coldBlooded(i)) spd *= 0.6;                                // 파충류·양서류는 밤에 몸이 식어 느려짐
   // 지침: 전력질주는 오래 못 함 (늑대·들개는 오래, 고양이과는 짧게)
   if (spd >= i.run * 0.99 && spd > i.walk) {
@@ -2635,8 +2657,9 @@ function updateSurvivalHud() {
   const st = active || (PL.info.larva ? '개구리가 되면' : P.abCd > 0 ? `${Math.ceil(P.abCd)}초 뒤` : '준비됨');
   document.body.dataset.sleep = P.sleep ? '1' : '0';
   abEl.innerHTML = `<kbd>F</kbd> ${AB_EMOJI[A.type]} ${A.name} <span class="${active || P.abCd <= 0 ? 'ok' : 'cd'}">${st}</span>`;
-  const kids = agents.reduce((n, b) => n + (b.mom === P && !b.dead && b.age < ADULT ? 1 : 0), 0);
-  growEl.textContent = (P.grow >= 1 ? '🌳 어른' : `🌱 ${STAGE(P.grow)} · 어른까지 ${Math.round(P.grow * 100)}%`) + (kids ? ` · 👪 새끼 ${kids}` : '') + (P.sleep ? ' · 💤' : '');
+  let kids = 0, crew = 0;
+  for (const b of agents) { if (b.dead) continue; if (b.mom === P && b.age < ADULT) kids++; if (b.leader === P) crew++; }
+  growEl.textContent = (P.grow >= 1 ? '🌳 어른' : `🌱 ${STAGE(P.grow)} · 어른까지 ${Math.round(P.grow * 100)}%`) + (kids ? ` · 👪 새끼 ${kids}` : '') + (crew ? ` · 🐾 무리 ${crew}` : '') + (P.sleep ? ' · 💤' : '');
   document.body.dataset.adult = P.grow >= 1 ? '1' : '0';
   let text = '';
   const grazeWord = PL.info.larva ? '물풀 먹기' : GRAZE_WORD[PL.sp.prey.find(p => GRAZE_WORD[p])];
@@ -3261,7 +3284,7 @@ function abilityEffect(u, A) {
   switch (A.type) {
     case 'roar': {        // 주변의 작거나 비슷한 동물, 나를 노리던 천적이 물러남
       const r = 15 + s * 12;
-      eachNear(u, r, b => { if (ageScale(b) <= s * 1.3 || (b.state === 'hunt' && (b.target === u.agent || (u.player && b.target === P)))) scare(b, u, 5, 8); });
+      eachNear(u, r, b => { if (b.info.sp !== sp && (ageScale(b) <= s * 1.3 || (b.state === 'hunt' && (b.target === u.agent || (u.player && b.target === P))))) scare(b, u, 5, 8); });   // 같은 종(내 무리)은 안 놀람
       fxRing(u.x, u.y, u.z, '#ffcc66', r);
       return true;
     }
@@ -3271,14 +3294,14 @@ function abilityEffect(u, A) {
         if (u.player && !waterNear()) { showToast('물가에서 쓸 수 있어요', '코로 물을 빨아들여야 해요'); return false; }
         if (u.player) { P.water = 100; popText('+💧 물 뿜기'); }
       }
-      eachNear(u, r, b => { if (isFoeOf(b, sp) || b.state === 'hunt') scare(b, u, 6, 10); });
+      eachNear(u, r, b => { if (b.info.sp !== sp && (isFoeOf(b, sp) || b.state === 'hunt')) scare(b, u, 6, 10); });
       if (sp.tpl === 'iv' && (sp.parts.includes('squid') || sp.parts.includes('octopus'))) { if (u.player) P.hideT = 4; else u.agent.hideT = 4; }
       fxCloud(u.x - Math.sin(u.yaw) * s, u.y + s * 0.4, u.z - Math.cos(u.yaw) * s, col, 2 + s * 2.5);
       return true;
     }
     case 'kick': {        // 가장 가까운 천적(없으면 먹잇감)을 차거나 집음
       let best = null, bd = 2.5 * s + 3;
-      eachNear(u, bd, (b, d) => { if ((isFoeOf(b, sp) || u.info.preySet.has(b.info.sp.name)) && d < bd) { bd = d; best = b; } });
+      eachNear(u, bd, (b, d) => { if (b.info.sp !== sp && (isFoeOf(b, sp) || u.info.preySet.has(b.info.sp.name)) && d < bd) { bd = d; best = b; } });
       if (best) {
         if (isFoeOf(best, sp)) { stun(best, 4); best.confT = 12; }   // 맞은 천적은 잠깐 쓰러졌다가 한동안 사냥을 못 함
         else if (u.player) huntBite(best, 2);
@@ -3439,6 +3462,7 @@ function dashHit(u, dash) {
   const s = u.s;
   if (dash.type === 'charge') {
     eachNear(u, s + 2, b => {
+      if (b.info.sp === u.sp) return;                    // 같이 달리는 무리는 안 부딪힘
       if (u.player && u.info.preySet.has(b.info.sp.name)) huntBite(b, 2);
       else if (b !== u.agent) { stun(b, 3); scare(b, u, 5, 8); }
     });
@@ -3504,6 +3528,7 @@ function playerAbility() {
   if (P.abCd > 0) return showToast(`${AB_EMOJI[A.type]} ${A.name}`, `${Math.ceil(P.abCd)}초 뒤에 다시 쓸 수 있어요`);
   if (!abilityEffect(playerUser(), A)) return;
   P.abCd = A.cd;
+  mimic('ability', P.dash && P.dash.target);   // 무리도 같은 특기를 씀
   LIFE.abilities = (LIFE.abilities || 0) + 1;
   popText(`${AB_EMOJI[A.type]} ${A.name}!`, 'mission');
   sfx('ability', A.type);
@@ -3520,9 +3545,11 @@ function huntBite(b, mult = 1) {
   if (b.hp > 0) {
     popText('콱!', 'bite');
     if (b.state !== 'flee') { b.state = 'flee'; b.target = P; b.timer = 4; }
+    mimic('hunt', b);             // 무리가 같이 사냥
     return;
   }
   die(b, 'killed');
+  mimic('eat');
   LIFE.hunts++;
   LIFE.huntsBy[b.info.sp.name] = (LIFE.huntsBy[b.info.sp.name] || 0) + 1;
   if (isNight()) LIFE.nightHunts++;
@@ -3652,19 +3679,57 @@ function herdSteer(a) {
     a.yaw += d * 0.6;
   }
 }
-// 플레이어 울기: 같은 종이 다가옴
-function playerCall() {
-  if (!PL || P.dead || (P.callCd || 0) > 0) return;
+// ---- 내 무리: X로 부른 같은 종이 3분 동안 나를 따라다니며 행동을 똑같이 따라함 ----
+const FOLLOW_SECS = 180;
+const followers = () => agents.filter(a => a.leader === P && !a.dead);
+// 플레이어 울기: 같은 종이 모여 내 무리가 됨 (Shift+X 는 흩어지기)
+function playerCall(dismiss) {
+  if (!PL || P.dead) return;
+  if (dismiss) {
+    const f = followers();
+    f.forEach(a => { a.leader = null; a.state = 'wander'; });
+    if (f.length) { fxText(P.x, P.y + PL.s * 1.8 + 0.8, P.z, '👋 흩어져!', 1.8); showToast('👋 무리가 흩어졌어요', `${f.length}마리가 각자 갈 길로`); }
+    return;
+  }
+  if ((P.callCd || 0) > 0) return;
   const w = callOf(PL.sp);
-  P.callCd = 4;
+  P.callCd = 2;
   fxText(P.x, P.y + PL.s * 1.8 + 0.8, P.z, w === '…' ? '🤫 (몸짓으로 알려요)' : `🗣️ ${w}`, 2);
   playCall(PL.sp, 0.25, PL.s);
-  let n = 0;
+  let slot = followers().length;
   nearby(P.x, P.z, 80, b => {
-    if (b.dead || b.info.sp !== PL.sp || b.state === 'flee' || b.state === 'hunt' || Math.hypot(b.x - P.x, b.z - P.z) > 80) return;
-    b.state = 'come'; b.target = P; b.timer = 10; n++;
+    if (b.dead || b.info.sp !== PL.sp || b.state === 'flee' || Math.hypot(b.x - P.x, b.z - P.z) > 80) return;
+    if (b.leader !== P) { b.leader = P; b.slot = slot++; }
+    b.leadUntil = ecoClock + FOLLOW_SECS;
+    if (b.state !== 'hunt') { b.state = 'mimic'; b.target = null; }
   });
-  showToast(`🗣️ ${w === '…' ? '조용히 몸짓으로 불렀어요' : w}`, n ? `${PL.sp.name} ${n}마리가 다가와요` : `근처에 ${jo(PL.sp.name, '이', '가')} 없어요`);
+  P.followerN = slot;
+  mimic('call');
+  showToast(`🗣️ ${w === '…' ? '조용히 몸짓으로 불렀어요' : w}`,
+    slot ? `${PL.sp.name} ${slot}마리가 내 무리가 되어 3분 동안 나를 따라해요 · Shift+X 흩어지기` : `근처에 ${jo(PL.sp.name, '이', '가')} 없어요`);
+}
+// 내가 한 행동을 무리가 따라함
+function mimic(kind, data) {
+  const f = followers();
+  if (!f.length) return;
+  f.forEach((a, k) => {
+    if (a.stunT > 0 || a.state === 'flee') return;
+    switch (kind) {
+      case 'eat': a.state = 'eat'; a.timer = 1.6; a.food = 0.3; break;          // 같이 고개 숙이고 먹기
+      case 'drink': a.state = 'drinking'; a.timer = 2; a.altT = 0; break;
+      case 'jump': a.jumpT = 0.6; break;
+      case 'hunt': if (data && !data.dead && a.info.preySet.has(data.info.sp.name)) { a.state = 'hunt'; a.target = data; a.chase = 0; a.cool = 0; } break;
+      case 'ability': setTimeout(() => { if (!a.dead && a.leader === P) { a.abCd = 0; aiAbility(a, data ? { target: data } : null); } }, 120 + k * 90); break;
+      case 'call': if (k < 6) setTimeout(() => { if (!a.dead) { fxText(a.x, a.y + ageScale(a) * 1.6 + 0.6, a.z, `🗣️ ${callOf(a.info.sp)}`, 1.4); if (k < 3) playCall(a.info.sp, 0.06, ageScale(a)); } }, 200 + k * 150); break;
+    }
+  });
+}
+// 무리 안에서 내 자리 (나를 둘러싼 대형)
+function mimicSlot(a) {
+  const n = Math.max(1, P.followerN || 1), s = Math.max(PL.s, ageScale(a)), ring = Math.floor(a.slot / 8), k = a.slot % 8;
+  const ang = P.yaw + Math.PI + (k - Math.min(7, n - 1) / 2) * 0.55;
+  const r = 2.5 + s * 2.2 + ring * (2 + s * 1.5);
+  return [P.x + Math.sin(ang) * r, P.z + Math.cos(ang) * r];
 }
 function togglePlayerSleep() {
   if (!PL || P.dead) return;
@@ -4421,7 +4486,7 @@ function update(dt) {
   } else if (P.swim) {
     P.y += (-0.45 * s - P.y) * Math.min(1, dt * 6); P.vy = 0; P.ground = true;
   } else {
-    if (up && P.ground) { P.vy = 7 + s * 4; P.ground = false; }
+    if (up && P.ground) { P.vy = 7 + s * 4; P.ground = false; mimic('jump'); }
     P.vy -= (P.glideT > 0 ? 6 : 30) * dt;
     if (P.glideT > 0) P.vy = Math.max(P.vy, -2.5);           // 활공: 천천히 내려옴
     P.y += P.vy * dt;
