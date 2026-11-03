@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>I.S.K</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <meta name="description" content="I.S.K (Invasive Species Kill) — 생태계 교란종 퇴치 모임 홈페이지">
 <meta name="theme-color" content="#4f46e5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 3 58 18v28L32 61 6 46V18z' fill='%234f46e5'/%3E%3Ctext x='32' y='40' font-size='19' font-family='Arial' font-weight='900' fill='white' text-anchor='middle'%3EISK%3C/text%3E%3C/svg%3E">
@@ -244,6 +246,27 @@
   .modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
   .err { color: var(--red); font-size: 13.5px; font-weight: 600; min-height: 1.2em; margin-top: 10px; }
   .err.ok { color: var(--green); }
+
+  /* ---- 사진·지도 ---- */
+  .photo-pick { display: flex; gap: 8px; flex-wrap: wrap; }
+  .photo-add, .thumb { width: 84px; height: 84px; border-radius: 12px; flex: none; position: relative; overflow: hidden; }
+  .photo-add { display: grid; place-items: center; border: 2px dashed var(--line); color: var(--ink3); font-size: 28px; cursor: pointer; }
+  .photo-add:hover { border-color: var(--acc); color: var(--acc); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--bg2); }
+  .thumb button { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; line-height: 1; }
+  .thumb span { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.45); color: #fff; font-size: 12px; font-weight: 700; }
+  .map { width: 100%; border-radius: 12px; z-index: 0; background: var(--bg2); }
+  .map-pick { height: 230px; border: 1px solid var(--line); cursor: crosshair; }
+  .map-post { height: 220px; margin-top: 8px; }
+  .map-big { height: min(62vh, 520px); border-radius: 0; }
+  .loc-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin: -4px 0 18px; }
+  .photos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; display: block; background: var(--bg2); }
+  .post-loc { margin: 0 0 18px; font-size: 14px; }
+  .pin { width: 26px; height: 26px; border-radius: 50% 50% 50% 0; background: var(--c); transform: rotate(-45deg); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+  .pop-img { width: 180px; height: 120px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 6px; }
+  .pop-go { cursor: pointer; font-weight: 700; }
+  .leaflet-container { font: inherit; }
   .switch { text-align: center; margin-top: 14px; font-size: 13.5px; color: var(--ink2); }
   .switch a { cursor: pointer; font-weight: 700; }
 
@@ -286,6 +309,7 @@
       <a data-go="members">멤버</a>
       <a data-go="notice">공지</a>
       <a data-go="board">나눔마당</a>
+      <a data-go="map">🗺️ 제보 지도</a>
       <a data-go="me">내 정보</a>
     </nav>
     <div class="top-right">
@@ -400,6 +424,16 @@
     <div class="card pad"><ul class="plist" id="board-list"></ul></div>
   </section>
 
+  <!-- 제보 지도 -->
+  <section class="page" id="page-map">
+    <div class="page-head">
+      <div><h2>🗺️ 제보 지도</h2><p>교란종을 발견한 곳 · <b id="map-count">0</b>곳</p></div>
+      <button class="btn" id="map-write">🔍 발견 제보 쓰기</button>
+    </div>
+    <div class="card" style="overflow:hidden"><div class="map map-big" id="spot-map"></div></div>
+    <div class="card pad" style="margin-top:16px"><ul class="plist" id="map-list"></ul></div>
+  </section>
+
   <!-- 글 보기 -->
   <section class="page" id="page-post">
     <button class="btn ghost sm" id="post-back" style="margin-bottom:12px">‹ 목록으로</button>
@@ -493,6 +527,21 @@
     <label class="f" for="w-text">내용</label>
     <textarea id="w-text" maxlength="3000" rows="9" placeholder="내용을 입력하세요"></textarea>
     <div class="muted" style="text-align:right;font-size:12.5px"><span id="w-len">0</span> / 3000</div>
+    <label class="f">📷 사진 <span class="muted" style="font-weight:600">(최대 3장)</span></label>
+    <div class="photo-pick" id="w-photos">
+      <label class="photo-add" id="w-photo-add">＋<input type="file" id="w-file" accept="image/*" multiple hidden></label>
+    </div>
+    <div id="w-loc-wrap">
+      <label class="f">📍 발견 장소 <span class="muted" style="font-weight:600">(지도를 눌러 찍어요)</span></label>
+      <div class="map map-pick" id="w-map"></div>
+      <div class="loc-row">
+        <button type="button" class="btn ghost sm" id="w-myloc">📍 내 위치로</button>
+        <button type="button" class="btn ghost sm" id="w-loc-clear" hidden>위치 지우기</button>
+        <span class="muted" id="w-loc-text" style="font-size:12.5px">아직 안 찍었어요</span>
+      </div>
+      <input type="text" id="w-place" maxlength="60" placeholder="장소 이름 (예: ○○저수지 북쪽 둑)" style="margin-top:8px">
+      <div class="hint">⚠️ 집이나 학교 말고, 교란종을 발견한 장소만 찍어 주세요. 사진의 위치 정보는 자동으로 지워져요.</div>
+    </div>
     <div class="err" id="write-err"></div>
     <div class="modal-foot">
       <button type="button" class="btn ghost" data-close>취소</button>
@@ -698,7 +747,7 @@
   }
 
   // ---------- 페이지 이동 ----------
-  var PAGES = ["home", "about", "members", "notice", "board", "post", "me"];
+  var PAGES = ["home", "about", "members", "notice", "board", "map", "post", "me"];
   function go(page) { location.hash = page; }
   function route() {
     var h = location.hash.replace(/^#/, "");
@@ -709,6 +758,7 @@
     var navKey = page === "post" ? (currentPost() && currentPost().cat === "notice" ? "notice" : "board") : page;
     document.querySelectorAll("#menu a").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-go") === navKey); });
     if (page === "post") renderPost();
+    if (page === "map") renderSpotMap();
     if (page === "me" && amAdmin()) loadAdmin();
     window.scrollTo(0, 0);
   }
@@ -738,6 +788,8 @@
       (showCat ? '<span class="badge b-' + esc(p.cat) + '">' + esc(CAT_NAME[p.cat] || "자유") + "</span>" : "") +
       '<div class="t"><div class="ttl">' + esc(p.title || "(제목 없음)") + '</div>' +
       '<div class="meta">' + esc(p.name) + " · " + fmtDate(p.time) + "</div></div>" +
+      (p.photos && p.photos.length ? '<span class="cnt" title="사진">📷' + p.photos.length + "</span>" : "") +
+      (p.loc ? '<span class="cnt" title="위치">📍</span>' : "") +
       (p.cmt ? '<span class="cnt">💬 ' + p.cmt + "</span>" : "") +
       "</div></li>";
   }
@@ -745,7 +797,7 @@
   function loadingOr(msg) { return state.loaded ? emptyHTML(msg) : emptyHTML("불러오는 중…"); }
 
   function renderAll() {
-    renderHome(); renderAbout(); renderMembers(); renderNotice(); renderBoard(); renderMe();
+    renderHome(); renderAbout(); renderMembers(); renderNotice(); renderBoard(); renderMe(); renderSpotMap();
     if (state.postId) renderPost();
   }
 
@@ -848,6 +900,11 @@
       '<div class="post-meta">' + avatar(p.name) + "<b style=\"color:var(--ink)\">" + esc(p.name) + "</b>" +
       roleBadge(p.name) + "<span>· " + fmtDate(p.time, true) + "</span></div>" +
       '<div class="post-body">' + esc(p.text) + "</div>" +
+      (p.photos && p.photos.length ? '<div class="photos">' + p.photos.map(function (u) {
+        return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="첨부 사진" loading="lazy"></a>';
+      }).join("") + "</div>" : "") +
+      (p.loc ? '<div class="post-loc"><b>📍 발견 장소</b>' + (p.place ? " · " + esc(p.place) : "") +
+        '<div class="map map-post" id="post-map"></div></div>' : "") +
       (acts ? '<div class="post-actions">' + acts + "</div>" : "") +
       '<div class="cmts"><h3>💬 댓글 <span id="cmt-n">' + (p.cmt || 0) + '</span></h3><div id="cmt-list"></div>' +
       (u ? '<form class="cmt-form" id="cmt-form"><textarea id="cmt-text" maxlength="300" placeholder="댓글을 남겨 주세요"></textarea><button class="btn" style="flex:none">등록</button></form>'
@@ -855,7 +912,50 @@
       "</div>";
     renderComments(p.id);
     if (!cmtCache[p.id] || cmtCache[p.id].stale) loadComments(p.id);
+    if (postMap) { postMap.remove(); postMap = null; }
+    if (p.loc && $("post-map")) {
+      postMap = makeMap($("post-map"));
+      if (postMap) {
+        postMap.setView([p.loc.lat, p.loc.lng], 15);
+        L.marker([p.loc.lat, p.loc.lng], { icon: pin("var(--red)") }).addTo(postMap);
+      }
+    }
   }
+  var postMap = null;
+
+  // ---------- 제보 지도 ----------
+  var spotMap = null, spotLayer = null;
+  function renderSpotMap() {
+    var spots = state.posts.filter(function (p) { return p.loc; });
+    $("map-count").textContent = spots.length;
+    $("map-list").innerHTML = spots.length ? spots.map(function (p) {
+      return rowHTML(p, true).replace('<div class="meta">', '<div class="meta">' + (p.place ? "📍 " + esc(p.place) + " · " : ""));
+    }).join("") : loadingOr("아직 위치가 찍힌 제보가 없어요. '발견 제보 쓰기'로 첫 제보를 올려 보세요!");
+    if (!$("page-map").classList.contains("on")) return;
+    if (!spotMap) {
+      spotMap = makeMap($("spot-map")); if (!spotMap) return;
+      spotLayer = L.layerGroup().addTo(spotMap);
+      // Leaflet 팝업은 클릭이 document 까지 안 올라와서 따로 연결
+      spotMap.on("popupopen", function (ev) {
+        var a = ev.popup.getElement().querySelector("[data-post]");
+        if (a) a.onclick = function () { go("post/" + a.getAttribute("data-post")); };
+      });
+    }
+    setTimeout(function () { spotMap.invalidateSize(); }, 50);
+    spotLayer.clearLayers();
+    var pts = [];
+    spots.forEach(function (p) {
+      var thumb = p.photos && p.photos[0] ? '<img src="' + esc(p.photos[0]) + '" alt="" class="pop-img">' : "";
+      L.marker([p.loc.lat, p.loc.lng], { icon: pin(p.cat === "spot" ? "var(--red)" : "var(--acc)") })
+        .bindPopup(thumb + "<b>" + esc(p.title) + "</b><br>" + esc(p.name) + " · " + fmtDate(p.time) +
+          (p.place ? "<br>📍 " + esc(p.place) : "") + '<br><a class="pop-go" data-post="' + esc(p.id) + '">글 보기 ›</a>')
+        .addTo(spotLayer);
+      pts.push([p.loc.lat, p.loc.lng]);
+    });
+    if (pts.length === 1) spotMap.setView(pts[0], 14);
+    else if (pts.length) spotMap.fitBounds(pts, { padding: [30, 30], maxZoom: 15 });
+  }
+  $("map-write").onclick = function () { openWrite("spot"); };
   function renderComments(pid) {
     var el = $("cmt-list"); if (!el) return;
     var c = cmtCache[pid];
@@ -1029,14 +1129,113 @@
   $("me-rename").onclick = function () { openAuth("rename"); };
   $("me-logout").onclick = function () { setSession(null); toast("로그아웃했어요"); go("home"); };
 
+  // ---------- 지도 (Leaflet + OpenStreetMap) ----------
+  var KOREA = [36.4, 127.9];
+  function makeMap(el, opts) {
+    if (!window.L) { el.innerHTML = '<div class="empty" style="padding:20px">지도를 불러오지 못했어요</div>'; return null; }
+    var m = L.map(el, Object.assign({ scrollWheelZoom: false }, opts || {})).setView(KOREA, 7);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19, attribution: "&copy; OpenStreetMap"
+    }).addTo(m);
+    return m;
+  }
+  function pin(color) {
+    return L.divIcon({ className: "", html: '<div class="pin" style="--c:' + (color || "var(--acc)") + '"></div>', iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -24] });
+  }
+
   // ---------- 글쓰기 ----------
+  var w = { photos: [], uploading: 0, loc: null, map: null, marker: null };
+  function renderWritePhotos() {
+    var box = $("w-photos");
+    box.querySelectorAll(".thumb").forEach(function (t) { t.remove(); });
+    w.photos.forEach(function (ph, i) {
+      var d = document.createElement("div");
+      d.className = "thumb" + (ph.url ? "" : " loading");
+      d.innerHTML = '<img src="' + esc(ph.preview) + '" alt="">' + (ph.url ? '<button type="button" data-rm="' + i + '" title="빼기">×</button>' : "<span>올리는 중…</span>");
+      box.insertBefore(d, $("w-photo-add"));
+    });
+    $("w-photo-add").hidden = w.photos.length >= 3;
+  }
+  // 사진을 1280px 이하 JPEG 로 줄임 (위치 정보 같은 EXIF 도 이때 사라짐)
+  function shrinkImage(file) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function () {
+        var max = 1280, sc = Math.min(1, max / Math.max(img.width, img.height));
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("bad-image")); };
+      img.src = url;
+    });
+  }
+  $("w-file").addEventListener("change", function () {
+    var files = Array.prototype.slice.call(this.files || [], 0, 3 - w.photos.length);
+    this.value = "";
+    files.forEach(function (f) {
+      var ph = { preview: "", url: "" };
+      w.photos.push(ph); w.uploading++;
+      shrinkImage(f).then(function (data) {
+        ph.preview = data; renderWritePhotos();
+        return api("/api/board", { method: "POST", body: { action: "upload", data: data } });
+      }).then(function (d) { ph.url = d.url; })
+        .catch(function (er) {
+          w.photos.splice(w.photos.indexOf(ph), 1);
+          $("write-err").textContent = er.message === "bad-image" ? "이 사진은 열 수 없어요. JPG·PNG 사진을 골라 주세요." : errMsg(er.message);
+        })
+        .then(function () { w.uploading--; renderWritePhotos(); });
+    });
+    renderWritePhotos();
+  });
+  $("w-photos").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-rm]"); if (!b) return;
+    w.photos.splice(+b.getAttribute("data-rm"), 1); renderWritePhotos();
+  });
+
+  function setWriteLoc(latlng) {
+    w.loc = latlng ? { lat: latlng.lat, lng: latlng.lng } : null;
+    if (w.marker) { w.marker.remove(); w.marker = null; }
+    if (w.loc && w.map) w.marker = L.marker([w.loc.lat, w.loc.lng], { icon: pin("var(--red)") }).addTo(w.map);
+    $("w-loc-text").textContent = w.loc ? "📍 " + w.loc.lat.toFixed(5) + ", " + w.loc.lng.toFixed(5) : "아직 안 찍었어요";
+    $("w-loc-clear").hidden = !w.loc;
+  }
+  function syncLocWrap() {
+    var spot = $("w-cat").value === "spot";
+    $("w-loc-wrap").hidden = !spot;
+    if (!spot) return;
+    if (!w.map) {
+      w.map = makeMap($("w-map"));
+      if (w.map) w.map.on("click", function (ev) { setWriteLoc(ev.latlng); });
+    }
+    if (w.map) setTimeout(function () { w.map.invalidateSize(); }, 50);
+  }
+  $("w-cat").addEventListener("change", syncLocWrap);
+  $("w-loc-clear").onclick = function () { setWriteLoc(null); };
+  $("w-myloc").onclick = function () {
+    if (!navigator.geolocation) { toast("이 기기에서는 내 위치를 쓸 수 없어요"); return; }
+    $("w-loc-text").textContent = "위치 찾는 중…";
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var ll = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setWriteLoc(ll);
+      if (w.map) w.map.setView([ll.lat, ll.lng], 16);
+    }, function () { setWriteLoc(w.loc); toast("위치를 가져오지 못했어요. 지도를 직접 눌러 주세요."); }, { enableHighAccuracy: true, timeout: 10000 });
+  };
+
   function openWrite(cat) {
     if (!me()) { openAuth("login"); return; }
     $("w-cat-notice").hidden = !amAdmin(); $("w-cat-notice").disabled = !amAdmin();
-    $("w-cat").value = cat === "notice" && amAdmin() ? "notice" : (state.cat || "free");
+    $("w-cat").value = cat === "notice" && amAdmin() ? "notice" : (cat === "spot" ? "spot" : (state.cat || "free"));
     $("write-title-h").textContent = cat === "notice" ? "공지 쓰기" : "글쓰기";
     $("w-title").value = ""; $("w-text").value = ""; $("w-len").textContent = "0"; $("write-err").textContent = "";
+    $("w-place").value = "";
+    w.photos = []; w.uploading = 0; renderWritePhotos();
     openModal("write-modal");
+    syncLocWrap();
+    setWriteLoc(null);
+    if (w.map) w.map.setView(KOREA, 7);
     setTimeout(function () { $("w-title").focus(); }, 30);
   }
   $("board-write").onclick = function () { openWrite("free"); };
@@ -1047,6 +1246,9 @@
     var body = { cat: $("w-cat").value, title: $("w-title").value.trim(), text: $("w-text").value.trim() };
     if (!body.title) { $("write-err").textContent = ERR["no-title"]; return; }
     if (!body.text) { $("write-err").textContent = ERR.empty; return; }
+    if (w.uploading > 0) { $("write-err").textContent = "사진을 올리는 중이에요. 잠시만 기다려 주세요."; return; }
+    body.photos = w.photos.map(function (ph) { return ph.url; }).filter(Boolean);
+    if (body.cat === "spot" && w.loc) { body.loc = w.loc; body.place = $("w-place").value.trim(); }
     var btn = $("write-submit"); btn.disabled = true;
     api("/api/board", { method: "POST", body: body }).then(function (d) {
       closeModal("write-modal"); setPosts(d.posts); toast("글을 올렸어요");

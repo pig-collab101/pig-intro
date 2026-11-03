@@ -1,7 +1,9 @@
 // I.S.K 모임 사이트 – 게시판 API (공지 + 나눔마당, Vercel 서버리스 + Vercel Blob)
 // GET                          → 글 목록 (최신순, 집계 파일 1회 읽기, 글마다 댓글 수 포함)
 // GET ?comments=<id>           → { comments:[...] }  특정 글의 댓글
-// POST {cat,title,text}        → 새 글 (로그인 필요, 차단 불가, cat 'notice' 는 관리자만, 'spot' = 교란종 발견 제보)
+// POST {cat,title,text,photos?,loc?,place?} → 새 글 (로그인 필요, 차단 불가, cat 'notice' 는 관리자만, 'spot' = 교란종 발견 제보)
+//      photos: upload 로 받은 사진 주소 최대 3개, loc: {lat,lng} 발견 위치, place: 장소 이름
+// POST {action:'upload', data:'data:image/jpeg;base64,...'} → { url }  사진 1장 (브라우저에서 줄인 JPEG, 1.5MB 이하)
 // POST {action:'comment', id, text} → 댓글 달기
 // POST {action:'report', id}   → 글 신고
 // POST {action:'ban'|'unban', name} → 관리자 추방/해제
@@ -11,6 +13,7 @@
 // 저장은 전부 불변 개별 파일 (공용 JSON 을 읽고-고쳐-쓰면 CDN 지연으로 유실됨):
 //   글   isk/n/<15자리ts>-<rand>.json
 //   댓글 isk/c/<글id>/<15자리ts>-<rand>.json
+//   사진 isk/img/<15자리ts>-<rand>.jpg  (글 지우면 같이 지움)
 //   집계 isk/board.json  ← 글/댓글 쓰고 지울 때만 list() 로 다시 만듦
 
 const crypto = require('crypto');
@@ -21,7 +24,10 @@ const AGG_PATH = 'isk/board.json';
 const POST_DIR = 'isk/n/';
 const CMT_DIR = 'isk/c/';
 const REP_DIR = 'isk/rep/';
+const IMG_DIR = 'isk/img/';
 const CATS = ['notice', 'free', 'spot', 'question', 'review'];
+const MAX_PHOTOS = 3;
+const MAX_IMG_BYTES = 1.5 * 1024 * 1024;
 const MAX_SHOW = 200;
 const MAX_TITLE = 60;
 const MAX_TEXT = 3000;
@@ -37,6 +43,21 @@ function newId() {
   return String(Date.now()).padStart(15, '0') + '-' + Math.random().toString(36).slice(2, 8);
 }
 function safeId(s) { return String(s || '').replace(/[^0-9a-z-]/gi, '').slice(0, 40); }
+
+// 우리 저장소의 isk/img/ 사진 주소만 받음
+function cleanPhotos(arr) {
+  const base = (blobBase() + '/' + IMG_DIR).toLowerCase();
+  if (!Array.isArray(arr)) return [];
+  return arr.map((u) => String(u || ''))
+    .filter((u) => u.toLowerCase().startsWith(base) && /^[^?#]+\.jpg$/.test(u))
+    .slice(0, MAX_PHOTOS);
+}
+function cleanLoc(loc) {
+  if (!loc) return null;
+  const lat = Number(loc.lat), lng = Number(loc.lng);
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5 };
+}
 
 async function listAll(prefix) {
   let blobs = [];
@@ -192,6 +213,9 @@ module.exports = async (req, res) => {
       try { await del(POST_DIR + id + '.json'); } catch (e) { /* 이미 없어도 진행 */ }
       await purgePrefix(REP_DIR + id + '__');
       await purgePrefix(CMT_DIR + id + '/');
+      if (target && Array.isArray(target.photos) && target.photos.length) {
+        try { await del(cleanPhotos(target.photos)); } catch (e) { /* 무시 */ }
+      }
       let posts = await rebuildAgg({ excludeId: id });
       if (!posts) posts = (await loadAgg()).filter((p) => p.id !== id);
       res.status(200).json({ ok: true, posts: posts });
@@ -237,6 +261,23 @@ module.exports = async (req, res) => {
 
     if (await isBanned(sess.name)) { res.status(403).json({ error: 'banned' }); return; }
 
+    // ---- 사진 올리기 (글 등록 전에 한 장씩) ----
+    if (body.action === 'upload') {
+      const m = String(body.data || '').match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);
+      if (!m) { res.status(400).json({ error: 'bad-image' }); return; }
+      const buf = Buffer.from(m[1], 'base64');
+      if (buf.length < 100 || buf[0] !== 0xff || buf[1] !== 0xd8) { res.status(400).json({ error: 'bad-image' }); return; }
+      if (buf.length > MAX_IMG_BYTES) { res.status(413).json({ error: 'too-big' }); return; }
+      try {
+        const r = await put(IMG_DIR + newId() + '.jpg', buf, {
+          access: 'public', addRandomSuffix: false, allowOverwrite: false,
+          contentType: 'image/jpeg', cacheControlMaxAge: 31536000,
+        });
+        res.status(200).json({ ok: true, url: r.url });
+      } catch (e) { res.status(500).json({ error: 'save-failed' }); }
+      return;
+    }
+
     // ---- 댓글 달기 ----
     if (body.action === 'comment') {
       const pid = safeId(body.id);
@@ -268,6 +309,10 @@ module.exports = async (req, res) => {
       id: newId(), cat: cat, sub: String(sess.sub || ''), name: clean(sess.name, 40) || '익명',
       title: title, text: text, time: new Date().toISOString(),
     };
+    const photos = cleanPhotos(body.photos);
+    const loc = cleanLoc(body.loc);
+    if (photos.length) post.photos = photos;
+    if (loc) { post.loc = loc; post.place = clean(body.place, 60); }
     try { await putImmutable(POST_DIR + post.id + '.json', post); }
     catch (e) { res.status(500).json({ error: 'save-failed' }); return; }
 
