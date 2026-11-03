@@ -10,6 +10,7 @@
 // DELETE ?id=X               → 글 삭제 (본인 글, 또는 관리자)
 // DELETE ?comment=<id>&cid=<cid> → 댓글 삭제 (본인 댓글, 또는 관리자)
 
+const crypto = require('crypto');
 const { put, list, del, head } = require('@vercel/blob');
 const { verifySession, isAdmin, isBanned, banName, unbanName, blobBase, blobStoreId } = require('./auth');
 
@@ -215,7 +216,7 @@ module.exports = async (req, res) => {
       const target = await readPost(id);
       if (!target) { res.status(404).json({ error: 'not-found' }); return; }
       if (target.sub === sess.sub) { res.status(400).json({ error: 'own-post' }); return; }
-      const repKey = REP_DIR + id + '__' + String(sess.sub).replace(/[^a-z0-9:_-]/gi, '') + '.json';
+      const repKey = REP_DIR + id + '__' + crypto.createHash('sha256').update(String(sess.sub)).digest('hex').slice(0, 24) + '.json';
       try {
         await put(repKey, JSON.stringify({
           postId: id, postText: clean(target.text, 120), postName: target.name || '', postSub: target.sub || '',
