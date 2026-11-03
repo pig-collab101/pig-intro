@@ -87,6 +87,7 @@
   .btn:disabled { opacity: .55; cursor: default; }
 
   .chip { display: inline-flex; align-items: center; gap: 7px; padding: 4px 6px 4px 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-weight: 700; font-size: 14px; max-width: 160px; }
+  .pbadge { background: var(--red); color: #fff; font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: inline-grid; place-items: center; }
   .chip span.nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .avatar { width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-weight: 800; font-size: 13px; flex: none; }
@@ -219,6 +220,7 @@
   .modal .sub { color: var(--ink2); margin: 4px 0 6px; font-size: 14px; }
   .modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
   .err { color: var(--red); font-size: 13.5px; font-weight: 600; min-height: 1.2em; margin-top: 10px; }
+  .err.ok { color: var(--green); }
   .switch { text-align: center; margin-top: 14px; font-size: 13.5px; color: var(--ink2); }
   .switch a { cursor: pointer; font-weight: 700; }
 
@@ -266,7 +268,7 @@
     <div class="top-right">
       <button class="icon-btn" id="theme-btn" title="밝게/어둡게">🌓</button>
       <button class="btn sm" id="login-btn">로그인</button>
-      <button class="chip" id="me-chip" hidden><span class="avatar" id="chip-av"></span><span class="nm" id="chip-name"></span></button>
+      <button class="chip" id="me-chip" hidden><span class="avatar" id="chip-av"></span><span class="nm" id="chip-name"></span><span class="pbadge" id="chip-badge" title="가입 대기" hidden></span></button>
     </div>
   </div>
 </header>
@@ -281,7 +283,7 @@
       <div class="full" id="hero-full"></div>
       <div class="motto" id="hero-motto">교란종을 막고, 우리 생태계를 지켜요</div>
       <div class="hero-btns">
-        <button class="btn" id="hero-join">✨ 멤버 가입하기</button>
+        <button class="btn" id="hero-join">✨ 가입 신청하기</button>
         <button class="btn ghost" data-go="board">💬 나눔마당 가기</button>
       </div>
     </div>
@@ -334,7 +336,7 @@
   <section class="page" id="page-members">
     <div class="page-head">
       <div><h2>멤버</h2><p>I.S.K 와 함께하는 사람들 · <b id="mem-count">0</b>명</p></div>
-      <button class="btn" id="mem-join">✨ 나도 가입하기</button>
+      <button class="btn" id="mem-join">✨ 가입 신청하기</button>
     </div>
     <div class="mgrid" id="mem-grid"></div>
   </section>
@@ -395,8 +397,10 @@
       </div>
       <div class="card pad admin-panel" id="admin-panel" hidden>
         <h3>🛡️ 관리자 패널</h3>
-        <p class="muted" style="margin:0 0 8px">신고된 글과 추방 목록을 관리해요.</p>
-        <div class="box-head" style="margin-top:12px"><h3 style="font-size:15px">🚩 신고된 글</h3><a id="admin-reload">새로고침</a></div>
+        <p class="muted" style="margin:0 0 8px">가입 신청, 신고된 글, 추방 목록을 관리해요.</p>
+        <div class="box-head" style="margin-top:12px"><h3 style="font-size:15px">⏳ 가입 대기 <span id="pend-n"></span></h3><a id="admin-reload">새로고침</a></div>
+        <div id="admin-pending"></div>
+        <div class="box-head" style="margin-top:16px"><h3 style="font-size:15px">🚩 신고된 글</h3></div>
         <div id="admin-reports"></div>
         <div class="box-head" style="margin-top:16px"><h3 style="font-size:15px">🚫 추방 목록</h3></div>
         <div id="admin-banned"></div>
@@ -495,7 +499,7 @@
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var SESSION_KEY = "isk-session-v1";
-  var ADMIN = "adminpig1234";
+  var ADMIN = "김승우";
   var CAT_NAME = { notice: "공지", free: "자유", spot: "발견", question: "질문", review: "후기" };
   var DEFAULT_SITE = {
     fullName: "Invasive · Species · Kill",
@@ -516,7 +520,7 @@
     "no-rename-admin": "관리자 아이디는 바꿀 수 없어요.", "unauthorized": "다시 로그인해 주세요.",
     "not-admin": "관리자만 할 수 있어요.", "not-yours": "내 글만 지울 수 있어요.",
     "empty": "내용을 입력해 주세요.", "no-title": "제목을 입력해 주세요.", "not-found": "글을 찾을 수 없어요.",
-    "own-post": "내 글은 신고할 수 없어요.", "no-db": "아직 서버 저장소가 연결되지 않았어요.",
+    "own-post": "내 글은 신고할 수 없어요.", "pending": "아직 관리자 승인을 기다리고 있어요. 승인되면 로그인할 수 있어요.", "no-db": "아직 서버 저장소가 연결되지 않았어요.",
     "network": "서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요."
   };
 
@@ -605,6 +609,7 @@
       var av = $("chip-av"); av.textContent = u.name.charAt(0).toUpperCase(); av.style.background = colorOf(u.name);
     }
     $("about-edit").hidden = !amAdmin();
+    if (amAdmin()) loadAdmin(); else setPendBadge(0);
     $("notice-write").hidden = !amAdmin();
     renderMe();
     if (state.postId) renderPost();
@@ -840,7 +845,7 @@
   var authMode = "login";
   var AUTH_TEXT = {
     login: { t: "로그인", s: "I.S.K 멤버 아이디로 로그인하세요", b: "로그인", sw: '아직 멤버가 아니라면? <a data-mode="signup">가입하기</a>' },
-    signup: { t: "멤버 가입", s: "아이디와 비밀번호만 있으면 바로 가입돼요", b: "가입하기", sw: '이미 멤버라면? <a data-mode="login">로그인</a>' },
+    signup: { t: "멤버 가입 신청", s: "신청하면 관리자가 확인하고 승인해 줘요. 승인 뒤에 로그인할 수 있어요.", b: "가입 신청", sw: '이미 멤버라면? <a data-mode="login">로그인</a>' },
     changepw: { t: "비밀번호 변경", s: "지금 비밀번호와 새 비밀번호를 입력하세요", b: "변경하기", sw: "" },
     rename: { t: "아이디 변경", s: "예전에 쓴 글은 예전 아이디로 남아요", b: "변경하기", sw: "" }
   };
@@ -849,7 +854,7 @@
     var T = AUTH_TEXT[mode];
     $("auth-title").textContent = T.t; $("auth-sub").textContent = T.s; $("auth-submit").textContent = T.b;
     $("auth-switch").innerHTML = T.sw;
-    $("auth-err").textContent = "";
+    $("auth-err").textContent = ""; $("auth-err").className = "err";
     var u = me();
     $("auth-name").value = (mode === "changepw" || mode === "rename") && u ? u.name : "";
     $("auth-name").readOnly = mode === "changepw" || mode === "rename";
@@ -885,8 +890,15 @@
       if (nv.trim().length < 2) { err.textContent = ERR["bad-newname"]; return; }
       body.newname = nv.trim();
     }
-    var btn = $("auth-submit"); btn.disabled = true; err.textContent = "";
+    var btn = $("auth-submit"); btn.disabled = true; err.textContent = ""; err.className = "err";
     api("/api/auth", { method: "POST", body: body }).then(function (d) {
+      if (d.pending) {
+        openAuth("login");
+        $("auth-name").value = d.name;
+        $("auth-err").className = "err ok";
+        $("auth-err").textContent = "✅ '" + d.name + "' 가입 신청을 보냈어요! 관리자(김승우)가 승인하면 여기서 로그인할 수 있어요.";
+        return;
+      }
       setSession({ token: d.token, exp: d.exp, user: d.user });
       closeModal("auth-modal");
       var msg = { login: "환영해요, " + d.user.name + "님!", signup: "🎉 I.S.K 멤버가 되었어요!", changepw: "비밀번호를 바꿨어요", rename: "아이디를 '" + d.user.name + "'(으)로 바꿨어요" };
@@ -959,7 +971,14 @@
   function loadAdmin() {
     if (!amAdmin()) return;
     api("/api/admin").then(function (d) {
-      var reps = d.reports || [], bans = d.banned || [];
+      var reps = d.reports || [], bans = d.banned || [], pend = d.pending || [];
+      setPendBadge(pend.length);
+      $("pend-n").textContent = pend.length ? "(" + pend.length + "명)" : "";
+      $("admin-pending").innerHTML = pend.length ? pend.map(function (p) {
+        return '<div class="arow">' + avatar(p.name) + '<div class="t"><b>' + esc(p.name) + '</b> <span class="muted">' + fmtDate(p.at, true) + " 신청</span></div>" +
+          '<button class="btn sm" data-approve="' + esc(p.name) + '">✅ 승인</button>' +
+          '<button class="btn danger sm" data-reject="' + esc(p.name) + '">거절</button></div>';
+      }).join("") : '<div class="muted" style="padding:6px 0">기다리는 가입 신청이 없어요</div>';
       $("admin-reports").innerHTML = reps.length ? reps.map(function (r) {
         return '<div class="arow"><div class="t"><b>' + esc(r.postName) + "</b> · 신고 " + r.count + "건<br><span class=\"muted\">" + esc(r.postText) + "</span></div>" +
           '<button class="btn soft sm" data-go="post/' + esc(r.postId) + '">보기</button>' +
@@ -976,7 +995,20 @@
   $("admin-reload").onclick = loadAdmin;
   $("admin-reload").style.cursor = "pointer";
   $("ban-btn").onclick = function () { banUser($("ban-name").value); $("ban-name").value = ""; };
+  function setPendBadge(n) {
+    var b = $("chip-badge"); b.textContent = n; b.hidden = !n;
+  }
   $("admin-panel").addEventListener("click", function (e) {
+    var ap = e.target.closest("[data-approve]"), rj = e.target.closest("[data-reject]");
+    if (ap || rj) {
+      var nm = (ap || rj).getAttribute(ap ? "data-approve" : "data-reject");
+      if (rj && !confirm("'" + nm + "' 의 가입 신청을 거절할까요?")) return;
+      (ap || rj).disabled = true;
+      api("/api/admin", { method: "POST", body: { action: ap ? "approve" : "reject", name: nm } })
+        .then(function () { toast(ap ? "✅ " + nm + " 님을 승인했어요" : nm + " 님의 신청을 거절했어요"); loadAdminSoon(); if (ap) setTimeout(loadAll, 800); })
+        .catch(function (er) { toast(errMsg(er.message)); (ap || rj).disabled = false; });
+      return;
+    }
     var un = e.target.closest("[data-unban]");
     if (un) {
       api("/api/board", { method: "POST", body: { action: "unban", name: un.getAttribute("data-unban") } })

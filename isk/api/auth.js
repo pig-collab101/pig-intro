@@ -3,7 +3,9 @@
 //
 // 계정 = 유저별 개별 파일 isk/u/<해시>.json  (head()로 강한 일관성 존재 검사)
 // 차단 = isk/ban/<해시>.json                (있으면 로그인/가입 불가)
-// 관리자 = 아이디 'adminpig1234' 딱 하나
+// 관리자 = 아이디 '김승우' 딱 하나 (가입하면 바로 승인됨)
+// 가입 승인제 = 가입하면 user 파일 approved:false + 대기 파일 isk/pend/<해시>__<ts>_<이름hex>.json
+//               관리자가 승인해야 로그인 가능 (승인/거절은 /api/admin)
 // 멤버 명부 = isk/m/<해시>__<가입ts>_<이름hex>.json (경로에 정보, 내용 없음) → list() 로 isk/members.json 재생성
 // 세션 토큰:  base64url(payload JSON) + "." + base64url(HMAC-SHA256(payload, SECRET))
 
@@ -14,9 +16,10 @@ const SESSION_TTL = 60 * 24 * 60 * 60; // 60일 (초)
 const PW_SALT = 'isk-2026-salt';
 const USER_DIR = 'isk/u/';
 const BAN_DIR = 'isk/ban/';
-const ADMIN_NAME = 'adminpig1234';
+const ADMIN_NAME = '김승우';
 const ADMIN_SUB = 'local:' + ADMIN_NAME;
 const MEMBER_DIR = 'isk/m/';
+const PEND_DIR = 'isk/pend/';
 const MEMBERS_PATH = 'isk/members.json';
 
 // ---- Blob ----
@@ -130,6 +133,47 @@ async function removeMember(name) {
   } catch (e) { /* 무시 */ }
 }
 
+// ---- 가입 승인 ----
+function isPending(u) { return !!(u && u.approved === false); }
+async function addPending(name, createdIso) {
+  const ts = Date.parse(createdIso) || Date.now();
+  await put(PEND_DIR + nameHash(name) + '__' + ts + '_' + hexOf(name) + '.json', '{}', {
+    access: 'public', addRandomSuffix: false, allowOverwrite: true,
+    contentType: 'application/json; charset=utf-8',
+  });
+}
+async function clearPending(name) {
+  try {
+    const blobs = (await list({ prefix: PEND_DIR + nameHash(name) + '__', limit: 100 })).blobs || [];
+    await Promise.all(blobs.map((b) => del(b.url).catch(() => {})));
+  } catch (e) { /* 무시 */ }
+}
+async function listPending() {
+  let blobs = [];
+  try { blobs = (await list({ prefix: PEND_DIR, limit: 1000 })).blobs || []; } catch (e) { return []; }
+  return blobs.map((b) => {
+    const m = b.pathname.slice(PEND_DIR.length).match(/^[0-9a-f]+__(\d+)_([0-9a-f]+)\.json$/);
+    return m ? { name: unhex(m[2]), at: new Date(+m[1]).toISOString() } : null;
+  }).filter(Boolean).sort((a, b) => a.at.localeCompare(b.at));
+}
+// 관리자 승인: user 파일 approved:true + 멤버 명부에 추가
+async function approveUser(name) {
+  const u = await readUser(name);
+  if (!u) { await clearPending(name); return false; }
+  const joined = new Date().toISOString();
+  await saveUser(name, Object.assign({}, u, { approved: true, approvedAt: joined }), true);
+  await addMember(u.name || name, joined);
+  await clearPending(name);
+  await rebuildMembers({ add: { name: u.name || name, joined: joined } });
+  return true;
+}
+// 관리자 거절: 대기 중인 계정만 지움 (같은 아이디로 다시 신청 가능)
+async function rejectUser(name) {
+  const u = await readUser(name);
+  if (u && isPending(u)) { try { await del(userFile(name)); } catch (e) { /* 무시 */ } }
+  await clearPending(name);
+}
+
 // ---- 세션 토큰 ----
 function secret() {
   if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
@@ -193,6 +237,7 @@ module.exports = async (req, res) => {
       if (await isBanned(newname)) { res.status(403).json({ error: 'banned' }); return; }
       const cur = await readUser(name);
       if (!cur || cur.hash !== hashPw(name, pw)) { res.status(401).json({ error: 'wrong' }); return; }
+      if (isPending(cur)) { res.status(403).json({ error: 'pending' }); return; }
       if (await readUser(newname)) { res.status(409).json({ error: 'exists' }); return; }
       try {
         // 비번 해시에 아이디가 섞여 있어 새 아이디로 다시 해시해야 함 (pw 평문은 요청에 있음)
@@ -215,7 +260,8 @@ module.exports = async (req, res) => {
       if (newpw.length < 4 || newpw.length > 40) { res.status(400).json({ error: 'bad-newpw' }); return; }
       const u = await readUser(name);
       if (!u || u.hash !== hashPw(name, pw)) { res.status(401).json({ error: 'wrong' }); return; }
-      await saveUser(name, { name: u.name || name, hash: hashPw(name, newpw), created: u.created || new Date().toISOString() }, true);
+      if (isPending(u)) { res.status(403).json({ error: 'pending' }); return; }
+      await saveUser(name, Object.assign({}, u, { hash: hashPw(name, newpw) }), true);
       const user0 = { sub: 'local:' + name.toLowerCase(), name: u.name || name, admin: name.toLowerCase() === ADMIN_NAME };
       const exp0 = now + SESSION_TTL;
       res.setHeader('Cache-Control', 'no-store');
@@ -226,10 +272,18 @@ module.exports = async (req, res) => {
     if (action === 'signup') {
       if (await readUser(name)) { res.status(409).json({ error: 'exists' }); return; }
       const created = new Date().toISOString();
+      const admin0 = name.toLowerCase() === ADMIN_NAME;
       try {
-        await saveUser(name, { name: name, hash: hashPw(name, pw), created: created });
+        await saveUser(name, { name: name, hash: hashPw(name, pw), created: created, approved: admin0 });
       } catch (e) {
         res.status(409).json({ error: 'exists' });
+        return;
+      }
+      if (!admin0) {
+        // 관리자 승인 전에는 토큰을 주지 않음
+        await addPending(name, created);
+        res.setHeader('Cache-Control', 'no-store');
+        res.status(200).json({ pending: true, name: name });
         return;
       }
       await addMember(name, created);
@@ -237,6 +291,7 @@ module.exports = async (req, res) => {
     } else {
       const u = await readUser(name);
       if (!u || u.hash !== hashPw(name, pw)) { res.status(401).json({ error: 'wrong' }); return; }
+      if (isPending(u)) { res.status(403).json({ error: 'pending' }); return; }
       displayName = u.name || name;
     }
 
@@ -260,4 +315,7 @@ module.exports.listBanned = listBanned;
 module.exports.blobStoreId = blobStoreId;
 module.exports.blobBase = blobBase;
 module.exports.MEMBERS_PATH = MEMBERS_PATH;
+module.exports.listPending = listPending;
+module.exports.approveUser = approveUser;
+module.exports.rejectUser = rejectUser;
 module.exports.ADMIN_SUB = ADMIN_SUB;
