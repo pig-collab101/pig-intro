@@ -127,6 +127,19 @@
   .hero .btn.ghost { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.35); }
   .hero-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 
+  .mission { margin-top: 16px; padding: 18px 20px; border: 2px solid var(--acc); }
+  .mission-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mission-tag { font-weight: 850; color: var(--acc); }
+  .mission-due { font-size: 13px; font-weight: 700; color: var(--ink2); background: var(--bg2); padding: 2px 9px; border-radius: 999px; }
+  .mission-due:empty { display: none; }
+  .mission-due.late { color: var(--red); background: var(--redSoft); }
+  .mission-head .btn { margin-left: auto; }
+  .mission h3 { font-size: 20px; font-weight: 850; margin: 8px 0 4px; word-break: break-word; }
+  .mission p { margin: 0; white-space: pre-wrap; color: var(--ink2); word-break: break-word; }
+  .bar { height: 10px; border-radius: 999px; background: var(--bg2); overflow: hidden; margin-top: 12px; }
+  .bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--acc), var(--hero3)); transition: width .4s; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink3); margin-top: 5px; }
+  input[type=date] { width: 100%; padding: 10px 12px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0 26px; }
   .stat { padding: 16px 18px; }
   .stat b { display: block; font-size: 26px; font-weight: 900; }
@@ -296,6 +309,14 @@
         <button class="btn" id="hero-join">✨ 가입 신청하기</button>
         <button class="btn ghost" data-go="board">💬 나눔마당 가기</button>
       </div>
+    </div>
+    <div class="card mission" id="mission-card">
+      <div class="mission-head">
+        <span class="mission-tag">🎯 이번 목표</span>
+        <span class="mission-due" id="mission-due"></span>
+        <button class="btn soft sm" id="mission-edit" hidden>✏️ 목표 정하기</button>
+      </div>
+      <div id="mission-body"></div>
     </div>
     <div class="stats">
       <div class="card stat"><b id="st-members">–</b><span>👥 멤버</span></div>
@@ -481,6 +502,28 @@
 </div>
 
 <!-- 소개 수정 모달 -->
+<!-- 이번 목표 모달 (관리자) -->
+<div class="modal-bg" id="mission-modal" hidden>
+  <form class="card modal wide" id="mission-form">
+    <h3>🎯 이번 목표 정하기</h3>
+    <p class="sub">관리자만 정할 수 있어요. 홈 화면 맨 위에 모두에게 보여요.</p>
+    <label class="f" for="m-title">목표</label>
+    <input type="text" id="m-title" maxlength="60" placeholder="예: 동네 저수지 황소개구리 서식지 조사">
+    <label class="f" for="m-text">자세한 내용 (할 일, 모이는 곳 등)</label>
+    <textarea id="m-text" maxlength="1000" rows="5" placeholder="예: 현장조사자는 발견 제보 올리기, 정보 분석가는 지도에 정리하기"></textarea>
+    <label class="f" for="m-due">기한</label>
+    <input type="date" id="m-due">
+    <label class="f" for="m-progress">진행률 <b id="m-progress-v">0%</b></label>
+    <input type="range" id="m-progress" min="0" max="100" step="5" value="0" style="width:100%">
+    <div class="err" id="mission-err"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn danger" id="mission-clear" style="margin-right:auto">목표 내리기</button>
+      <button type="button" class="btn ghost" data-close>취소</button>
+      <button type="submit" class="btn">저장</button>
+    </div>
+  </form>
+</div>
+
 <div class="modal-bg" id="about-modal" hidden>
   <form class="card modal wide" id="about-form">
     <h3>소개 수정</h3>
@@ -647,6 +690,7 @@
       var av = $("chip-av"); av.textContent = u.name.charAt(0).toUpperCase(); av.style.background = colorOf(u.name);
     }
     $("about-edit").hidden = !amAdmin();
+    renderMission();
     if (amAdmin()) loadAdmin(); else setPendBadge(0);
     $("notice-write").hidden = !amAdmin();
     renderMe();
@@ -678,7 +722,7 @@
   function loadAll() {
     return Promise.all([
       api("/api/board").then(function (d) { state.posts = Array.isArray(d) ? d : []; }).catch(function () { state.posts = []; }),
-      api("/api/site").then(function (d) { state.site = d.site || {}; state.members = d.members || []; }).catch(function () {})
+      api("/api/site").then(function (d) { state.site = d.site || {}; state.members = d.members || []; state.mission = d.mission || null; }).catch(function () {})
     ]).then(function () { state.loaded = true; renderAll(); });
   }
   function setPosts(posts) { if (Array.isArray(posts)) { state.posts = posts; renderAll(); } }
@@ -705,7 +749,33 @@
     if (state.postId) renderPost();
   }
 
+  function renderMission() {
+    var m = state.mission, admin = amAdmin();
+    $("mission-edit").hidden = !admin;
+    $("mission-card").hidden = !m && !admin && state.loaded;
+    var due = $("mission-due");
+    due.textContent = ""; due.className = "mission-due";
+    if (!m) {
+      $("mission-body").innerHTML = '<p class="muted" style="margin-top:8px">' +
+        (!state.loaded ? "불러오는 중…" : "아직 이번 목표가 없어요. '목표 정하기'를 눌러 정해 주세요.") + "</p>";
+      return;
+    }
+    if (m.due) {
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var days = Math.round((new Date(m.due + "T00:00:00") - today) / 86400000);
+      due.textContent = "📅 " + m.due.replace(/-/g, ".") + (days > 0 ? " · D-" + days : days === 0 ? " · 오늘까지" : " · 기한 지남");
+      if (days < 0 && m.progress < 100) due.className = "mission-due late";
+    }
+    var p = Math.max(0, Math.min(100, m.progress || 0));
+    $("mission-body").innerHTML = "<h3>" + (p >= 100 ? "✅ " : "") + esc(m.title) + "</h3>" +
+      (m.text ? "<p>" + esc(m.text) + "</p>" : "") +
+      '<div class="bar"><i style="width:' + p + '%"></i></div>' +
+      '<div class="bar-label"><span>진행률 <b style="color:var(--ink)">' + p + "%</b></span><span>" +
+      esc(m.by || "") + " · " + fmtDate(m.updated) + " 정함</span></div>";
+  }
+
   function renderHome() {
+    renderMission();
     $("hero-full").textContent = site("fullName");
     $("hero-motto").textContent = site("motto");
     $("st-members").textContent = state.members.length;
@@ -1000,6 +1070,32 @@
       state.site = d.site || body; renderAll(); closeModal("about-modal"); toast("소개를 저장했어요");
     }).catch(function (er) { $("about-err").textContent = errMsg(er.message); });
   });
+
+  // ---------- 이번 목표 (관리자) ----------
+  $("mission-edit").onclick = function () {
+    var m = state.mission || {};
+    $("m-title").value = m.title || ""; $("m-text").value = m.text || ""; $("m-due").value = m.due || "";
+    $("m-progress").value = m.progress || 0; $("m-progress-v").textContent = (m.progress || 0) + "%";
+    $("mission-clear").hidden = !state.mission;
+    $("mission-err").textContent = "";
+    openModal("mission-modal");
+    setTimeout(function () { $("m-title").focus(); }, 30);
+  };
+  $("m-progress").addEventListener("input", function () { $("m-progress-v").textContent = this.value + "%"; });
+  function saveMission(body, msg) {
+    api("/api/site", { method: "POST", body: body }).then(function (d) {
+      state.mission = d.mission || null; renderMission(); closeModal("mission-modal"); toast(msg);
+    }).catch(function (er) { $("mission-err").textContent = errMsg(er.message); });
+  }
+  $("mission-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var title = $("m-title").value.trim();
+    if (!title) { $("mission-err").textContent = "목표를 입력해 주세요."; return; }
+    saveMission({ action: "mission", title: title, text: $("m-text").value.trim(), due: $("m-due").value, progress: +$("m-progress").value }, "🎯 이번 목표를 정했어요");
+  });
+  $("mission-clear").onclick = function () {
+    if (confirm("이번 목표를 내릴까요? 홈에서 사라져요.")) saveMission({ action: "mission", clear: true }, "목표를 내렸어요");
+  };
 
   // ---------- 관리자 패널 ----------
   function banUser(name) {
