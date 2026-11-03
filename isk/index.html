@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>I.S.K</title>
-<meta name="description" content="I.S.K 모임 홈페이지 — 소개, 멤버, 공지, 나눔마당">
+<meta name="description" content="I.S.K (Invasive Species Kill) — 생태계 교란종 퇴치 모임 홈페이지">
 <meta name="theme-color" content="#4f46e5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 3 58 18v28L32 61 6 46V18z' fill='%234f46e5'/%3E%3Ctext x='32' y='40' font-size='19' font-family='Arial' font-weight='900' fill='white' text-anchor='middle'%3EISK%3C/text%3E%3C/svg%3E">
 <script>
@@ -149,7 +149,8 @@
   .badge { flex: none; display: inline-block; font-size: 11.5px; font-weight: 800; padding: 2px 8px; border-radius: 7px; }
   .b-notice { background: var(--goldSoft); color: var(--gold); }
   .b-free { background: var(--accSoft); color: var(--acc); }
-  .b-question { background: var(--greenSoft); color: var(--green); }
+  .b-spot { background: var(--greenSoft); color: var(--green); }
+  .b-question { background: var(--bg2); color: var(--ink2); }
   .b-review { background: var(--redSoft); color: var(--red); }
   .b-admin { background: var(--goldSoft); color: var(--gold); }
 
@@ -275,10 +276,10 @@
   <!-- 홈 -->
   <section class="page" id="page-home">
     <div class="hero">
-      <span class="tag">우리들의 모임</span>
+      <span class="tag">🌿 생태계 교란종 퇴치 모임</span>
       <h1>I.S.K</h1>
       <div class="full" id="hero-full"></div>
-      <div class="motto" id="hero-motto">함께 배우고, 함께 자라는 우리들의 모임</div>
+      <div class="motto" id="hero-motto">교란종을 막고, 우리 생태계를 지켜요</div>
       <div class="hero-btns">
         <button class="btn" id="hero-join">✨ 멤버 가입하기</button>
         <button class="btn ghost" data-go="board">💬 나눔마당 가기</button>
@@ -357,6 +358,7 @@
       <div class="tabs" id="board-tabs">
         <button data-cat="" class="on">전체</button>
         <button data-cat="free">자유</button>
+        <button data-cat="spot">🔍 발견 제보</button>
         <button data-cat="question">질문</button>
         <button data-cat="review">활동 후기</button>
       </div>
@@ -445,6 +447,7 @@
     <label class="f" for="w-cat">말머리</label>
     <select id="w-cat">
       <option value="free">자유</option>
+      <option value="spot">🔍 발견 제보 (어디서 어떤 교란종을 봤는지)</option>
       <option value="question">질문</option>
       <option value="review">활동 후기</option>
       <option value="notice" id="w-cat-notice">📢 공지 (관리자)</option>
@@ -493,13 +496,16 @@
   var $ = function (id) { return document.getElementById(id); };
   var SESSION_KEY = "isk-session-v1";
   var ADMIN = "adminpig1234";
-  var CAT_NAME = { notice: "공지", free: "자유", question: "질문", review: "후기" };
+  var CAT_NAME = { notice: "공지", free: "자유", spot: "발견", question: "질문", review: "후기" };
   var DEFAULT_SITE = {
-    fullName: "",
-    motto: "함께 배우고, 함께 자라는 우리들의 모임",
-    about: "I.S.K 는 관심사를 나누고 함께 활동하는 모임이에요.\n누구나 가입해서 이야기를 나눌 수 있어요.",
-    goals: "· 서로 배우고 가르쳐 주기\n· 즐겁게 활동하고 기록 남기기\n· 모두가 편하게 참여하는 모임 만들기",
-    rules: "1. 서로 존중하고 예의 바르게 말해요.\n2. 욕설·비방·도배는 하지 않아요.\n3. 개인정보(전화번호·주소)는 올리지 않아요.\n4. 공지는 꼭 읽어 주세요.",
+    fullName: "Invasive · Species · Kill",
+    motto: "교란종을 막고, 우리 생태계를 지켜요",
+    about: "I.S.K 는 Invasive Species Kill, 곧 '교란종 퇴치'의 줄임말이에요.\n" +
+      "황소개구리·뉴트리아·큰입배스·블루길·붉은귀거북 같은 동물이나 가시박·돼지풀 같은 식물은 원래 우리나라에 없던 생물인데, " +
+      "들어와서 토종 생물을 잡아먹거나 자리를 빼앗아 생태계를 어지럽혀요.\n" +
+      "I.S.K 는 이런 생태계 교란종을 알아보고, 신고하고, 퇴치 활동에 함께하는 모임이에요.",
+    goals: "· 생태계 교란종을 정확히 알아보기 (토종과 헷갈리지 않기!)\n· 발견한 곳과 사진을 나눔마당에 기록하기\n· 지역 퇴치 행사·정화 활동에 함께 참여하기\n· 토종 생물을 지키는 방법 널리 알리기",
+    rules: "1. 안전이 먼저! 물가·산에서는 꼭 어른과 함께 다녀요.\n2. 법과 지역 지침을 지켜요. 포획이 금지된 곳에서는 직접 잡지 말고 신고해요.\n3. 토종 생물은 절대 해치지 않아요. 헷갈리면 건드리지 말고 사진부터!\n4. 잡은 교란종을 다른 곳에 풀어 주거나 기르지 않아요.\n5. 서로 존중하고, 개인정보(전화번호·주소)는 올리지 않아요.",
     founded: "2026-11-03"
   };
   var ERR = {

@@ -1,7 +1,7 @@
 // I.S.K 모임 사이트 – 게시판 API (공지 + 나눔마당, Vercel 서버리스 + Vercel Blob)
 // GET                          → 글 목록 (최신순, 집계 파일 1회 읽기, 글마다 댓글 수 포함)
 // GET ?comments=<id>           → { comments:[...] }  특정 글의 댓글
-// POST {cat,title,text}        → 새 글 (로그인 필요, 차단 불가, cat 'notice' 는 관리자만)
+// POST {cat,title,text}        → 새 글 (로그인 필요, 차단 불가, cat 'notice' 는 관리자만, 'spot' = 교란종 발견 제보)
 // POST {action:'comment', id, text} → 댓글 달기
 // POST {action:'report', id}   → 글 신고
 // POST {action:'ban'|'unban', name} → 관리자 추방/해제
@@ -21,7 +21,7 @@ const AGG_PATH = 'isk/board.json';
 const POST_DIR = 'isk/n/';
 const CMT_DIR = 'isk/c/';
 const REP_DIR = 'isk/rep/';
-const CATS = ['notice', 'free', 'question', 'review'];
+const CATS = ['notice', 'free', 'spot', 'question', 'review'];
 const MAX_SHOW = 200;
 const MAX_TITLE = 60;
 const MAX_TEXT = 3000;
