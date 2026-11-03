@@ -249,6 +249,24 @@
   .err { color: var(--red); font-size: 13.5px; font-weight: 600; min-height: 1.2em; margin-top: 10px; }
   .err.ok { color: var(--green); }
 
+  /* ---- 작전 기록 ---- */
+  .op { padding: 18px 20px; position: relative; }
+  .op + .op { margin-top: 14px; }
+  .op-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .op-no { font-weight: 900; color: var(--acc); }
+  .op-date { font-size: 13px; }
+  .op-head .x { margin-left: auto; border: 0; background: none; color: var(--ink3); cursor: pointer; font-size: 12.5px; }
+  .op h3 { font-size: 19px; font-weight: 850; margin: 8px 0 4px; word-break: break-word; }
+  .op p { margin: 0; white-space: pre-wrap; color: var(--ink2); word-break: break-word; }
+  .op-result { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg2); font-size: 14px; }
+  .op-mem { margin-top: 12px; font-size: 14px; }
+  .op-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; border: 1px solid var(--line); font-weight: 700; font-size: 13px; }
+  .op-chip .avatar { width: 22px; height: 22px; font-size: 11px; }
+  .mchks { display: flex; flex-wrap: wrap; gap: 6px; max-height: 160px; overflow: auto; }
+  .mchk { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); cursor: pointer; font-size: 14px; font-weight: 600; }
+  .mchk:has(input:checked) { background: var(--accSoft); border-color: var(--acc); color: var(--acc); }
+
   /* ---- 도감 ---- */
   .guide-warn { border: 1px solid var(--gold); background: var(--goldSoft); }
   .guide-warn ul { margin: 6px 0 0; padding-left: 20px; color: var(--ink2); font-size: 14px; }
@@ -332,6 +350,7 @@
       <a data-go="board">나눔마당</a>
       <a data-go="map">🗺️ 제보 지도</a>
       <a data-go="guide">📖 도감</a>
+      <a data-go="ops">📜 작전 기록</a>
       <a data-go="me">내 정보</a>
     </nav>
     <div class="top-right">
@@ -361,6 +380,7 @@
         <span class="mission-tag">🎯 이번 목표</span>
         <span class="mission-due" id="mission-due"></span>
         <button class="btn soft sm" id="mission-edit" hidden>✏️ 목표 정하기</button>
+        <button class="btn sm" id="mission-finish" hidden>🏁 작전 끝내기</button>
       </div>
       <div id="mission-body"></div>
     </div>
@@ -420,7 +440,7 @@
         <button data-sort="role" class="on">⭐ 계급순</button>
         <button data-sort="score">🏅 활동 점수순</button>
       </div>
-      <span class="muted" style="font-size:13px">🏅 점수: 발견 제보 10 · 사진 붙은 제보 +5 · 다른 글 3 · 댓글 1</span>
+      <span class="muted" style="font-size:13px">🏅 점수: 발견 제보 10 · 사진 붙은 제보 +5 · 작전 참여 5 · 다른 글 3 · 댓글 1</span>
     </div>
     <div class="mgrid" id="mem-grid"></div>
   </section>
@@ -451,6 +471,15 @@
       <input type="text" class="search" id="board-search" placeholder="🔍 제목·내용·글쓴이 검색">
     </div>
     <div class="card pad"><ul class="plist" id="board-list"></ul></div>
+  </section>
+
+  <!-- 작전 기록 -->
+  <section class="page" id="page-ops">
+    <div class="page-head">
+      <div><h2>📜 작전 기록</h2><p>I.S.K 가 해낸 작전들 · <b id="ops-count">0</b>개</p></div>
+      <button class="btn soft" id="ops-add" hidden>＋ 기록 직접 추가</button>
+    </div>
+    <div id="ops-list"></div>
   </section>
 
   <!-- 교란종 도감 -->
@@ -607,6 +636,39 @@
 
 <!-- 소개 수정 모달 -->
 <!-- 이번 목표 모달 (관리자) -->
+<!-- 작전 기록 모달 (관리자) -->
+<div class="modal-bg" id="op-modal" hidden>
+  <form class="card modal wide" id="op-form">
+    <h3 id="op-h">🏁 작전 끝내기</h3>
+    <p class="sub" id="op-sub"></p>
+    <label class="f" for="o-title">작전 이름</label>
+    <input type="text" id="o-title" maxlength="60">
+    <label class="f" for="o-text">작전 내용</label>
+    <textarea id="o-text" maxlength="1000" rows="3"></textarea>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <label class="f" for="o-status">결과</label>
+        <select id="o-status"><option value="done">✅ 완료</option><option value="stopped">⏹️ 중단</option></select>
+      </div>
+      <div style="flex:1;min-width:140px">
+        <label class="f" for="o-due">기한</label>
+        <input type="date" id="o-due">
+      </div>
+    </div>
+    <label class="f" for="o-progress">최종 진행률 <b id="o-progress-v">0%</b></label>
+    <input type="range" id="o-progress" min="0" max="100" step="5" value="0" style="width:100%">
+    <label class="f" for="o-result">결과 정리 (무엇을 했고, 얼마나 찾았는지)</label>
+    <textarea id="o-result" maxlength="1500" rows="4" placeholder="예: 황소개구리 성체 12마리·올챙이 다수 확인, 서식지 3곳 지도에 기록, 지자체에 신고 완료"></textarea>
+    <label class="f">참여한 사람 <a id="o-all" style="cursor:pointer;font-weight:700;margin-left:6px">모두 선택</a></label>
+    <div class="mchks" id="o-members"></div>
+    <div class="err" id="op-err"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn ghost" data-close>취소</button>
+      <button type="submit" class="btn" id="op-submit">기록 남기기</button>
+    </div>
+  </form>
+</div>
+
 <div class="modal-bg" id="mission-modal" hidden>
   <form class="card modal wide" id="mission-form">
     <h3>🎯 이번 목표 정하기</h3>
@@ -802,7 +864,7 @@
   }
 
   // ---------- 페이지 이동 ----------
-  var PAGES = ["home", "about", "members", "notice", "board", "map", "guide", "post", "me"];
+  var PAGES = ["home", "about", "members", "notice", "board", "map", "guide", "ops", "post", "me"];
   function go(page) { location.hash = page; }
   function route() {
     var h = location.hash.replace(/^#/, "");
@@ -828,7 +890,7 @@
     return Promise.all([
       api("/api/board").then(function (d) { state.posts = Array.isArray(d) ? d : []; }).catch(function () { state.posts = []; }),
       loadScores(),
-      api("/api/site").then(function (d) { state.site = d.site || {}; state.members = d.members || []; state.mission = d.mission || null; }).catch(function () {})
+      api("/api/site").then(function (d) { state.site = d.site || {}; state.members = d.members || []; state.mission = d.mission || null; state.ops = d.ops || []; }).catch(function () {})
     ]).then(function () { state.loaded = true; renderAll(); });
   }
   function loadScores() {
@@ -859,13 +921,14 @@
   function loadingOr(msg) { return state.loaded ? emptyHTML(msg) : emptyHTML("불러오는 중…"); }
 
   function renderAll() {
-    renderHome(); renderAbout(); renderMembers(); renderNotice(); renderBoard(); renderMe(); renderSpotMap();
+    renderHome(); renderAbout(); renderMembers(); renderNotice(); renderBoard(); renderMe(); renderSpotMap(); renderOps();
     if (state.postId) renderPost();
   }
 
   function renderMission() {
     var m = state.mission, admin = amAdmin();
     $("mission-edit").hidden = !admin;
+    $("mission-finish").hidden = !admin || !m;
     $("mission-card").hidden = !m && !admin && state.loaded;
     var due = $("mission-due");
     due.textContent = ""; due.className = "mission-due";
@@ -887,6 +950,43 @@
       '<div class="bar-label"><span>진행률 <b style="color:var(--ink)">' + p + "%</b></span><span>" +
       esc(m.by || "") + " · " + fmtDate(m.updated) + " 정함</span></div>";
   }
+
+  function opDay(iso) { var d = new Date(iso); return isNaN(d) ? "" : d.getFullYear() + "." + (d.getMonth() + 1) + "." + d.getDate(); }
+  function renderOps() {
+    var ops = state.ops || [], admin = amAdmin();
+    $("ops-add").hidden = !admin;
+    $("ops-count").textContent = ops.length;
+    $("ops-list").innerHTML = ops.length ? ops.map(function (o, i) {
+      var p = Math.max(0, Math.min(100, o.progress || 0));
+      // 작전 기간에 올라온 발견 제보 수
+      var spots = o.started ? state.posts.filter(function (x) { return x.cat === "spot" && x.time >= o.started && x.time <= o.ended; }).length : null;
+      return '<div class="card op">' +
+        '<div class="op-head"><span class="op-no">#' + (ops.length - i) + "</span>" +
+        (o.status === "stopped" ? '<span class="badge r-commander">⏹️ 중단</span>' : '<span class="badge r-field">✅ 완료</span>') +
+        '<span class="muted op-date">' + (o.started ? opDay(o.started) + " ~ " : "") + opDay(o.ended) + "</span>" +
+        (admin ? '<button class="x" data-opdel="' + esc(o.id) + '" title="기록 지우기">삭제</button>' : "") + "</div>" +
+        "<h3>" + esc(o.title) + "</h3>" +
+        (o.text ? "<p>" + esc(o.text) + "</p>" : "") +
+        '<div class="bar"><i style="width:' + p + '%"></i></div>' +
+        '<div class="bar-label"><span>최종 진행률 <b style="color:var(--ink)">' + p + "%</b></span>" +
+        (spots != null ? "<span>🔍 기간 중 발견 제보 <b style=\"color:var(--ink)\">" + spots + "</b>건</span>" : "") + "</div>" +
+        (o.result ? '<div class="op-result"><b>📝 결과</b><p>' + esc(o.result) + "</p></div>" : "") +
+        '<div class="op-mem"><b>👥 참여 ' + (o.members || []).length + "명</b>" +
+        ((o.members || []).length ? '<div class="op-chips">' + o.members.map(function (n) {
+          return '<span class="op-chip">' + avatar(n) + esc(n) + "</span>";
+        }).join("") + "</div>" : '<span class="muted"> · 기록 없음</span>') + "</div>" +
+        "</div>";
+    }).join("") : '<div class="card empty">' + (state.loaded ? "아직 끝낸 작전이 없어요. 홈의 '이번 목표'를 끝내면 여기에 기록돼요." : "불러오는 중…") + "</div>";
+  }
+  $("ops-list").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-opdel]"); if (!b) return;
+    if (!confirm("이 작전 기록을 지울까요? 참여 점수도 함께 빠져요.")) return;
+    api("/api/site", { method: "POST", body: { action: "opdel", id: b.getAttribute("data-opdel") } }).then(function (d) {
+      var id = b.getAttribute("data-opdel");
+      state.ops = Array.isArray(d.ops) ? d.ops : (state.ops || []).filter(function (o) { return o.id !== id; });
+      renderAll(); toast("작전 기록을 지웠어요");
+    }).catch(function (er) { toast(errMsg(er.message)); });
+  });
 
   function renderHome() {
     renderMission();
@@ -915,15 +1015,19 @@
     $("ab-count").textContent = state.members.length;
   }
 
-  // 활동 점수: 발견 제보 10 · 사진 붙은 제보 +5 · 다른 글 3 · 댓글 1 (재료는 서버 isk/scores.json)
+  // 활동 점수: 발견 제보 10 · 사진 붙은 제보 +5 · 작전 참여 5 · 다른 글 3 · 댓글 1 (글·댓글은 서버 isk/scores.json, 작전은 state.ops)
   function scoreOf(name) {
     var r = (state.scores || {})["local:" + String(name || "").toLowerCase()] || {};
     var s = { spot: r.spot || 0, photo: r.photo || 0, post: r.post || 0, cmt: r.cmt || 0 };
-    s.total = s.spot * 10 + s.photo * 5 + s.post * 3 + s.cmt;
+    var low = String(name || "").toLowerCase();
+    s.op = (state.ops || []).filter(function (o) {
+      return (o.members || []).some(function (n) { return String(n).toLowerCase() === low; });
+    }).length;
+    s.total = s.spot * 10 + s.photo * 5 + s.post * 3 + s.cmt + s.op * 5;
     return s;
   }
   function scoreText(s) {
-    return "발견 제보 " + s.spot + "개(사진 " + s.photo + ") · 다른 글 " + s.post + "개 · 댓글 " + s.cmt + "개";
+    return "발견 제보 " + s.spot + "개(사진 " + s.photo + ") · 다른 글 " + s.post + "개 · 댓글 " + s.cmt + "개 · 작전 참여 " + s.op + "번";
   }
   $("mem-sort").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
@@ -1466,11 +1570,63 @@
     e.preventDefault();
     var title = $("m-title").value.trim();
     if (!title) { $("mission-err").textContent = "목표를 입력해 주세요."; return; }
-    saveMission({ action: "mission", title: title, text: $("m-text").value.trim(), due: $("m-due").value, progress: +$("m-progress").value }, "🎯 이번 목표를 정했어요");
+    saveMission({
+      action: "mission", title: title, text: $("m-text").value.trim(), due: $("m-due").value, progress: +$("m-progress").value,
+      started: state.mission ? state.mission.started || state.mission.updated : ""
+    }, "🎯 이번 목표를 정했어요");
   });
   $("mission-clear").onclick = function () {
     if (confirm("이번 목표를 내릴까요? 홈에서 사라져요.")) saveMission({ action: "mission", clear: true }, "목표를 내렸어요");
   };
+
+  // ---------- 작전 기록 (관리자: 끝내기 / 직접 추가) ----------
+  var opMode = "finish";
+  function openOp(mode) {
+    opMode = mode;
+    var m = mode === "finish" ? (state.mission || {}) : {};
+    $("op-h").textContent = mode === "finish" ? "🏁 작전 끝내기" : "📜 작전 기록 직접 추가";
+    $("op-sub").textContent = mode === "finish"
+      ? "이번 목표를 작전 기록에 남기고 홈에서 내려요. 참여한 사람은 작전 1개당 5점을 받아요."
+      : "예전에 했던 작전을 기록으로 남겨요. 참여한 사람은 작전 1개당 5점을 받아요.";
+    $("o-title").value = m.title || ""; $("o-text").value = m.text || ""; $("o-due").value = m.due || "";
+    $("o-status").value = "done";
+    $("o-progress").value = mode === "finish" ? (m.progress || 0) : 100;
+    $("o-progress-v").textContent = $("o-progress").value + "%";
+    $("o-result").value = ""; $("op-err").textContent = "";
+    var names = state.members.map(function (x) { return x.name; }).sort(function (a, b) { return a.localeCompare(b, "ko"); });
+    $("o-members").innerHTML = names.length ? names.map(function (n) {
+      return '<label class="mchk"><input type="checkbox" value="' + esc(n) + '"> ' + esc(n) + "</label>";
+    }).join("") : '<span class="muted">멤버가 없어요</span>';
+    openModal("op-modal");
+  }
+  $("mission-finish").onclick = function () { openOp("finish"); };
+  $("ops-add").onclick = function () { openOp("add"); };
+  $("o-progress").addEventListener("input", function () { $("o-progress-v").textContent = this.value + "%"; });
+  $("o-all").onclick = function () {
+    var boxes = $("o-members").querySelectorAll("input"), all = Array.prototype.every.call(boxes, function (b) { return b.checked; });
+    boxes.forEach(function (b) { b.checked = !all; });
+  };
+  $("op-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var title = $("o-title").value.trim();
+    if (!title) { $("op-err").textContent = "작전 이름을 입력해 주세요."; return; }
+    var members = Array.prototype.map.call($("o-members").querySelectorAll("input:checked"), function (b) { return b.value; });
+    var finish = opMode === "finish";
+    var body = {
+      action: "op", title: title, text: $("o-text").value.trim(), due: $("o-due").value,
+      status: $("o-status").value, progress: +$("o-progress").value, result: $("o-result").value.trim(), members: members,
+      started: finish && state.mission ? state.mission.started || state.mission.updated : "", endMission: finish
+    };
+    var btn = $("op-submit"); btn.disabled = true;
+    api("/api/site", { method: "POST", body: body }).then(function (d) {
+      if (Array.isArray(d.ops)) state.ops = d.ops; else if (d.op) state.ops = [d.op].concat(state.ops || []);
+      if (finish) state.mission = null;
+      renderAll(); closeModal("op-modal");
+      toast(finish ? "🏁 작전을 끝내고 기록에 남겼어요" : "📜 작전 기록을 추가했어요");
+      if (finish) go("ops");
+    }).catch(function (er) { $("op-err").textContent = errMsg(er.message); })
+      .then(function () { btn.disabled = false; });
+  });
 
   // ---------- 관리자 패널 ----------
   function banUser(name) {
