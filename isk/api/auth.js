@@ -6,6 +6,8 @@
 // 관리자 = 아이디 '김승우' 딱 하나 (가입하면 바로 승인됨)
 // 가입 승인제 = 가입하면 user 파일 approved:false + 대기 파일 isk/pend/<해시>__<ts>_<이름hex>.json
 //               관리자가 승인해야 로그인 가능 (승인/거절은 /api/admin)
+// 실명 가입 = 아이디는 한글 실명 2~5자만 (REALNAME)
+// 계급 = isk/role/<해시>__<계급키>.json (관리자만 지정, 사람마다 파일 1개) → members.json 에 role 로 합침
 // 멤버 명부 = isk/m/<해시>__<가입ts>_<이름hex>.json (경로에 정보, 내용 없음) → list() 로 isk/members.json 재생성
 // 세션 토큰:  base64url(payload JSON) + "." + base64url(HMAC-SHA256(payload, SECRET))
 
@@ -21,6 +23,10 @@ const ADMIN_SUB = 'local:' + ADMIN_NAME;
 const MEMBER_DIR = 'isk/m/';
 const PEND_DIR = 'isk/pend/';
 const MEMBERS_PATH = 'isk/members.json';
+const ROLE_DIR = 'isk/role/';
+// 계급 (높은 순). 관리자 기본 = chief, 나머지 기본 = field
+const ROLES = ['chief', 'commander', 'planner', 'analyst', 'field'];
+const REALNAME = /^[가-힣]{2,5}$/;
 
 // ---- Blob ----
 function blobStoreId() {
@@ -88,19 +94,61 @@ async function listBanned() {
 function hexOf(s) { return Buffer.from(String(s), 'utf8').toString('hex'); }
 function unhex(h) { try { return Buffer.from(h, 'hex').toString('utf8'); } catch (e) { return ''; } }
 
-// 명부 파일들을 모아 isk/members.json 을 다시 만듦 (가입·아이디변경 때만)
-// opts: { add: {name, joined}, removeName } — list() 반영 지연 대비
+function defaultRole(name) { return String(name).toLowerCase() === ADMIN_NAME ? 'chief' : 'field'; }
+async function listAllBlobs(prefix) {
+  let blobs = [];
+  let cursor;
+  do {
+    const r = await list({ prefix: prefix, limit: 1000, cursor: cursor });
+    blobs = blobs.concat(r.blobs || []);
+    cursor = r.hasMore ? r.cursor : null;
+  } while (cursor);
+  return blobs;
+}
+async function getRole(name) {
+  try {
+    const blobs = (await list({ prefix: ROLE_DIR + nameHash(name) + '__', limit: 100 })).blobs || [];
+    const m = blobs.length && blobs[blobs.length - 1].pathname.match(/__([a-z]+)\.json$/);
+    if (m && ROLES.indexOf(m[1]) >= 0) return m[1];
+  } catch (e) { /* 무시 */ }
+  return defaultRole(name);
+}
+// 계급 파일 교체 (예전 것 지우고 새로 하나)
+async function setRole(name, key) {
+  if (ROLES.indexOf(key) < 0) key = defaultRole(name);
+  const prefix = ROLE_DIR + nameHash(name) + '__';
+  try {
+    const old = (await list({ prefix: prefix, limit: 100 })).blobs || [];
+    await Promise.all(old.filter((b) => b.pathname !== prefix + key + '.json').map((b) => del(b.url).catch(() => {})));
+  } catch (e) { /* 무시 */ }
+  await put(prefix + key + '.json', '{}', {
+    access: 'public', addRandomSuffix: false, allowOverwrite: true,
+    contentType: 'application/json; charset=utf-8',
+  });
+  return key;
+}
+async function clearRole(name) {
+  try {
+    const old = (await list({ prefix: ROLE_DIR + nameHash(name) + '__', limit: 100 })).blobs || [];
+    await Promise.all(old.map((b) => del(b.url).catch(() => {})));
+  } catch (e) { /* 무시 */ }
+}
+
+// 명부 파일들을 모아 isk/members.json 을 다시 만듦 (가입승인·아이디변경·계급변경 때만)
+// opts: { add: {name, joined}, removeName, role: {name, key} } — list() 반영 지연 대비
 async function rebuildMembers(opts) {
   opts = opts || {};
-  let blobs = [];
+  let blobs = [], rblobs = [];
   try {
-    let cursor;
-    do {
-      const r = await list({ prefix: MEMBER_DIR, limit: 1000, cursor: cursor });
-      blobs = blobs.concat(r.blobs || []);
-      cursor = r.hasMore ? r.cursor : null;
-    } while (cursor);
+    blobs = await listAllBlobs(MEMBER_DIR);
+    rblobs = await listAllBlobs(ROLE_DIR);
   } catch (e) { return null; }
+  const roles = {};
+  rblobs.forEach((b) => {
+    const m = b.pathname.slice(ROLE_DIR.length).match(/^([0-9a-f]+)__([a-z]+)\.json$/);
+    if (m && ROLES.indexOf(m[2]) >= 0) roles[m[1]] = m[2];
+  });
+  if (opts.role) roles[nameHash(opts.role.name)] = opts.role.key;
   let members = blobs.map((b) => {
     const m = b.pathname.slice(MEMBER_DIR.length).match(/^[0-9a-f]+__(\d+)_([0-9a-f]+)\.json$/);
     return m ? { name: unhex(m[2]), joined: new Date(+m[1]).toISOString() } : null;
@@ -108,6 +156,7 @@ async function rebuildMembers(opts) {
   const low = (s) => String(s).toLowerCase();
   if (opts.removeName) members = members.filter((m) => low(m.name) !== low(opts.removeName));
   if (opts.add && !members.some((m) => low(m.name) === low(opts.add.name))) members.push(opts.add);
+  members.forEach((m) => { m.role = roles[nameHash(m.name)] || defaultRole(m.name); });
   members.sort((a, b) => String(a.joined).localeCompare(String(b.joined)));
   try {
     await put(MEMBERS_PATH, JSON.stringify(members), {
@@ -157,14 +206,15 @@ async function listPending() {
   }).filter(Boolean).sort((a, b) => a.at.localeCompare(b.at));
 }
 // 관리자 승인: user 파일 approved:true + 멤버 명부에 추가
-async function approveUser(name) {
+async function approveUser(name, roleKey) {
   const u = await readUser(name);
   if (!u) { await clearPending(name); return false; }
   const joined = new Date().toISOString();
   await saveUser(name, Object.assign({}, u, { approved: true, approvedAt: joined }), true);
   await addMember(u.name || name, joined);
+  const key = await setRole(u.name || name, roleKey);
   await clearPending(name);
-  await rebuildMembers({ add: { name: u.name || name, joined: joined } });
+  await rebuildMembers({ add: { name: u.name || name, joined: joined }, role: { name: u.name || name, key: key } });
   return true;
 }
 // 관리자 거절: 대기 중인 계정만 지움 (같은 아이디로 다시 신청 가능)
@@ -231,7 +281,7 @@ module.exports = async (req, res) => {
     if (action === 'rename') {
       if (name.toLowerCase() === ADMIN_NAME) { res.status(403).json({ error: 'no-rename-admin' }); return; }
       const newname = cleanName(body.newname);
-      if (newname.length < 2) { res.status(400).json({ error: 'bad-newname' }); return; }
+      if (!REALNAME.test(newname)) { res.status(400).json({ error: 'bad-realname' }); return; }
       if (newname.toLowerCase() === name.toLowerCase()) { res.status(400).json({ error: 'same-name' }); return; }
       if (newname.toLowerCase() === ADMIN_NAME) { res.status(409).json({ error: 'exists' }); return; }
       if (await isBanned(newname)) { res.status(403).json({ error: 'banned' }); return; }
@@ -245,9 +295,12 @@ module.exports = async (req, res) => {
       } catch (e) { res.status(409).json({ error: 'exists' }); return; }
       try { await del(userFile(name)); } catch (e) { /* 무시 */ }
       const joinedR = cur.created || new Date().toISOString();
+      const roleR = await getRole(name);
+      await clearRole(name);
+      await setRole(newname, roleR);
       await removeMember(name);
       await addMember(newname, joinedR);
-      await rebuildMembers({ removeName: name, add: { name: newname, joined: joinedR } });
+      await rebuildMembers({ removeName: name, add: { name: newname, joined: joinedR }, role: { name: newname, key: roleR } });
       const userR = { sub: 'local:' + newname.toLowerCase(), name: newname, admin: false };
       const expR = now + SESSION_TTL;
       res.setHeader('Cache-Control', 'no-store');
@@ -270,6 +323,7 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'signup') {
+      if (!REALNAME.test(name)) { res.status(400).json({ error: 'bad-realname' }); return; }
       if (await readUser(name)) { res.status(409).json({ error: 'exists' }); return; }
       const created = new Date().toISOString();
       const admin0 = name.toLowerCase() === ADMIN_NAME;
@@ -287,7 +341,8 @@ module.exports = async (req, res) => {
         return;
       }
       await addMember(name, created);
-      await rebuildMembers({ add: { name: name, joined: created } });
+      await setRole(name, 'chief');
+      await rebuildMembers({ add: { name: name, joined: created }, role: { name: name, key: 'chief' } });
     } else {
       const u = await readUser(name);
       if (!u || u.hash !== hashPw(name, pw)) { res.status(401).json({ error: 'wrong' }); return; }
@@ -318,4 +373,8 @@ module.exports.MEMBERS_PATH = MEMBERS_PATH;
 module.exports.listPending = listPending;
 module.exports.approveUser = approveUser;
 module.exports.rejectUser = rejectUser;
+module.exports.setRole = setRole;
+module.exports.rebuildMembers = rebuildMembers;
+module.exports.readUser = readUser;
+module.exports.ROLES = ROLES;
 module.exports.ADMIN_SUB = ADMIN_SUB;

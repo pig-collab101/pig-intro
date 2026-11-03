@@ -154,6 +154,16 @@
   .b-question { background: var(--bg2); color: var(--ink2); }
   .b-review { background: var(--redSoft); color: var(--red); }
   .b-admin { background: var(--goldSoft); color: var(--gold); }
+  .r-chief { background: var(--goldSoft); color: var(--gold); }
+  .r-commander { background: var(--redSoft); color: var(--red); }
+  .r-planner { background: var(--accSoft); color: var(--acc); }
+  .r-analyst { background: color-mix(in srgb, #0ea5e9 16%, transparent); color: #0b8fcc; }
+  .r-field { background: var(--greenSoft); color: var(--green); }
+  select.rsel { width: auto; padding: 5px 8px; font-size: 13px; border-radius: 9px; }
+  .mcard .rsel { margin-top: 4px; width: 100%; }
+  .mcard .t { flex: 1; }
+  .mcard .badge { margin-top: 3px; }
+  .hint { font-size: 12.5px; color: var(--ink3); margin-top: 5px; }
 
   .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
   .tabs { display: flex; gap: 4px; background: var(--bg2); padding: 4px; border-radius: 12px; overflow-x: auto; }
@@ -196,7 +206,7 @@
   .letter span { font-size: 12.5px; color: var(--ink2); font-weight: 700; }
 
   /* ---- 멤버 ---- */
-  .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
   .mcard { padding: 16px; display: flex; align-items: center; gap: 11px; }
   .mcard .avatar { width: 40px; height: 40px; font-size: 16px; }
   .mcard b { display: block; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -387,7 +397,7 @@
         <div><h2 id="me-name"></h2><div class="muted" id="me-joined"></div></div>
         <div class="me-btns">
           <button class="btn ghost sm" id="me-pw">🔑 비번 변경</button>
-          <button class="btn ghost sm" id="me-rename">🏷️ 아이디 변경</button>
+          <button class="btn ghost sm" id="me-rename">🏷️ 이름 변경</button>
           <button class="btn danger sm" id="me-logout">로그아웃</button>
         </div>
       </div>
@@ -405,7 +415,7 @@
         <div class="box-head" style="margin-top:16px"><h3 style="font-size:15px">🚫 추방 목록</h3></div>
         <div id="admin-banned"></div>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <input type="text" id="ban-name" placeholder="추방할 아이디">
+          <input type="text" id="ban-name" placeholder="추방할 이름">
           <button class="btn danger" id="ban-btn" style="flex:none">추방</button>
         </div>
       </div>
@@ -422,9 +432,10 @@
 <div class="modal-bg" id="auth-modal" hidden>
   <form class="card modal" id="auth-form" autocomplete="on">
     <h3 id="auth-title">로그인</h3>
-    <p class="sub" id="auth-sub">I.S.K 멤버 아이디로 로그인하세요</p>
-    <label class="f" for="auth-name">아이디</label>
-    <input type="text" id="auth-name" maxlength="16" autocomplete="username" placeholder="2~16자">
+    <p class="sub" id="auth-sub">I.S.K 멤버 실명으로 로그인하세요</p>
+    <label class="f" for="auth-name">이름 (실명)</label>
+    <input type="text" id="auth-name" maxlength="5" autocomplete="username" placeholder="예: 홍길동">
+    <div class="hint" id="auth-name-hint" hidden>⚠️ 진짜 이름(한글 2~5자)으로 가입해요. 관리자가 실명인지 확인하고 승인해요.</div>
     <label class="f" for="auth-pw" id="auth-pw-label">비밀번호</label>
     <input type="password" id="auth-pw" maxlength="40" autocomplete="current-password" placeholder="4자 이상">
     <div id="auth-new-wrap" hidden>
@@ -501,6 +512,33 @@
   var SESSION_KEY = "isk-session-v1";
   var ADMIN = "김승우";
   var CAT_NAME = { notice: "공지", free: "자유", spot: "발견", question: "질문", review: "후기" };
+  // 계급 (높은 순) — 서버 auth.js ROLES 와 같은 키
+  var ROLES = [
+    { key: "chief", name: "총사령관", icon: "⭐" },
+    { key: "commander", name: "사령관", icon: "🎖️" },
+    { key: "planner", name: "작전 계획자", icon: "🗺️" },
+    { key: "analyst", name: "사령부 정보 분석가", icon: "📡" },
+    { key: "field", name: "현장조사자", icon: "🔍" }
+  ];
+  var REALNAME = /^[가-힣]{2,5}$/;
+  function roleOf(name) {
+    var low = String(name || "").toLowerCase();
+    for (var i = 0; i < state.members.length; i++) {
+      if (String(state.members[i].name).toLowerCase() === low) return state.members[i].role || (isAdminName(name) ? "chief" : "field");
+    }
+    return null;
+  }
+  function roleInfo(key) { for (var i = 0; i < ROLES.length; i++) if (ROLES[i].key === key) return ROLES[i]; return null; }
+  function roleRank(key) { for (var i = 0; i < ROLES.length; i++) if (ROLES[i].key === key) return i; return ROLES.length; }
+  function roleBadge(name) {
+    var r = roleInfo(roleOf(name));
+    return r ? '<span class="badge r-' + r.key + '">' + r.icon + " " + r.name + "</span>" : "";
+  }
+  function roleSelect(attr, cur) {
+    return '<select class="rsel" ' + attr + ">" + ROLES.map(function (r) {
+      return '<option value="' + r.key + '"' + (r.key === cur ? " selected" : "") + ">" + r.icon + " " + r.name + "</option>";
+    }).join("") + "</select>";
+  }
   var DEFAULT_SITE = {
     fullName: "Invasive · Species · Kill",
     motto: "교란종을 막고, 우리 생태계를 지켜요",
@@ -513,11 +551,11 @@
     founded: "2026-11-03"
   };
   var ERR = {
-    "bad-name": "아이디는 2~16자로 써 주세요.", "bad-pw": "비밀번호는 4~40자로 써 주세요.",
-    "bad-newpw": "새 비밀번호는 4~40자로 써 주세요.", "bad-newname": "새 아이디는 2~16자로 써 주세요.",
-    "exists": "이미 있는 아이디예요.", "wrong": "아이디 또는 비밀번호가 틀렸어요.",
-    "banned": "추방된 아이디라 사용할 수 없어요.", "same-name": "지금 아이디와 같아요.",
-    "no-rename-admin": "관리자 아이디는 바꿀 수 없어요.", "unauthorized": "다시 로그인해 주세요.",
+    "bad-name": "이름을 2자 이상 써 주세요.", "bad-realname": "실제 이름(한글 2~5자)으로 써 주세요. 예: 홍길동", "bad-role": "계급이 올바르지 않아요.", "bad-pw": "비밀번호는 4~40자로 써 주세요.",
+    "bad-newpw": "새 비밀번호는 4~40자로 써 주세요.", "bad-newname": "새 이름은 실제 이름(한글 2~5자)으로 써 주세요.",
+    "exists": "이미 가입된 이름이에요. 동명이인이면 관리자에게 말해 주세요.", "wrong": "이름 또는 비밀번호가 틀렸어요.",
+    "banned": "추방된 이름이라 사용할 수 없어요.", "same-name": "지금 이름과 같아요.",
+    "no-rename-admin": "관리자 이름은 바꿀 수 없어요.", "unauthorized": "다시 로그인해 주세요.",
     "not-admin": "관리자만 할 수 있어요.", "not-yours": "내 글만 지울 수 있어요.",
     "empty": "내용을 입력해 주세요.", "no-title": "제목을 입력해 주세요.", "not-found": "글을 찾을 수 없어요.",
     "own-post": "내 글은 신고할 수 없어요.", "pending": "아직 관리자 승인을 기다리고 있어요. 승인되면 로그인할 수 있어요.", "no-db": "아직 서버 저장소가 연결되지 않았어요.",
@@ -696,12 +734,14 @@
   function renderMembers() {
     $("mem-count").textContent = state.members.length;
     var list = state.members.slice().sort(function (a, b) {
-      if (isAdminName(a.name) !== isAdminName(b.name)) return isAdminName(a.name) ? -1 : 1;
+      var ra = roleRank(roleOf(a.name)), rb = roleRank(roleOf(b.name));
+      if (ra !== rb) return ra - rb;
       return String(a.joined).localeCompare(String(b.joined));
     });
+    var admin = amAdmin();
     $("mem-grid").innerHTML = list.length ? list.map(function (m) {
       return '<div class="card mcard">' + avatar(m.name) + '<div class="t"><b>' + esc(m.name) + "</b>" +
-        (isAdminName(m.name) ? '<span class="badge b-admin">관리자</span>' : "<span>" + fmtDate(m.joined, false).replace(/전$/, "전 가입") + "</span>") +
+        (admin ? roleSelect('data-role-of="' + esc(m.name) + '" title="계급 바꾸기"', roleOf(m.name)) : roleBadge(m.name)) +
         "</div></div>";
     }).join("") : '<div class="card empty" style="grid-column:1/-1">' + (state.loaded ? "아직 멤버가 없어요. 첫 멤버가 되어 주세요!" : "불러오는 중…") + "</div>";
   }
@@ -736,7 +776,7 @@
       '<span class="badge b-' + esc(p.cat) + '">' + esc(CAT_NAME[p.cat] || "자유") + "</span>" +
       "<h2>" + esc(p.title) + "</h2>" +
       '<div class="post-meta">' + avatar(p.name) + "<b style=\"color:var(--ink)\">" + esc(p.name) + "</b>" +
-      (isAdminName(p.name) ? '<span class="badge b-admin">관리자</span>' : "") + "<span>· " + fmtDate(p.time, true) + "</span></div>" +
+      roleBadge(p.name) + "<span>· " + fmtDate(p.time, true) + "</span></div>" +
       '<div class="post-body">' + esc(p.text) + "</div>" +
       (acts ? '<div class="post-actions">' + acts + "</div>" : "") +
       '<div class="cmts"><h3>💬 댓글 <span id="cmt-n">' + (p.cmt || 0) + '</span></h3><div id="cmt-list"></div>' +
@@ -753,7 +793,7 @@
     var u = me();
     el.innerHTML = c.list.length ? c.list.map(function (m) {
       var can = u && (u.sub === m.sub || u.admin);
-      return '<div class="cmt">' + avatar(m.name) + '<div class="c-body"><div class="c-head"><b>' + esc(m.name) + "</b>" +
+      return '<div class="cmt">' + avatar(m.name) + '<div class="c-body"><div class="c-head"><b>' + esc(m.name) + "</b>" + roleBadge(m.name) +
         '<span class="muted">' + fmtDate(m.time) + "</span>" +
         (can ? '<button class="x" data-act="del-cmt" data-cid="' + esc(m.id) + '">삭제</button>' : "") +
         '</div><div class="c-text">' + esc(m.text) + "</div></div></div>";
@@ -774,7 +814,8 @@
     $("me-av").outerHTML = avatar(u.name, "lg").replace("<span ", '<span id="me-av" ');
     $("me-name").textContent = u.name;
     var m = state.members.filter(function (x) { return String(x.name).toLowerCase() === u.name.toLowerCase(); })[0];
-    $("me-joined").textContent = (u.admin ? "🛡️ 관리자 · " : "") + (m ? fmtDate(m.joined, true).split(" ")[0] + " 가입" : "I.S.K 멤버");
+    var ri = roleInfo(roleOf(u.name));
+    $("me-joined").textContent = (ri ? ri.icon + " " + ri.name + " · " : "") + (u.admin ? "관리자 · " : "") + (m ? fmtDate(m.joined, true).split(" ")[0] + " 가입" : "I.S.K 멤버");
     $("me-rename").hidden = !!u.admin;
     var mine = state.posts.filter(function (p) { return p.sub === u.sub; });
     $("me-posts").innerHTML = mine.length ? mine.map(function (p) { return rowHTML(p, true); }).join("") : emptyHTML("아직 쓴 글이 없어요");
@@ -844,10 +885,10 @@
   // ---------- 로그인 / 가입 / 비번·아이디 변경 ----------
   var authMode = "login";
   var AUTH_TEXT = {
-    login: { t: "로그인", s: "I.S.K 멤버 아이디로 로그인하세요", b: "로그인", sw: '아직 멤버가 아니라면? <a data-mode="signup">가입하기</a>' },
+    login: { t: "로그인", s: "I.S.K 멤버 실명으로 로그인하세요", b: "로그인", sw: '아직 멤버가 아니라면? <a data-mode="signup">가입하기</a>' },
     signup: { t: "멤버 가입 신청", s: "신청하면 관리자가 확인하고 승인해 줘요. 승인 뒤에 로그인할 수 있어요.", b: "가입 신청", sw: '이미 멤버라면? <a data-mode="login">로그인</a>' },
     changepw: { t: "비밀번호 변경", s: "지금 비밀번호와 새 비밀번호를 입력하세요", b: "변경하기", sw: "" },
-    rename: { t: "아이디 변경", s: "예전에 쓴 글은 예전 아이디로 남아요", b: "변경하기", sw: "" }
+    rename: { t: "이름 변경", s: "실명이 바뀌었을 때만 써요. 예전에 쓴 글은 예전 이름으로 남아요", b: "변경하기", sw: "" }
   };
   function openAuth(mode) {
     authMode = mode;
@@ -862,10 +903,11 @@
     $("auth-pw-label").textContent = mode === "changepw" || mode === "rename" ? "지금 비밀번호" : "비밀번호";
     $("auth-pw").autocomplete = mode === "signup" ? "new-password" : "current-password";
     $("auth-new-wrap").hidden = !(mode === "changepw" || mode === "rename");
-    $("auth-new-label").textContent = mode === "rename" ? "새 아이디" : "새 비밀번호";
+    $("auth-new-label").textContent = mode === "rename" ? "새 이름 (실명)" : "새 비밀번호";
+    $("auth-name-hint").hidden = mode !== "signup";
     $("auth-new").type = mode === "rename" ? "text" : "password";
-    $("auth-new").maxLength = mode === "rename" ? 16 : 40;
-    $("auth-new").placeholder = mode === "rename" ? "2~16자" : "4자 이상";
+    $("auth-new").maxLength = mode === "rename" ? 5 : 40;
+    $("auth-new").placeholder = mode === "rename" ? "예: 홍길동" : "4자 이상";
     $("auth-pw2-wrap").hidden = !(mode === "signup" || mode === "changepw");
     openModal("auth-modal");
     setTimeout(function () { ($("auth-name").readOnly ? $("auth-pw") : $("auth-name")).focus(); }, 30);
@@ -878,6 +920,7 @@
     var name = $("auth-name").value.trim(), pw = $("auth-pw").value, nv = $("auth-new").value, pw2 = $("auth-pw2").value;
     var err = $("auth-err");
     if (name.length < 2) { err.textContent = ERR["bad-name"]; return; }
+    if (authMode === "signup" && !REALNAME.test(name)) { err.textContent = ERR["bad-realname"]; return; }
     if (pw.length < 4) { err.textContent = ERR["bad-pw"]; return; }
     var body = { action: authMode, name: name, pw: pw };
     if (authMode === "signup" && pw !== pw2) { err.textContent = "비밀번호 확인이 달라요."; return; }
@@ -887,7 +930,7 @@
       body.newpw = nv;
     }
     if (authMode === "rename") {
-      if (nv.trim().length < 2) { err.textContent = ERR["bad-newname"]; return; }
+      if (!REALNAME.test(nv.trim())) { err.textContent = ERR["bad-newname"]; return; }
       body.newname = nv.trim();
     }
     var btn = $("auth-submit"); btn.disabled = true; err.textContent = ""; err.className = "err";
@@ -901,7 +944,7 @@
       }
       setSession({ token: d.token, exp: d.exp, user: d.user });
       closeModal("auth-modal");
-      var msg = { login: "환영해요, " + d.user.name + "님!", signup: "🎉 I.S.K 멤버가 되었어요!", changepw: "비밀번호를 바꿨어요", rename: "아이디를 '" + d.user.name + "'(으)로 바꿨어요" };
+      var msg = { login: "환영해요, " + d.user.name + "님!", signup: "🎉 I.S.K 멤버가 되었어요!", changepw: "비밀번호를 바꿨어요", rename: "이름을 '" + d.user.name + "'(으)로 바꿨어요" };
       toast(msg[authMode]);
       if (authMode === "signup" || authMode === "rename") loadAll();
     }).catch(function (er) { err.textContent = errMsg(er.message); })
@@ -976,6 +1019,7 @@
       $("pend-n").textContent = pend.length ? "(" + pend.length + "명)" : "";
       $("admin-pending").innerHTML = pend.length ? pend.map(function (p) {
         return '<div class="arow">' + avatar(p.name) + '<div class="t"><b>' + esc(p.name) + '</b> <span class="muted">' + fmtDate(p.at, true) + " 신청</span></div>" +
+          roleSelect('data-pend-role="' + esc(p.name) + '" title="승인할 때 줄 계급"', "field") +
           '<button class="btn sm" data-approve="' + esc(p.name) + '">✅ 승인</button>' +
           '<button class="btn danger sm" data-reject="' + esc(p.name) + '">거절</button></div>';
       }).join("") : '<div class="muted" style="padding:6px 0">기다리는 가입 신청이 없어요</div>';
@@ -995,6 +1039,16 @@
   $("admin-reload").onclick = loadAdmin;
   $("admin-reload").style.cursor = "pointer";
   $("ban-btn").onclick = function () { banUser($("ban-name").value); $("ban-name").value = ""; };
+  // 멤버 페이지에서 관리자가 계급 바꾸기
+  $("mem-grid").addEventListener("change", function (e) {
+    var sel = e.target.closest("[data-role-of]"); if (!sel) return;
+    var nm = sel.getAttribute("data-role-of"), role = sel.value;
+    sel.disabled = true;
+    api("/api/admin", { method: "POST", body: { action: "role", name: nm, role: role } }).then(function (d) {
+      if (Array.isArray(d.members)) state.members = d.members;
+      renderAll(); toast(nm + " 님 → " + roleInfo(role).icon + " " + roleInfo(role).name);
+    }).catch(function (er) { toast(errMsg(er.message)); renderMembers(); });
+  });
   function setPendBadge(n) {
     var b = $("chip-badge"); b.textContent = n; b.hidden = !n;
   }
@@ -1003,9 +1057,14 @@
     if (ap || rj) {
       var nm = (ap || rj).getAttribute(ap ? "data-approve" : "data-reject");
       if (rj && !confirm("'" + nm + "' 의 가입 신청을 거절할까요?")) return;
+      var rsel = ap && ap.parentNode.querySelector("[data-pend-role]");
+      var role = rsel ? rsel.value : "field";
       (ap || rj).disabled = true;
-      api("/api/admin", { method: "POST", body: { action: ap ? "approve" : "reject", name: nm } })
-        .then(function () { toast(ap ? "✅ " + nm + " 님을 승인했어요" : nm + " 님의 신청을 거절했어요"); loadAdminSoon(); if (ap) setTimeout(loadAll, 800); })
+      api("/api/admin", { method: "POST", body: { action: ap ? "approve" : "reject", name: nm, role: ap ? role : undefined } })
+        .then(function () {
+          toast(ap ? "✅ " + nm + " 님을 " + roleInfo(role).name + "(으)로 승인했어요" : nm + " 님의 신청을 거절했어요");
+          loadAdminSoon(); if (ap) setTimeout(loadAll, 800);
+        })
         .catch(function (er) { toast(errMsg(er.message)); (ap || rj).disabled = false; });
       return;
     }

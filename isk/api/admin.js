@@ -1,11 +1,17 @@
 // I.S.K 모임 사이트 – 관리자 전용 API (가입 대기 / 신고 목록 / 차단 목록)
 // GET  (Authorization: Bearer <관리자 세션토큰>)  → { pending:[{name,at}], reports:[...], banned:[...] }
-// POST {action:'approve'|'reject', name}         → 가입 승인 / 거절
+// POST {action:'approve', name, role}            → 가입 승인 (계급 함께 지정)
+// POST {action:'reject', name}                   → 가입 거절
+// POST {action:'role', name, role}               → 멤버 계급 변경 → { members }
+//   role: chief(총사령관) commander(사령관) planner(작전 계획자) analyst(사령부 정보 분석가) field(현장조사자)
 //   reports: 글 단위로 묶은 신고 [{ postId, postText, postName, postSub, count, reporters:[이름...], last }]
 // 추방/해제·삭제는 /api/board 로 처리.
 
 const { list } = require('@vercel/blob');
-const { verifySession, isAdmin, blobStoreId, listBanned, listPending, approveUser, rejectUser } = require('./auth');
+const {
+  verifySession, isAdmin, blobStoreId, listBanned, listPending, approveUser, rejectUser,
+  setRole, rebuildMembers, readUser, ROLES,
+} = require('./auth');
 
 const REP_DIR = 'isk/rep/';
 
@@ -21,11 +27,19 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'POST') {
       const body = req.body || {};
-      const name = String(body.name == null ? '' : body.name).replace(/s+/g, ' ').trim().slice(0, 16);
+      const name = String(body.name == null ? '' : body.name).replace(/\s+/g, ' ').trim().slice(0, 16);
       if (name.length < 2) { res.status(400).json({ error: 'bad-name' }); return; }
+      if (body.role != null && ROLES.indexOf(body.role) < 0) { res.status(400).json({ error: 'bad-role' }); return; }
       if (body.action === 'approve') {
-        const ok = await approveUser(name);
+        const ok = await approveUser(name, body.role);
         res.status(ok ? 200 : 404).json(ok ? { ok: true } : { error: 'not-found' });
+      } else if (body.action === 'role') {
+        // 승인된 멤버의 계급 바꾸기
+        const u = await readUser(name);
+        if (!u || u.approved === false) { res.status(404).json({ error: 'not-found' }); return; }
+        const key = await setRole(u.name || name, body.role);
+        const members = await rebuildMembers({ role: { name: u.name || name, key: key } });
+        res.status(200).json({ ok: true, members: members || undefined });
       } else if (body.action === 'reject') {
         await rejectUser(name);
         res.status(200).json({ ok: true });
