@@ -178,6 +178,8 @@
   .mcard .rsel { margin-top: 4px; width: 100%; }
   .mcard .t { flex: 1; }
   .mcard .badge { margin-top: 3px; }
+  .mcard .score { font-size: 12.5px; color: var(--ink2); margin-top: 4px; }
+  .mcard .score b { display: inline; color: var(--gold); font-size: 14px; }
   .hint { font-size: 12.5px; color: var(--ink3); margin-top: 5px; }
 
   .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
@@ -247,6 +249,25 @@
   .err { color: var(--red); font-size: 13.5px; font-weight: 600; min-height: 1.2em; margin-top: 10px; }
   .err.ok { color: var(--green); }
 
+  /* ---- 도감 ---- */
+  .guide-warn { border: 1px solid var(--gold); background: var(--goldSoft); }
+  .guide-warn ul { margin: 6px 0 0; padding-left: 20px; color: var(--ink2); font-size: 14px; }
+  .guide-warn li + li { margin-top: 3px; }
+  .guide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .sp { padding: 18px; display: flex; flex-direction: column; }
+  .sp-head { display: flex; gap: 12px; align-items: center; }
+  .sp-emo { font-size: 38px; width: 56px; height: 56px; border-radius: 16px; background: var(--bg2); display: grid; place-items: center; flex: none; }
+  .sp-head h3 { font-size: 19px; font-weight: 850; }
+  .sp-head .muted { font-size: 12.5px; }
+  .sp h4 { font-size: 13.5px; font-weight: 800; margin: 14px 0 4px; color: var(--ink); }
+  .sp ul { margin: 0; padding-left: 18px; color: var(--ink2); font-size: 14px; }
+  .sp p { margin: 0; color: var(--ink2); font-size: 14px; }
+  .sp .vs { background: var(--greenSoft); border-radius: 12px; padding: 10px 12px; margin-top: 4px; font-size: 14px; color: var(--ink2); }
+  .sp .vs b { color: var(--green); }
+  .sp .vs + .vs { margin-top: 6px; }
+  .sp .alert { color: var(--red); font-weight: 700; font-size: 13.5px; margin-top: 8px; }
+  .sp .btn { margin-top: 14px; align-self: flex-start; }
+
   /* ---- 사진·지도 ---- */
   .photo-pick { display: flex; gap: 8px; flex-wrap: wrap; }
   .photo-add, .thumb { width: 84px; height: 84px; border-radius: 12px; flex: none; position: relative; overflow: hidden; }
@@ -310,6 +331,7 @@
       <a data-go="notice">공지</a>
       <a data-go="board">나눔마당</a>
       <a data-go="map">🗺️ 제보 지도</a>
+      <a data-go="guide">📖 도감</a>
       <a data-go="me">내 정보</a>
     </nav>
     <div class="top-right">
@@ -393,6 +415,13 @@
       <div><h2>멤버</h2><p>I.S.K 와 함께하는 사람들 · <b id="mem-count">0</b>명</p></div>
       <button class="btn" id="mem-join">✨ 가입 신청하기</button>
     </div>
+    <div class="toolbar">
+      <div class="tabs" id="mem-sort">
+        <button data-sort="role" class="on">⭐ 계급순</button>
+        <button data-sort="score">🏅 활동 점수순</button>
+      </div>
+      <span class="muted" style="font-size:13px">🏅 점수: 발견 제보 10 · 사진 붙은 제보 +5 · 다른 글 3 · 댓글 1</span>
+    </div>
     <div class="mgrid" id="mem-grid"></div>
   </section>
 
@@ -424,6 +453,32 @@
     <div class="card pad"><ul class="plist" id="board-list"></ul></div>
   </section>
 
+  <!-- 교란종 도감 -->
+  <section class="page" id="page-guide">
+    <div class="page-head">
+      <div><h2>📖 교란종 도감</h2><p>생김새와 헷갈리는 토종 구별법 · <b id="guide-count">0</b>종</p></div>
+    </div>
+    <div class="card pad guide-warn">
+      <b>⚠️ 현장에 나가기 전에 꼭 읽어요</b>
+      <ul>
+        <li><b>헷갈리면 건드리지 말고 사진부터!</b> 수달·남생이·금개구리 같은 보호받는 토종과 닮은 교란종이 있어요.</li>
+        <li>살아 있는 교란종을 <b>옮기거나, 기르거나, 다른 곳에 풀어 주는 건 법으로 금지</b>돼 있어요.</li>
+        <li>물가·숲에는 꼭 어른과 함께 가고, 동물은 물 수 있으니 가까이 가지 않아요.</li>
+        <li>이 도감은 쉽게 정리한 것이라, 정확한 지정 목록과 처리 방법은 국립생태원·환경부 자료로 확인해요.</li>
+      </ul>
+    </div>
+    <div class="toolbar" style="margin-top:14px">
+      <div class="tabs" id="guide-tabs">
+        <button data-g="" class="on">전체</button>
+        <button data-g="animal">🐾 동물</button>
+        <button data-g="fish">🐟 물고기</button>
+        <button data-g="plant">🌿 식물</button>
+      </div>
+      <input type="text" class="search" id="guide-search" placeholder="🔍 이름으로 찾기 (예: 개구리, 거북)">
+    </div>
+    <div class="guide-grid" id="guide-grid"></div>
+  </section>
+
   <!-- 제보 지도 -->
   <section class="page" id="page-map">
     <div class="page-head">
@@ -449,7 +504,7 @@
     <div id="me-in" hidden>
       <div class="card pad me-top">
         <span class="avatar lg" id="me-av"></span>
-        <div><h2 id="me-name"></h2><div class="muted" id="me-joined"></div></div>
+        <div><h2 id="me-name"></h2><div class="muted" id="me-joined"></div><div id="me-score" style="font-size:14px;margin-top:2px"></div></div>
         <div class="me-btns">
           <button class="btn ghost sm" id="me-pw">🔑 비번 변경</button>
           <button class="btn ghost sm" id="me-rename">🏷️ 이름 변경</button>
@@ -747,7 +802,7 @@
   }
 
   // ---------- 페이지 이동 ----------
-  var PAGES = ["home", "about", "members", "notice", "board", "map", "post", "me"];
+  var PAGES = ["home", "about", "members", "notice", "board", "map", "guide", "post", "me"];
   function go(page) { location.hash = page; }
   function route() {
     var h = location.hash.replace(/^#/, "");
@@ -772,10 +827,17 @@
   function loadAll() {
     return Promise.all([
       api("/api/board").then(function (d) { state.posts = Array.isArray(d) ? d : []; }).catch(function () { state.posts = []; }),
+      loadScores(),
       api("/api/site").then(function (d) { state.site = d.site || {}; state.members = d.members || []; state.mission = d.mission || null; }).catch(function () {})
     ]).then(function () { state.loaded = true; renderAll(); });
   }
-  function setPosts(posts) { if (Array.isArray(posts)) { state.posts = posts; renderAll(); } }
+  function loadScores() {
+    return api("/api/board?scores=1").then(function (d) { state.scores = d.scores || {}; }).catch(function () {});
+  }
+  // 글·댓글이 바뀌면 점수도 다시 가져옴
+  function setPosts(posts) {
+    if (Array.isArray(posts)) { state.posts = posts; renderAll(); loadScores().then(function () { renderMembers(); renderMe(); }); }
+  }
   function site(k) { var v = state.site && state.site[k]; return v ? v : DEFAULT_SITE[k]; }
   function currentPost() {
     for (var i = 0; i < state.posts.length; i++) if (state.posts[i].id === state.postId) return state.posts[i];
@@ -853,17 +915,39 @@
     $("ab-count").textContent = state.members.length;
   }
 
+  // 활동 점수: 발견 제보 10 · 사진 붙은 제보 +5 · 다른 글 3 · 댓글 1 (재료는 서버 isk/scores.json)
+  function scoreOf(name) {
+    var r = (state.scores || {})["local:" + String(name || "").toLowerCase()] || {};
+    var s = { spot: r.spot || 0, photo: r.photo || 0, post: r.post || 0, cmt: r.cmt || 0 };
+    s.total = s.spot * 10 + s.photo * 5 + s.post * 3 + s.cmt;
+    return s;
+  }
+  function scoreText(s) {
+    return "발견 제보 " + s.spot + "개(사진 " + s.photo + ") · 다른 글 " + s.post + "개 · 댓글 " + s.cmt + "개";
+  }
+  $("mem-sort").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    state.memSort = b.getAttribute("data-sort");
+    this.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x === b); });
+    renderMembers();
+  });
+
   function renderMembers() {
     $("mem-count").textContent = state.members.length;
+    var byScore = state.memSort === "score";
     var list = state.members.slice().sort(function (a, b) {
+      if (byScore) { var d = scoreOf(b.name).total - scoreOf(a.name).total; if (d) return d; }
       var ra = roleRank(roleOf(a.name)), rb = roleRank(roleOf(b.name));
       if (ra !== rb) return ra - rb;
       return String(a.joined).localeCompare(String(b.joined));
     });
     var admin = amAdmin();
-    $("mem-grid").innerHTML = list.length ? list.map(function (m) {
-      return '<div class="card mcard">' + avatar(m.name) + '<div class="t"><b>' + esc(m.name) + "</b>" +
+    $("mem-grid").innerHTML = list.length ? list.map(function (m, i) {
+      var s = scoreOf(m.name);
+      var medal = byScore && s.total > 0 ? ["🥇 ", "🥈 ", "🥉 "][i] || "" : "";
+      return '<div class="card mcard">' + avatar(m.name) + '<div class="t"><b>' + medal + esc(m.name) + "</b>" +
         (admin ? roleSelect('data-role-of="' + esc(m.name) + '" title="계급 바꾸기"', roleOf(m.name)) : roleBadge(m.name)) +
+        '<div class="score" title="' + esc(scoreText(s)) + '">🏅 <b>' + s.total + "</b>점</div>" +
         "</div></div>";
     }).join("") : '<div class="card empty" style="grid-column:1/-1">' + (state.loaded ? "아직 멤버가 없어요. 첫 멤버가 되어 주세요!" : "불러오는 중…") + "</div>";
   }
@@ -922,6 +1006,93 @@
     }
   }
   var postMap = null;
+
+  // ---------- 교란종 도감 ----------
+  // look: 생김새, vs: [헷갈리는 토종, 구별법], where: 사는 곳, why: 문제점, tip: 발견하면, alert: 특히 조심
+  var SPECIES = [
+    { id: "bullfrog", emo: "🐸", name: "황소개구리", alt: "북아메리카에서 온 양서류", g: "animal",
+      look: ["몸길이 12~20cm, 우리나라 개구리 중 가장 커요", "등은 녹갈색에 얼룩무늬", "눈 뒤 고막(동그란 귀)이 아주 커요 — 수컷은 눈보다 커요", "등 양옆에 솟은 줄(융기선)이 없어요", "올챙이도 10cm 넘게 크고 겨울을 넘겨요", "밤에 '우웡~ 우웡~' 소 울음 같은 낮은 소리"],
+      vs: [["참개구리", "등 양옆에 뚜렷한 융기선이 있고 등 가운데 연한 줄이 있어요. 고막이 작아요."],
+           ["금개구리 (멸종위기)", "6cm쯤으로 작고, 등에 금빛 융기선 2줄이 있어요. 보호종이니 절대 건드리지 마요!"]],
+      where: "저수지, 연못, 물 흐름이 느린 하천", why: "토종 개구리·물고기·뱀, 새끼 새까지 잡아먹고 천적이 거의 없어요." },
+    { id: "nutria", emo: "🦫", name: "뉴트리아", alt: "남아메리카에서 온 포유류", g: "animal",
+      look: ["몸 40~60cm에 꼬리 30~45cm", "꼬리가 쥐꼬리처럼 둥글고 털이 거의 없어요", "앞니가 크고 주황색이에요", "뒷발에 물갈퀴, 갈색 털"],
+      vs: [["수달 (천연기념물·멸종위기)", "꼬리가 굵고 털로 덮여 끝으로 갈수록 가늘어져요. 머리가 납작하고 둥글며 주황 앞니가 안 보여요."]],
+      where: "낙동강 등 남부 지방의 강, 습지", why: "물풀 뿌리와 농작물을 먹어 치우고 둑에 굴을 파서 약하게 만들어요.",
+      alert: "물 수 있어요. 절대 가까이 가지 말고 멀리서 사진만 찍어요." },
+    { id: "bass", emo: "🐟", name: "큰입배스", alt: "흔히 '배스' · 북아메리카", g: "fish",
+      look: ["길이 30~50cm", "입이 아주 커서 위턱 끝이 눈 뒤까지 와요", "몸 옆 가운데에 검은 띠가 머리부터 꼬리까지 이어져요 (어릴수록 뚜렷)", "등은 녹갈색"],
+      vs: [["쏘가리", "몸에 표범 같은 검은 얼룩무늬가 있고, 옆으로 길게 이어진 띠는 없어요."],
+           ["꺽지", "아가미뚜껑에 노란 테두리가 있는 검은 점이 있어요."]],
+      where: "댐, 저수지, 큰 강", why: "토종 물고기·새우·개구리를 잡아먹는 최상위 포식자예요.",
+      tip: "낚았다면 다른 물에 살려서 옮기거나 풀어 주면 안 돼요." },
+    { id: "bluegill", emo: "🐠", name: "블루길", alt: "우리말 이름 '파랑볼우럭' · 북아메리카", g: "fish",
+      look: ["길이 15~25cm, 손바닥만 해요", "몸이 동그랗고 납작한 원반 모양", "아가미뚜껑 끝에 검푸른 점", "옆구리에 희미한 세로 띠 여러 줄"],
+      vs: [["붕어", "몸이 덜 납작하고 비늘이 금빛이에요. 아가미뚜껑에 검푸른 점이 없어요."]],
+      where: "저수지, 연못, 느린 하천 가장자리", why: "토종 물고기의 알과 새끼를 먹고 아주 빨리 늘어나요." },
+    { id: "slider", emo: "🐢", name: "붉은귀거북", alt: "노란배거북 등 같은 무리 포함 · 미국", g: "animal",
+      look: ["눈 뒤에 빨간 줄무늬 (나이 들면 흐려지기도 해요)", "머리와 다리에 노란 줄무늬", "등딱지 20~30cm", "어릴 때 초록색 '청거북'으로 팔리던 거북이에요"],
+      vs: [["남생이 (천연기념물·멸종위기)", "머리에 빨간 무늬가 없고, 등딱지에 세로로 솟은 줄이 3개 있어요. 전체가 갈색~검은색."],
+           ["자라", "등딱지가 딱딱하지 않고 말랑한 가죽이며, 코가 뾰족해요."]],
+      where: "공원 연못, 저수지, 도심 하천", why: "토종 남생이의 자리를 빼앗고 물고기·수생생물을 먹어요. 버려진 애완 거북이 퍼졌어요.",
+      tip: "기르던 거북을 강이나 연못에 풀어 주는 건 법으로 금지돼 있어요." },
+    { id: "crayfish", emo: "🦞", name: "미국가재", alt: "미국에서 온 갑각류", g: "animal",
+      look: ["길이 10~15cm", "몸과 집게가 진한 빨간색", "집게에 오돌토돌한 돌기가 있어요"],
+      vs: [["가재 (토종)", "5~6cm로 작고 갈색·녹갈색이에요. 물이 아주 맑은 계곡 상류에 살아요."]],
+      where: "논, 농수로, 저수지", why: "물풀·올챙이·작은 물고기를 닥치는 대로 먹고 굴을 파서 둑을 약하게 해요.",
+      alert: "집게에 물리면 아파요. 맨손으로 잡지 마요." },
+    { id: "sicyos", emo: "🌿", name: "가시박", alt: "북아메리카에서 온 덩굴식물", g: "plant",
+      look: ["박처럼 생긴 덩굴, 덩굴손으로 감고 올라가요", "잎이 손바닥처럼 5갈래로 얕게 갈라지고 거친 털이 있어요", "열매가 여러 개 뭉쳐 달리고 가는 가시 털이 빽빽해요"],
+      vs: [["박·호박", "잎이 크고 둥글며 열매에 가시 털이 없어요."]],
+      where: "강가, 하천 둔치, 숲 가장자리", why: "나무와 풀을 통째로 덮어 햇빛을 막아 말려 죽여요. 씨앗이 아주 많이 생겨요.",
+      tip: "씨가 맺히기 전(여름)에 뿌리째 뽑는 게 좋아요. 장갑을 껴요." },
+    { id: "ragweed", emo: "🌾", name: "돼지풀", alt: "북아메리카에서 온 풀", g: "plant",
+      look: ["키 30cm~1.5m", "잎이 깃털처럼 잘게 2~3번 갈라져요", "여름~가을에 줄기 끝에 작은 연두색 꽃이 이삭처럼 달려요"],
+      vs: [["쑥", "잎 뒷면이 하얀 털로 덮여 희게 보이고, 비비면 쑥 냄새가 나요. 돼지풀은 뒷면이 희지 않고 쑥 냄새가 없어요."]],
+      where: "길가, 빈터, 하천변", why: "꽃가루가 비염·천식 같은 알레르기를 일으키고 토종 풀 자리를 차지해요.",
+      tip: "꽃가루가 날리는 8~9월에는 마스크를 써요." },
+    { id: "giantragweed", emo: "🍁", name: "단풍잎돼지풀", alt: "북아메리카에서 온 풀", g: "plant",
+      look: ["키 1~3m로 사람보다 커요", "잎이 단풍잎처럼 3~5갈래로 크게 갈라져요", "잎이 줄기에 마주 붙어요 (마주나기)", "줄기에 거친 털"],
+      vs: [["뽕나무 어린 가지", "나무라서 줄기가 딱딱하고, 잎이 한 장씩 어긋나게 붙어요."]],
+      where: "하천변, 길가, 빈터", why: "키가 커서 주변 식물을 그늘로 덮고, 꽃가루 알레르기를 일으켜요.",
+      tip: "꽃가루가 날리는 여름 끝~가을에는 마스크를 써요." }
+  ];
+  var guideFilter = { g: "", q: "" };
+  function renderGuide() {
+    var q = guideFilter.q.toLowerCase();
+    var list = SPECIES.filter(function (s) {
+      if (guideFilter.g && s.g !== guideFilter.g) return false;
+      if (q && (s.name + " " + s.alt + " " + s.vs.map(function (v) { return v[0]; }).join(" ")).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    $("guide-count").textContent = SPECIES.length;
+    $("guide-grid").innerHTML = list.length ? list.map(function (s) {
+      return '<div class="card sp" id="sp-' + s.id + '">' +
+        '<div class="sp-head"><div class="sp-emo">' + s.emo + '</div><div><h3>' + esc(s.name) + '</h3><div class="muted">' + esc(s.alt) + "</div></div></div>" +
+        "<h4>👀 생김새</h4><ul>" + s.look.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" +
+        "<h4>🤔 헷갈리는 토종과 구별법</h4>" + s.vs.map(function (v) { return '<div class="vs"><b>' + esc(v[0]) + "</b> — " + esc(v[1]) + "</div>"; }).join("") +
+        "<h4>📍 어디서 볼 수 있나</h4><p>" + esc(s.where) + "</p>" +
+        "<h4>❗ 왜 문제인가</h4><p>" + esc(s.why) + "</p>" +
+        (s.tip ? "<h4>💡 발견하면</h4><p>" + esc(s.tip) + "</p>" : "") +
+        (s.alert ? '<div class="alert">⚠️ ' + esc(s.alert) + "</div>" : "") +
+        '<button class="btn soft sm" data-spot="' + esc(s.name) + '">🔍 이걸 봤어요 → 발견 제보</button>' +
+        "</div>";
+    }).join("") : '<div class="card empty" style="grid-column:1/-1">찾는 교란종이 없어요</div>';
+  }
+  $("guide-tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    guideFilter.g = b.getAttribute("data-g");
+    this.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x === b); });
+    renderGuide();
+  });
+  $("guide-search").addEventListener("input", function () { guideFilter.q = this.value.trim(); renderGuide(); });
+  $("guide-grid").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-spot]"); if (!b) return;
+    if (!me()) { toast("제보하려면 먼저 로그인해 주세요"); openAuth("login"); return; }
+    openWrite("spot");
+    $("w-title").value = "[" + b.getAttribute("data-spot") + "] ";
+  });
+  renderGuide();
 
   // ---------- 제보 지도 ----------
   var spotMap = null, spotLayer = null;
@@ -986,6 +1157,8 @@
     var m = state.members.filter(function (x) { return String(x.name).toLowerCase() === u.name.toLowerCase(); })[0];
     var ri = roleInfo(roleOf(u.name));
     $("me-joined").textContent = (ri ? ri.icon + " " + ri.name + " · " : "") + (u.admin ? "관리자 · " : "") + (m ? fmtDate(m.joined, true).split(" ")[0] + " 가입" : "I.S.K 멤버");
+    var sc = scoreOf(u.name);
+    $("me-score").innerHTML = "🏅 활동 점수 <b>" + sc.total + "</b>점 <span class=\"muted\">(" + esc(scoreText(sc)) + ")</span>";
     $("me-rename").hidden = !!u.admin;
     var mine = state.posts.filter(function (p) { return p.sub === u.sub; });
     $("me-posts").innerHTML = mine.length ? mine.map(function (p) { return rowHTML(p, true); }).join("") : emptyHTML("아직 쓴 글이 없어요");

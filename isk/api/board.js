@@ -1,6 +1,7 @@
 // I.S.K 모임 사이트 – 게시판 API (공지 + 나눔마당, Vercel 서버리스 + Vercel Blob)
 // GET                          → 글 목록 (최신순, 집계 파일 1회 읽기, 글마다 댓글 수 포함)
 // GET ?comments=<id>           → { comments:[...] }  특정 글의 댓글
+// GET ?scores=1                → { scores:{ sub:{post,spot,photo,cmt} } }  활동 점수 재료 (isk/scores.json, 글·댓글 바뀔 때 다시 만듦)
 // POST {cat,title,text,photos?,loc?,place?} → 새 글 (로그인 필요, 차단 불가, cat 'notice' 는 관리자만, 'spot' = 교란종 발견 제보)
 //      photos: upload 로 받은 사진 주소 최대 3개, loc: {lat,lng} 발견 위치, place: 장소 이름
 // POST {action:'upload', data:'data:image/jpeg;base64,...'} → { url }  사진 1장 (브라우저에서 줄인 JPEG, 1.5MB 이하)
@@ -21,6 +22,7 @@ const { put, list, del, head } = require('@vercel/blob');
 const { verifySession, isAdmin, isBanned, banName, unbanName, blobBase, blobStoreId } = require('./auth');
 
 const AGG_PATH = 'isk/board.json';
+const SCORES_PATH = 'isk/scores.json';
 const POST_DIR = 'isk/n/';
 const CMT_DIR = 'isk/c/';
 const REP_DIR = 'isk/rep/';
@@ -42,7 +44,9 @@ function cleanBody(s, max) {
 function newId() {
   return String(Date.now()).padStart(15, '0') + '-' + Math.random().toString(36).slice(2, 8);
 }
-function safeId(s) { return String(s || '').replace(/[^0-9a-z-]/gi, '').slice(0, 40); }
+function safeId(s) { return String(s || '').replace(/[^0-9a-z-]/gi, '').slice(0, 120); }
+function hexOf(s) { return Buffer.from(String(s), 'utf8').toString('hex'); }
+function unhex(h) { try { return /^[0-9a-f]+$/.test(h) ? Buffer.from(h, 'hex').toString('utf8') : ''; } catch (e) { return ''; } }
 
 // 우리 저장소의 isk/img/ 사진 주소만 받음
 function cleanPhotos(arr) {
@@ -111,9 +115,13 @@ async function rebuildAgg(opts) {
   if (opts.cmtAdd) cmtPaths.add(opts.cmtAdd.path);
   if (opts.cmtRemove) cmtPaths.delete(opts.cmtRemove.path);
   const counts = {};
+  const cmtBy = {}; // 쓴 사람(sub)별 댓글 수 — 댓글 id 끝에 sub 의 hex 가 붙어 있음
   cmtPaths.forEach((p) => {
-    const pid = p.slice(CMT_DIR.length).split('/')[0];
+    const parts = p.slice(CMT_DIR.length).split('/');
+    const pid = parts[0];
     counts[pid] = (counts[pid] || 0) + 1;
+    const hx = String(parts[1] || '').replace(/\.json$/, '').split('-')[2];
+    if (hx) { const sub = unhex(hx); if (sub) cmtBy[sub] = (cmtBy[sub] || 0) + 1; }
   });
 
   blobs.sort((a, b) => (a.pathname < b.pathname ? -1 : a.pathname > b.pathname ? 1 : 0));
@@ -135,6 +143,22 @@ async function rebuildAgg(opts) {
 
   try {
     await put(AGG_PATH, JSON.stringify(posts), {
+      access: 'public', addRandomSuffix: false, allowOverwrite: true,
+      contentType: 'application/json; charset=utf-8', cacheControlMaxAge: 0,
+    });
+  } catch (e) { /* 다음에 쓸 때 복구됨 */ }
+
+  // 활동 점수 재료: 사람(sub)별 { post, spot, photo, cmt } (글은 집계에 든 최근 MAX_SHOW 개 기준)
+  const scores = {};
+  const sc = (sub) => (scores[sub] = scores[sub] || { post: 0, spot: 0, photo: 0, cmt: 0 });
+  posts.forEach((p) => {
+    if (!p.sub || p.cat === 'notice') return;
+    const s = sc(p.sub);
+    if (p.cat === 'spot') { s.spot++; if (p.photos && p.photos.length) s.photo++; } else s.post++;
+  });
+  Object.keys(cmtBy).forEach((sub) => { sc(sub).cmt = cmtBy[sub]; });
+  try {
+    await put(SCORES_PATH, JSON.stringify(scores), {
       access: 'public', addRandomSuffix: false, allowOverwrite: true,
       contentType: 'application/json; charset=utf-8', cacheControlMaxAge: 0,
     });
@@ -169,6 +193,15 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const q = req.query || {};
       res.setHeader('Cache-Control', 'no-store');
+      if (q.scores) {
+        const base = blobBase();
+        let scores = {};
+        if (base) {
+          try { const r = await fetch(`${base}/${SCORES_PATH}?t=${Date.now()}`, { cache: 'no-store' }); if (r.ok) scores = await r.json(); } catch (e) { /* 없음 */ }
+        }
+        res.status(200).json({ scores: scores && typeof scores === 'object' ? scores : {} });
+        return;
+      }
       if (q.comments) {
         if (!blobStoreId()) { res.status(200).json({ comments: [] }); return; }
         res.status(200).json({ comments: await loadComments(safeId(q.comments)) });
@@ -286,7 +319,8 @@ module.exports = async (req, res) => {
       if (text.length < 1) { res.status(400).json({ error: 'empty' }); return; }
       try { await head(POST_DIR + pid + '.json'); } catch (e) { res.status(404).json({ error: 'not-found' }); return; }
       const cmt = {
-        id: newId(), pid: pid, sub: String(sess.sub || ''), name: clean(sess.name, 40) || '익명',
+        // id 끝에 쓴 사람 hex 를 붙여 두면 list() 경로만으로 사람별 댓글 수를 셀 수 있음
+        id: newId() + '-' + hexOf(sess.sub).slice(0, 60), pid: pid, sub: String(sess.sub || ''), name: clean(sess.name, 40) || '익명',
         text: text, time: new Date().toISOString(),
       };
       const path = CMT_DIR + pid + '/' + cmt.id + '.json';
