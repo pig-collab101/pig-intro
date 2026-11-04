@@ -302,6 +302,19 @@
   .sp .vs b { color: var(--green); }
   .sp .vs + .vs { margin-top: 6px; }
   .sp .alert { color: var(--red); font-weight: 700; font-size: 13.5px; margin-top: 8px; }
+  .act { margin-top: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid; font-size: 14px; }
+  .act-h { font-weight: 700; }
+  .act ul { margin: 6px 0 0; padding-left: 18px; color: var(--ink2); }
+  .act-tip { margin-top: 6px; color: var(--ink2); }
+  .act-report { background: var(--redSoft); border-color: color-mix(in srgb, var(--red) 35%, transparent); }
+  .act-report .act-h b { color: var(--red); }
+  .act-fish { background: var(--accSoft); border-color: color-mix(in srgb, var(--acc) 35%, transparent); }
+  .act-fish .act-h b { color: var(--acc); }
+  .act-remove { background: var(--greenSoft); border-color: color-mix(in srgb, var(--green) 35%, transparent); }
+  .act-remove .act-h b { color: var(--green); }
+  .post-act { margin: -6px 0 18px; }
+  .post-act .act { margin-top: 0; }
+  .post-act a { cursor: pointer; font-weight: 700; font-size: 13.5px; }
   .sp .btn { margin-top: 14px; align-self: flex-start; }
 
   /* ---- 사진·지도 ---- */
@@ -511,6 +524,8 @@
         <li><b>헷갈리면 건드리지 말고 사진부터!</b> 수달·남생이·금개구리 같은 보호받는 토종과 닮은 교란종이 있어요.</li>
         <li>살아 있는 교란종을 <b>옮기거나, 기르거나, 다른 곳에 풀어 주는 건 법으로 금지</b>돼 있어요.</li>
         <li>물가·숲에는 꼭 어른과 함께 가고, 동물은 물 수 있으니 가까이 가지 않아요.</li>
+        <li><b>📞 어디에 신고하나요?</b> 시청·구청·군청의 <b>환경과</b>에 전화해요. 번호를 모르면 지역 대표번호(예: 120)에 물어봐요. 사진·장소·날짜가 있으면 좋아요.</li>
+        <li><b>동물은 신고</b>, <b>식물은 어른과 함께 직접 뽑기</b>가 기본이에요. 지역마다 방법이 다를 수 있으니, 처음엔 시청 환경과에 물어보고 그 방법을 따라요.</li>
         <li>이 도감은 쉽게 정리한 것이라, 정확한 지정 목록과 처리 방법은 국립생태원·환경부 자료로 확인해요.</li>
       </ul>
     </div>
@@ -1123,6 +1138,11 @@
       '<div class="post-meta">' + avatar(p.name) + "<b style=\"color:var(--ink)\">" + esc(p.name) + "</b>" +
       roleBadge(p.name) + "<span>· " + fmtDate(p.time, true) + "</span></div>" +
       '<div class="post-body">' + esc(p.text) + "</div>" +
+      (function () {
+        // 발견 제보면 그 교란종의 처리 방법을 바로 보여 줌
+        var sp = p.cat === "spot" ? speciesOf(p) : null;
+        return sp ? '<div class="post-act">' + actBox(sp) + '<a data-guide="' + sp.id + '">' + sp.emo + " " + esc(sp.name) + " 도감 보기 ›</a></div>" : "";
+      })() +
       (p.photos && p.photos.length ? '<div class="photos">' + p.photos.map(function (u) {
         return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="첨부 사진" loading="lazy"></a>';
       }).join("") + "</div>" : "") +
@@ -1147,50 +1167,73 @@
   var postMap = null;
 
   // ---------- 교란종 도감 ----------
-  // look: 생김새, vs: [헷갈리는 토종, 구별법], where: 사는 곳, why: 문제점, tip: 발견하면, alert: 특히 조심
+  // 발견했을 때 처리 방법 (종마다 act 로 고름) — 동물은 신고, 물고기는 풀어 주지 않기, 식물은 어른과 직접 뽑기
+  var ACT = {
+    report: { icon: "📞", label: "시청에 신고해요", cls: "act-report", steps: [
+      "직접 잡거나 만지지 말고, 멀리서 사진만 찍어요",
+      "장소·날짜와 함께 I.S.K 발견 제보로 올려요",
+      "어른에게 알리고 시청·구청 환경과에 신고해요"] },
+    fish: { icon: "🎣", label: "풀어 주지 말고 알려요", cls: "act-fish", steps: [
+      "낚시로 잡았다면 다시 풀어 주지 않아요 (살려서 다른 물에 옮기는 것도 금지)",
+      "처리 방법은 같이 간 어른이나 낚시터 관리인에게 물어요",
+      "많이 보이는 곳은 I.S.K 발견 제보로 올리고 시청 환경과에 알려요"] },
+    remove: { icon: "🧤", label: "어른과 함께 직접 뽑아도 돼요", cls: "act-remove", steps: [
+      "공원·하천처럼 모두가 쓰는 땅에서, 어른과 함께 장갑을 끼고 뿌리째 뽑아요",
+      "남의 밭이나 땅이면 먼저 허락을 받아요",
+      "뽑은 풀은 씨가 퍼지지 않게 봉투에 담아 버려요",
+      "넓게 퍼져 있으면 시청에 알리거나 '이번 목표' 제거 작전으로 정해요"] }
+  };
+  function actBox(s, compact) {
+    var a = ACT[s.act]; if (!a) return "";
+    return '<div class="act ' + a.cls + '"><div class="act-h">' + a.icon + " 발견하면: <b>" + a.label + "</b></div>" +
+      (compact ? "" : "<ul>" + a.steps.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>") +
+      (s.tip ? '<div class="act-tip">💡 ' + esc(s.tip) + "</div>" : "") + "</div>";
+  }
+
+  // look: 생김새, vs: [헷갈리는 토종, 구별법], where: 사는 곳, why: 문제점, act: 처리 방법(ACT), tip: 덧붙임, alert: 특히 조심
   var SPECIES = [
-    { id: "bullfrog", emo: "🐸", name: "황소개구리", alt: "북아메리카에서 온 양서류", g: "animal",
+    { id: "bullfrog", act: "report", emo: "🐸", name: "황소개구리", alt: "북아메리카에서 온 양서류", g: "animal",
       look: ["몸길이 12~20cm, 우리나라 개구리 중 가장 커요", "등은 녹갈색에 얼룩무늬", "눈 뒤 고막(동그란 귀)이 아주 커요 — 수컷은 눈보다 커요", "등 양옆에 솟은 줄(융기선)이 없어요", "올챙이도 10cm 넘게 크고 겨울을 넘겨요", "밤에 '우웡~ 우웡~' 소 울음 같은 낮은 소리"],
       vs: [["참개구리", "등 양옆에 뚜렷한 융기선이 있고 등 가운데 연한 줄이 있어요. 고막이 작아요."],
            ["금개구리 (멸종위기)", "6cm쯤으로 작고, 등에 금빛 융기선 2줄이 있어요. 보호종이니 절대 건드리지 마요!"]],
       where: "저수지, 연못, 물 흐름이 느린 하천", why: "토종 개구리·물고기·뱀, 새끼 새까지 잡아먹고 천적이 거의 없어요." },
-    { id: "nutria", emo: "🦫", name: "뉴트리아", alt: "남아메리카에서 온 포유류", g: "animal",
+    { id: "nutria", act: "report", emo: "🦫", name: "뉴트리아", alt: "남아메리카에서 온 포유류", g: "animal",
       look: ["몸 40~60cm에 꼬리 30~45cm", "꼬리가 쥐꼬리처럼 둥글고 털이 거의 없어요", "앞니가 크고 주황색이에요", "뒷발에 물갈퀴, 갈색 털"],
       vs: [["수달 (천연기념물·멸종위기)", "꼬리가 굵고 털로 덮여 끝으로 갈수록 가늘어져요. 머리가 납작하고 둥글며 주황 앞니가 안 보여요."]],
       where: "낙동강 등 남부 지방의 강, 습지", why: "물풀 뿌리와 농작물을 먹어 치우고 둑에 굴을 파서 약하게 만들어요.",
       alert: "물 수 있어요. 절대 가까이 가지 말고 멀리서 사진만 찍어요." },
-    { id: "bass", emo: "🐟", name: "큰입배스", alt: "흔히 '배스' · 북아메리카", g: "fish",
+    { id: "bass", act: "fish", emo: "🐟", name: "큰입배스", alt: "흔히 '배스' · 북아메리카", g: "fish",
       look: ["길이 30~50cm", "입이 아주 커서 위턱 끝이 눈 뒤까지 와요", "몸 옆 가운데에 검은 띠가 머리부터 꼬리까지 이어져요 (어릴수록 뚜렷)", "등은 녹갈색"],
       vs: [["쏘가리", "몸에 표범 같은 검은 얼룩무늬가 있고, 옆으로 길게 이어진 띠는 없어요."],
            ["꺽지", "아가미뚜껑에 노란 테두리가 있는 검은 점이 있어요."]],
       where: "댐, 저수지, 큰 강", why: "토종 물고기·새우·개구리를 잡아먹는 최상위 포식자예요.",
       tip: "낚았다면 다른 물에 살려서 옮기거나 풀어 주면 안 돼요." },
-    { id: "bluegill", emo: "🐠", name: "블루길", alt: "우리말 이름 '파랑볼우럭' · 북아메리카", g: "fish",
+    { id: "bluegill", act: "fish", emo: "🐠", name: "블루길", alt: "우리말 이름 '파랑볼우럭' · 북아메리카", g: "fish",
       look: ["길이 15~25cm, 손바닥만 해요", "몸이 동그랗고 납작한 원반 모양", "아가미뚜껑 끝에 검푸른 점", "옆구리에 희미한 세로 띠 여러 줄"],
       vs: [["붕어", "몸이 덜 납작하고 비늘이 금빛이에요. 아가미뚜껑에 검푸른 점이 없어요."]],
       where: "저수지, 연못, 느린 하천 가장자리", why: "토종 물고기의 알과 새끼를 먹고 아주 빨리 늘어나요." },
-    { id: "slider", emo: "🐢", name: "붉은귀거북", alt: "노란배거북 등 같은 무리 포함 · 미국", g: "animal",
+    { id: "slider", act: "report", emo: "🐢", name: "붉은귀거북", alt: "노란배거북 등 같은 무리 포함 · 미국", g: "animal",
       look: ["눈 뒤에 빨간 줄무늬 (나이 들면 흐려지기도 해요)", "머리와 다리에 노란 줄무늬", "등딱지 20~30cm", "어릴 때 초록색 '청거북'으로 팔리던 거북이에요"],
       vs: [["남생이 (천연기념물·멸종위기)", "머리에 빨간 무늬가 없고, 등딱지에 세로로 솟은 줄이 3개 있어요. 전체가 갈색~검은색."],
            ["자라", "등딱지가 딱딱하지 않고 말랑한 가죽이며, 코가 뾰족해요."]],
       where: "공원 연못, 저수지, 도심 하천", why: "토종 남생이의 자리를 빼앗고 물고기·수생생물을 먹어요. 버려진 애완 거북이 퍼졌어요.",
       tip: "기르던 거북을 강이나 연못에 풀어 주는 건 법으로 금지돼 있어요." },
-    { id: "crayfish", emo: "🦞", name: "미국가재", alt: "미국에서 온 갑각류", g: "animal",
+    { id: "crayfish", act: "report", emo: "🦞", name: "미국가재", alt: "미국에서 온 갑각류", g: "animal",
       look: ["길이 10~15cm", "몸과 집게가 진한 빨간색", "집게에 오돌토돌한 돌기가 있어요"],
       vs: [["가재 (토종)", "5~6cm로 작고 갈색·녹갈색이에요. 물이 아주 맑은 계곡 상류에 살아요."]],
       where: "논, 농수로, 저수지", why: "물풀·올챙이·작은 물고기를 닥치는 대로 먹고 굴을 파서 둑을 약하게 해요.",
       alert: "집게에 물리면 아파요. 맨손으로 잡지 마요." },
-    { id: "sicyos", emo: "🌿", name: "가시박", alt: "북아메리카에서 온 덩굴식물", g: "plant",
+    { id: "sicyos", act: "remove", emo: "🌿", name: "가시박", alt: "북아메리카에서 온 덩굴식물", g: "plant",
       look: ["박처럼 생긴 덩굴, 덩굴손으로 감고 올라가요", "잎이 손바닥처럼 5갈래로 얕게 갈라지고 거친 털이 있어요", "열매가 여러 개 뭉쳐 달리고 가는 가시 털이 빽빽해요"],
       vs: [["박·호박", "잎이 크고 둥글며 열매에 가시 털이 없어요."]],
       where: "강가, 하천 둔치, 숲 가장자리", why: "나무와 풀을 통째로 덮어 햇빛을 막아 말려 죽여요. 씨앗이 아주 많이 생겨요.",
       tip: "씨가 맺히기 전(여름)에 뿌리째 뽑는 게 좋아요. 장갑을 껴요." },
-    { id: "ragweed", emo: "🌾", name: "돼지풀", alt: "북아메리카에서 온 풀", g: "plant",
+    { id: "ragweed", act: "remove", emo: "🌾", name: "돼지풀", alt: "북아메리카에서 온 풀", g: "plant",
       look: ["키 30cm~1.5m", "잎이 깃털처럼 잘게 2~3번 갈라져요", "여름~가을에 줄기 끝에 작은 연두색 꽃이 이삭처럼 달려요"],
       vs: [["쑥", "잎 뒷면이 하얀 털로 덮여 희게 보이고, 비비면 쑥 냄새가 나요. 돼지풀은 뒷면이 희지 않고 쑥 냄새가 없어요."]],
       where: "길가, 빈터, 하천변", why: "꽃가루가 비염·천식 같은 알레르기를 일으키고 토종 풀 자리를 차지해요.",
       tip: "꽃가루가 날리는 8~9월에는 마스크를 써요." },
-    { id: "giantragweed", emo: "🍁", name: "단풍잎돼지풀", alt: "북아메리카에서 온 풀", g: "plant",
+    { id: "giantragweed", act: "remove", emo: "🍁", name: "단풍잎돼지풀", alt: "북아메리카에서 온 풀", g: "plant",
       look: ["키 1~3m로 사람보다 커요", "잎이 단풍잎처럼 3~5갈래로 크게 갈라져요", "잎이 줄기에 마주 붙어요 (마주나기)", "줄기에 거친 털"],
       vs: [["뽕나무 어린 가지", "나무라서 줄기가 딱딱하고, 잎이 한 장씩 어긋나게 붙어요."]],
       where: "하천변, 길가, 빈터", why: "키가 커서 주변 식물을 그늘로 덮고, 꽃가루 알레르기를 일으켜요.",
@@ -1212,8 +1255,8 @@
         "<h4>🤔 헷갈리는 토종과 구별법</h4>" + s.vs.map(function (v) { return '<div class="vs"><b>' + esc(v[0]) + "</b> — " + esc(v[1]) + "</div>"; }).join("") +
         "<h4>📍 어디서 볼 수 있나</h4><p>" + esc(s.where) + "</p>" +
         "<h4>❗ 왜 문제인가</h4><p>" + esc(s.why) + "</p>" +
-        (s.tip ? "<h4>💡 발견하면</h4><p>" + esc(s.tip) + "</p>" : "") +
         (s.alert ? '<div class="alert">⚠️ ' + esc(s.alert) + "</div>" : "") +
+        actBox(s) +
         '<button class="btn soft sm" data-spot="' + esc(s.name) + '">🔍 이걸 봤어요 → 발견 제보</button>' +
         "</div>";
     }).join("") : '<div class="card empty" style="grid-column:1/-1">찾는 교란종이 없어요</div>';
@@ -1283,11 +1326,15 @@
     box.innerHTML = html;
     return inR;
   }
-  $("near-result").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-sp]"); if (!b) return;
-    var id = b.getAttribute("data-sp");
+  function goGuide(id) {
     go("guide");
     setTimeout(function () { var c = $("sp-" + id); if (c) { c.scrollIntoView({ behavior: "smooth", block: "start" }); c.classList.add("flash"); setTimeout(function () { c.classList.remove("flash"); }, 1600); } }, 120);
+  }
+  $("near-result").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-sp]"); if (b) goGuide(b.getAttribute("data-sp"));
+  });
+  $("post-view").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-guide]"); if (b) goGuide(b.getAttribute("data-guide"));
   });
   function setNear(lat, lng, label) {
     near = { lat: lat, lng: lng, label: label, r: +$("near-r").value };
