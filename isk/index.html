@@ -249,6 +249,24 @@
   .err { color: var(--red); font-size: 13.5px; font-weight: 600; min-height: 1.2em; margin-top: 10px; }
   .err.ok { color: var(--green); }
 
+  /* ---- 우리 동네 교란종 찾기 ---- */
+  .near { margin-top: 0; }
+  .near h3 { font-size: 17px; font-weight: 850; margin-bottom: 10px; }
+  .near-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .near-row input { flex: 1; min-width: 180px; }
+  .near-row select { width: auto; }
+  .near-row .btn { flex: none; }
+  .near-where { margin-top: 12px; font-size: 14px; color: var(--ink2); }
+  .near-sum { margin-top: 6px; font-size: 15.5px; }
+  .near-sum b { color: var(--red); }
+  .near-none { margin-top: 8px; padding: 12px; border-radius: 12px; background: var(--greenSoft); color: var(--ink); font-size: 14.5px; }
+  .near-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .near-chip { border: 1px solid var(--line); background: var(--bg); color: var(--ink2); border-radius: 12px; padding: 7px 12px; font-size: 14px; cursor: pointer; text-align: left; }
+  .near-chip b { color: var(--ink); }
+  button.near-chip:hover { border-color: var(--acc); color: var(--acc); }
+  .near-d { color: var(--acc); }
+  .sp.flash { box-shadow: 0 0 0 3px var(--acc); transition: box-shadow .3s; }
+
   /* ---- 작전 기록 ---- */
   .op { padding: 18px 20px; position: relative; }
   .op + .op { margin-top: 14px; }
@@ -514,7 +532,24 @@
       <div><h2>🗺️ 제보 지도</h2><p>교란종을 발견한 곳 · <b id="map-count">0</b>곳</p></div>
       <button class="btn" id="map-write">🔍 발견 제보 쓰기</button>
     </div>
-    <div class="card" style="overflow:hidden"><div class="map map-big" id="spot-map"></div></div>
+    <div class="card pad near">
+      <h3>📍 우리 동네 교란종 찾기</h3>
+      <form class="near-row" id="near-form">
+        <input type="text" id="near-q" maxlength="60" placeholder="사는 동네 (예: 대전 유성구 궁동)">
+        <select id="near-r" title="얼마나 가까이">
+          <option value="3">3km 안</option>
+          <option value="5" selected>5km 안</option>
+          <option value="10">10km 안</option>
+          <option value="30">30km 안</option>
+        </select>
+        <button class="btn" id="near-go">찾기</button>
+        <button type="button" class="btn ghost" id="near-me">📍 내 위치</button>
+        <button type="button" class="btn ghost" id="near-clear" hidden>지우기</button>
+      </form>
+      <div class="hint">🔒 집 주소 말고 동네 이름만 써도 돼요. 입력한 위치는 어디에도 저장되지 않고, 위치를 찾을 때만 OpenStreetMap 검색에 보내져요.</div>
+      <div id="near-result"></div>
+    </div>
+    <div class="card" style="overflow:hidden;margin-top:16px"><div class="map map-big" id="spot-map"></div></div>
     <div class="card pad" style="margin-top:16px"><ul class="plist" id="map-list"></ul></div>
   </section>
 
@@ -1199,13 +1234,98 @@
   renderGuide();
 
   // ---------- 제보 지도 ----------
-  var spotMap = null, spotLayer = null;
+  var spotMap = null, spotLayer = null, nearLayer = null;
+  var near = null; // { lat, lng, label, r(km) } — 브라우저 메모리에만, 저장 안 함
+
+  function distKm(a, b) {
+    var R = 6371, rad = Math.PI / 180;
+    var dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+  function fmtKm(km) { return km < 1 ? Math.round(km * 1000) + "m" : (Math.round(km * 10) / 10) + "km"; }
+  // 글 제목·내용에서 도감의 교란종 이름 찾기 (긴 이름 먼저: 단풍잎돼지풀 → 돼지풀)
+  function speciesOf(p) {
+    var txt = (p.title || "") + " " + (p.text || "");
+    var list = SPECIES.slice().sort(function (a, b) { return b.name.length - a.name.length; });
+    for (var i = 0; i < list.length; i++) if (txt.indexOf(list[i].name) >= 0) return list[i];
+    if (txt.indexOf("배스") >= 0) return SPECIES.filter(function (s) { return s.id === "bass"; })[0];
+    if (txt.indexOf("파랑볼우럭") >= 0) return SPECIES.filter(function (s) { return s.id === "bluegill"; })[0];
+    return null;
+  }
+
+  function renderNear(spots) {
+    var box = $("near-result");
+    $("near-clear").hidden = !near;
+    if (!near) { box.innerHTML = ""; return; }
+    var withD = spots.map(function (p) { return { p: p, d: distKm(near, p.loc) }; }).sort(function (a, b) { return a.d - b.d; });
+    var inR = withD.filter(function (x) { return x.d <= near.r; });
+    var html = '<div class="near-where">📍 <b>' + esc(near.label) + "</b> 에서 " + near.r + "km 안</div>";
+    if (!inR.length) {
+      html += '<div class="near-none">가까운 곳에는 아직 교란종 제보가 없어요 🎉 직접 둘러보고 발견하면 제보해 주세요!' +
+        (withD.length ? "<br><span class=\"muted\">가장 가까운 제보: " + esc(withD[0].p.title) + " · " + fmtKm(withD[0].d) + "</span>" : "") + "</div>";
+    } else {
+      // 교란종별로 묶기
+      var groups = {}, order = [];
+      inR.forEach(function (x) {
+        var sp = speciesOf(x.p), key = sp ? sp.id : "_etc";
+        if (!groups[key]) { groups[key] = { sp: sp, n: 0, min: x.d }; order.push(key); }
+        groups[key].n++; groups[key].min = Math.min(groups[key].min, x.d);
+      });
+      html += '<div class="near-sum">⚠️ 가까운 곳에서 <b>' + inR.length + "건</b>의 교란종 제보가 있어요</div>" +
+        '<div class="near-chips">' + order.map(function (k) {
+          var g = groups[k];
+          return g.sp
+            ? '<button type="button" class="near-chip" data-sp="' + g.sp.id + '">' + g.sp.emo + " <b>" + esc(g.sp.name) + "</b> " + g.n + "건 · 가장 가까이 " + fmtKm(g.min) + " ›</button>"
+            : '<span class="near-chip">❔ 기타 ' + g.n + "건 · 가장 가까이 " + fmtKm(g.min) + "</span>";
+        }).join("") + "</div>";
+    }
+    box.innerHTML = html;
+    return inR;
+  }
+  $("near-result").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-sp]"); if (!b) return;
+    var id = b.getAttribute("data-sp");
+    go("guide");
+    setTimeout(function () { var c = $("sp-" + id); if (c) { c.scrollIntoView({ behavior: "smooth", block: "start" }); c.classList.add("flash"); setTimeout(function () { c.classList.remove("flash"); }, 1600); } }, 120);
+  });
+  function setNear(lat, lng, label) {
+    near = { lat: lat, lng: lng, label: label, r: +$("near-r").value };
+    renderSpotMap();
+  }
+  $("near-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var q = $("near-q").value.trim();
+    if (q.length < 2) { toast("동네 이름을 2글자 이상 써 주세요"); return; }
+    var btn = $("near-go"); btn.disabled = true; btn.textContent = "찾는 중…";
+    fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=kr&accept-language=ko&q=" + encodeURIComponent(q))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.length) { toast("그 동네를 찾지 못했어요. '○○시 ○○동'처럼 써 보세요."); return; }
+        setNear(+d[0].lat, +d[0].lon, q);
+      })
+      .catch(function () { toast("위치 검색에 실패했어요. 잠시 뒤 다시 해 주세요."); })
+      .then(function () { btn.disabled = false; btn.textContent = "찾기"; });
+  });
+  $("near-me").onclick = function () {
+    if (!navigator.geolocation) { toast("이 기기에서는 내 위치를 쓸 수 없어요"); return; }
+    toast("위치 찾는 중…");
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      setNear(pos.coords.latitude, pos.coords.longitude, "내 위치");
+    }, function () { toast("위치를 가져오지 못했어요. 동네 이름으로 찾아 주세요."); }, { enableHighAccuracy: false, timeout: 10000 });
+  };
+  $("near-r").addEventListener("change", function () { if (near) { near.r = +this.value; renderSpotMap(); } });
+  $("near-clear").onclick = function () { near = null; $("near-q").value = ""; renderSpotMap(); };
+
   function renderSpotMap() {
     var spots = state.posts.filter(function (p) { return p.loc; });
     $("map-count").textContent = spots.length;
-    $("map-list").innerHTML = spots.length ? spots.map(function (p) {
-      return rowHTML(p, true).replace('<div class="meta">', '<div class="meta">' + (p.place ? "📍 " + esc(p.place) + " · " : ""));
-    }).join("") : loadingOr("아직 위치가 찍힌 제보가 없어요. '발견 제보 쓰기'로 첫 제보를 올려 보세요!");
+    var inR = renderNear(spots);
+    var listed = near ? inR.map(function (x) { return x.p; }) : spots;
+    $("map-list").innerHTML = listed.length ? listed.map(function (p) {
+      var dist = near ? '<b class="near-d">' + fmtKm(distKm(near, p.loc)) + "</b> · " : "";
+      return rowHTML(p, true).replace('<div class="meta">', '<div class="meta">' + dist + (p.place ? "📍 " + esc(p.place) + " · " : ""));
+    }).join("") : (near ? emptyHTML("이 범위 안에는 제보가 없어요") : loadingOr("아직 위치가 찍힌 제보가 없어요. '발견 제보 쓰기'로 첫 제보를 올려 보세요!"));
     if (!$("page-map").classList.contains("on")) return;
     if (!spotMap) {
       spotMap = makeMap($("spot-map")); if (!spotMap) return;
@@ -1227,7 +1347,13 @@
         .addTo(spotLayer);
       pts.push([p.loc.lat, p.loc.lng]);
     });
-    if (pts.length === 1) spotMap.setView(pts[0], 14);
+    if (!nearLayer) nearLayer = L.layerGroup().addTo(spotMap);
+    nearLayer.clearLayers();
+    if (near) {
+      var circle = L.circle([near.lat, near.lng], { radius: near.r * 1000, color: "#4f46e5", weight: 2, fillOpacity: 0.07 }).addTo(nearLayer);
+      L.marker([near.lat, near.lng], { icon: pin("#0ea5e9"), zIndexOffset: 1000 }).bindPopup("📍 " + esc(near.label)).addTo(nearLayer);
+      spotMap.fitBounds(circle.getBounds(), { padding: [20, 20] });
+    } else if (pts.length === 1) spotMap.setView(pts[0], 14);
     else if (pts.length) spotMap.fitBounds(pts, { padding: [30, 30], maxZoom: 15 });
   }
   $("map-write").onclick = function () { openWrite("spot"); };
