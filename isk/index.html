@@ -267,6 +267,62 @@
   .near-d { color: var(--acc); }
   .sp.flash { box-shadow: 0 0 0 3px var(--acc); transition: box-shadow .3s; }
 
+  /* ---- 모임 일정 ---- */
+  .next-ev { margin-top: 12px; padding: 12px 18px; font-size: 14.5px; }
+  .next-ev a { cursor: pointer; font-weight: 700; text-decoration: none; margin-left: 4px; }
+  .cal { padding: 14px; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cal-head b { font-size: 17px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-w { text-align: center; font-size: 12.5px; font-weight: 700; color: var(--ink3); padding: 2px 0; }
+  .cal-w.sun { color: var(--red); } .cal-w.sat { color: var(--acc); }
+  .cal-d { min-height: 54px; border-radius: 10px; background: var(--bg); padding: 4px; font-size: 12.5px; overflow: hidden; }
+  .cal-d span { font-weight: 700; color: var(--ink2); }
+  .cal-d.today { outline: 2px solid var(--acc); }
+  .cal-d.has { background: var(--accSoft); cursor: pointer; }
+  .cal-d i { display: block; font-style: normal; font-size: 11px; color: var(--acc); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ev-sec { font-size: 17px; font-weight: 850; margin: 22px 0 10px; }
+  .ev { display: flex; gap: 14px; padding: 16px 18px; }
+  .ev + .ev { margin-top: 12px; }
+  .ev.past { opacity: .72; }
+  .ev.flash { box-shadow: 0 0 0 3px var(--acc); }
+  .ev-date { flex: none; width: 64px; text-align: center; border-radius: 14px; background: var(--accSoft); color: var(--acc); padding: 8px 0; align-self: flex-start; }
+  .ev-date b { display: block; font-size: 26px; font-weight: 900; line-height: 1.1; }
+  .ev-date span { font-size: 12px; font-weight: 700; }
+  .ev-body { flex: 1; min-width: 0; }
+  .ev-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ev-top h3 { font-size: 18px; font-weight: 850; word-break: break-word; }
+  .ev-top .x { margin-left: auto; border: 0; background: none; color: var(--ink3); cursor: pointer; font-size: 12.5px; }
+  .ev-meta { color: var(--ink2); font-size: 14px; margin-top: 2px; }
+  .ev-memo { margin: 6px 0 0; white-space: pre-wrap; color: var(--ink2); font-size: 14px; }
+  .ev-who { margin-top: 10px; font-size: 14px; }
+  .ev-btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+  /* ---- 제보 통계 ---- */
+  .st-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .hbar { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 14px; }
+  .hbar[data-sp] { cursor: pointer; }
+  .hbar[data-sp]:hover .hbar-l { color: var(--acc); }
+  .hbar-l { width: 120px; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hbar-t { flex: 1; height: 12px; border-radius: 999px; background: var(--bg2); overflow: hidden; }
+  .hbar-t i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--red), var(--gold)); }
+  .hbar b { width: 28px; text-align: right; }
+  .toprow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .toprow:first-child { border-top: 0; }
+  .toprank { width: 34px; text-align: center; font-weight: 800; }
+  .topn { margin-left: auto; font-weight: 800; color: var(--acc); }
+  .st-months { display: flex; align-items: flex-end; gap: 6px; height: 170px; padding-top: 6px; }
+  .vbar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
+  .vbar i { width: 70%; max-width: 34px; min-height: 2px; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, var(--acc2), var(--acc)); }
+  .vbar b { font-size: 12px; color: var(--ink2); min-height: 16px; }
+  .vbar span { font-size: 11.5px; color: var(--ink3); margin-top: 4px; white-space: nowrap; }
+
+  /* ---- 도감 사진 ---- */
+  .sp-photo { background-size: cover; background-position: center; }
+  .sp-gal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .sp-gal img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; cursor: pointer; display: block; background: var(--bg2); }
+  @media (max-width: 720px) { .st-tiles { grid-template-columns: repeat(2, 1fr); } .ev-date { width: 54px; } }
+
   /* ---- 작전 기록 ---- */
   .op { padding: 18px 20px; position: relative; }
   .op + .op { margin-top: 14px; }
@@ -378,8 +434,10 @@
       <a data-go="about">소개</a>
       <a data-go="members">멤버</a>
       <a data-go="notice">공지</a>
+      <a data-go="events">📅 일정</a>
       <a data-go="board">나눔마당</a>
       <a data-go="map">🗺️ 제보 지도</a>
+      <a data-go="stats">📊 통계</a>
       <a data-go="guide">📖 도감</a>
       <a data-go="ops">📜 작전 기록</a>
       <a data-go="me">내 정보</a>
@@ -415,6 +473,7 @@
       </div>
       <div id="mission-body"></div>
     </div>
+    <div class="card next-ev" id="home-next" hidden></div>
     <div class="stats">
       <div class="card stat"><b id="st-members">–</b><span>👥 멤버</span></div>
       <div class="card stat"><b id="st-posts">–</b><span>📝 글</span></div>
@@ -502,6 +561,40 @@
       <input type="text" class="search" id="board-search" placeholder="🔍 제목·내용·글쓴이 검색">
     </div>
     <div class="card pad"><ul class="plist" id="board-list"></ul></div>
+  </section>
+
+  <!-- 모임 일정 -->
+  <section class="page" id="page-events">
+    <div class="page-head">
+      <div><h2>📅 모임 일정</h2><p>다가오는 모임 <b id="ev-count">0</b>개 · 참석/불참을 눌러 알려 주세요</p></div>
+      <button class="btn" id="ev-add" hidden>＋ 일정 올리기</button>
+    </div>
+    <div class="card pad cal">
+      <div class="cal-head">
+        <button class="icon-btn" id="cal-prev" title="지난달">‹</button>
+        <b id="cal-title"></b>
+        <button class="icon-btn" id="cal-next" title="다음달">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+    <h3 class="ev-sec">다가오는 모임</h3>
+    <div id="ev-up"></div>
+    <h3 class="ev-sec">지난 모임</h3>
+    <div id="ev-past"></div>
+  </section>
+
+  <!-- 제보 통계 -->
+  <section class="page" id="page-stats">
+    <div class="page-head">
+      <div><h2>📊 제보 통계</h2><p>I.S.K 멤버들이 올린 발견 제보를 한눈에</p></div>
+    </div>
+    <div class="st-tiles" id="st-tiles"></div>
+    <div class="two" style="margin-top:16px">
+      <div class="card pad"><div class="box-head"><h3>🐾 교란종별 제보</h3></div><div id="st-species"></div></div>
+      <div class="card pad"><div class="box-head"><h3>🏆 제보왕</h3></div><div id="st-top"></div></div>
+    </div>
+    <div class="card pad" style="margin-top:16px"><div class="box-head"><h3>📈 달마다 제보 수 (최근 12달)</h3></div><div class="st-months" id="st-months"></div></div>
+    <p class="muted" style="font-size:13px;margin-top:10px">교란종 이름은 제보의 제목·내용으로 알아내요. 최근 글 200개까지 셉니다.</p>
   </section>
 
   <!-- 작전 기록 -->
@@ -686,6 +779,29 @@
 
 <!-- 소개 수정 모달 -->
 <!-- 이번 목표 모달 (관리자) -->
+<!-- 일정 올리기 모달 (관리자) -->
+<div class="modal-bg" id="ev-modal" hidden>
+  <form class="card modal wide" id="ev-form">
+    <h3>📅 일정 올리기</h3>
+    <p class="sub">관리자만 올릴 수 있어요. 멤버들이 참석/불참을 눌러 알려 줘요.</p>
+    <label class="f" for="e-title">모임 이름</label>
+    <input type="text" id="e-title" maxlength="60" placeholder="예: 탄천 가시박 뽑기">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:150px"><label class="f" for="e-date">날짜</label><input type="date" id="e-date"></div>
+      <div style="flex:1;min-width:120px"><label class="f" for="e-time">시간</label><input type="time" id="e-time" style="width:100%;padding:10px 12px;border-radius:11px;border:1px solid var(--line);background:var(--bg)"></div>
+    </div>
+    <label class="f" for="e-place">모이는 곳</label>
+    <input type="text" id="e-place" maxlength="80" placeholder="예: 정자역 3번 출구 앞 탄천 산책로 입구">
+    <label class="f" for="e-memo">준비물·할 일</label>
+    <textarea id="e-memo" maxlength="1000" rows="4" placeholder="예: 장갑, 물, 마스크. 보호자 동반!"></textarea>
+    <div class="err" id="ev-err"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn ghost" data-close>취소</button>
+      <button type="submit" class="btn" id="ev-submit">올리기</button>
+    </div>
+  </form>
+</div>
+
 <!-- 작전 기록 모달 (관리자) -->
 <div class="modal-bg" id="op-modal" hidden>
   <form class="card modal wide" id="op-form">
@@ -710,6 +826,7 @@
     <label class="f" for="o-result">결과 정리 (무엇을 했고, 얼마나 찾았는지)</label>
     <textarea id="o-result" maxlength="1500" rows="4" placeholder="예: 황소개구리 성체 12마리·올챙이 다수 확인, 서식지 3곳 지도에 기록, 지자체에 신고 완료"></textarea>
     <label class="f">참여한 사람 <a id="o-all" style="cursor:pointer;font-weight:700;margin-left:6px">모두 선택</a></label>
+    <select id="o-ev" style="margin-bottom:8px"><option value="">📅 모임 일정에서 참석자 불러오기…</option></select>
     <div class="mchks" id="o-members"></div>
     <div class="err" id="op-err"></div>
     <div class="modal-foot">
@@ -914,7 +1031,7 @@
   }
 
   // ---------- 페이지 이동 ----------
-  var PAGES = ["home", "about", "members", "notice", "board", "map", "guide", "ops", "post", "me"];
+  var PAGES = ["home", "about", "members", "notice", "events", "board", "map", "stats", "guide", "ops", "post", "me"];
   function go(page) { location.hash = page; }
   function route() {
     var h = location.hash.replace(/^#/, "");
@@ -940,7 +1057,8 @@
     return Promise.all([
       api("/api/board").then(function (d) { state.posts = Array.isArray(d) ? d : []; }).catch(function () { state.posts = []; }),
       loadScores(),
-      api("/api/site").then(function (d) { state.site = d.site || {}; state.members = d.members || []; state.mission = d.mission || null; state.ops = d.ops || []; }).catch(function () {})
+      api("/api/site").then(function (d) { state.site = d.site || {}; state.members = d.members || []; state.mission = d.mission || null; state.ops = d.ops || []; }).catch(function () {}),
+      api("/api/events").then(function (d) { state.events = d.events || []; }).catch(function () { state.events = []; })
     ]).then(function () { state.loaded = true; renderAll(); });
   }
   function loadScores() {
@@ -972,6 +1090,7 @@
 
   function renderAll() {
     renderHome(); renderAbout(); renderMembers(); renderNotice(); renderBoard(); renderMe(); renderSpotMap(); renderOps();
+    renderEvents(); renderStats(); renderGuide();
     if (state.postId) renderPost();
   }
 
@@ -1248,9 +1367,22 @@
       return true;
     });
     $("guide-count").textContent = SPECIES.length;
+    // 멤버들이 발견 제보에 올린 사진을 교란종별로 모음 (최신 것부터)
+    var shots = {};
+    (state.posts || []).forEach(function (p) {
+      if (p.cat !== "spot" || !p.photos || !p.photos.length) return;
+      var sp = speciesOf(p); if (!sp) return;
+      p.photos.forEach(function (u) { (shots[sp.id] = shots[sp.id] || []).push({ url: u, post: p }); });
+    });
     $("guide-grid").innerHTML = list.length ? list.map(function (s) {
+      var ph = shots[s.id] || [];
+      var head = ph.length ? '<div class="sp-emo sp-photo" style="background-image:url(\'' + esc(ph[0].url) + '\')" title="멤버가 찍은 사진"></div>' : '<div class="sp-emo">' + s.emo + "</div>";
       return '<div class="card sp" id="sp-' + s.id + '">' +
-        '<div class="sp-head"><div class="sp-emo">' + s.emo + '</div><div><h3>' + esc(s.name) + '</h3><div class="muted">' + esc(s.alt) + "</div></div></div>" +
+        '<div class="sp-head">' + head + '<div><h3>' + (ph.length ? s.emo + " " : "") + esc(s.name) + '</h3><div class="muted">' + esc(s.alt) + "</div></div></div>" +
+        (ph.length ? '<h4>📸 우리가 찍은 사진 <span class="muted">' + ph.length + "장</span></h4>" +
+          '<div class="sp-gal">' + ph.slice(0, 6).map(function (x) {
+            return '<img src="' + esc(x.url) + '" alt="' + esc(s.name) + ' 사진" loading="lazy" data-post="' + esc(x.post.id) + '" title="' + esc(x.post.name + " · " + fmtDate(x.post.time, true)) + '">';
+          }).join("") + "</div>" : "") +
         "<h4>👀 생김새</h4><ul>" + s.look.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" +
         "<h4>🤔 헷갈리는 토종과 구별법</h4>" + s.vs.map(function (v) { return '<div class="vs"><b>' + esc(v[0]) + "</b> — " + esc(v[1]) + "</div>"; }).join("") +
         "<h4>📍 어디서 볼 수 있나</h4><p>" + esc(s.where) + "</p>" +
@@ -1770,6 +1902,12 @@
     $("o-members").innerHTML = names.length ? names.map(function (n) {
       return '<label class="mchk"><input type="checkbox" value="' + esc(n) + '"> ' + esc(n) + "</label>";
     }).join("") : '<span class="muted">멤버가 없어요</span>';
+    // 참석자가 있는 일정 (최근 것부터)
+    var evs = (state.events || []).filter(function (x) { return (x.yes || []).length; }).slice().reverse();
+    $("o-ev").innerHTML = '<option value="">📅 모임 일정에서 참석자 불러오기…</option>' + evs.map(function (x) {
+      return '<option value="' + esc(x.id) + '">' + esc(x.date.slice(5).replace("-", "/")) + " " + esc(x.title) + " (참석 " + x.yes.length + "명)</option>";
+    }).join("");
+    $("o-ev").hidden = !evs.length;
     openModal("op-modal");
   }
   $("mission-finish").onclick = function () { openOp("finish"); };
@@ -1800,6 +1938,182 @@
     }).catch(function (er) { $("op-err").textContent = errMsg(er.message); })
       .then(function () { btn.disabled = false; });
   });
+
+  // ---------- 모임 일정 ----------
+  var WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+  var cal = (function () { var d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })();
+  function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function evDay(e) { return new Date(e.date + "T00:00:00"); }
+  function fmtTime(t) {
+    if (!t) return "";
+    var h = +t.slice(0, 2), m = t.slice(3, 5);
+    return (h < 12 ? "오전 " : "오후 ") + (h % 12 || 12) + (m !== "00" ? ":" + m : "시");
+  }
+  function iAm(list) {
+    var u = me(); if (!u) return false;
+    return (list || []).some(function (n) { return String(n).toLowerCase() === u.name.toLowerCase(); });
+  }
+  function evCard(e, past) {
+    var d = evDay(e), u = me();
+    var days = Math.round((d - new Date(ymd(new Date()) + "T00:00:00")) / 86400000);
+    var dday = past ? "" : days === 0 ? '<span class="badge r-commander">오늘!</span>' : '<span class="badge b-free">D-' + days + "</span>";
+    var yes = e.yes || [], no = e.no || [];
+    var mineYes = iAm(yes), mineNo = iAm(no);
+    return '<div class="card ev' + (past ? " past" : "") + '" id="ev-' + esc(e.id) + '">' +
+      '<div class="ev-date"><span>' + (d.getMonth() + 1) + "월</span><b>" + d.getDate() + "</b><span>" + WEEK[d.getDay()] + "요일</span></div>" +
+      '<div class="ev-body">' +
+        '<div class="ev-top"><h3>' + esc(e.title) + "</h3>" + dday +
+        (amAdmin() ? '<button class="x" data-evdel="' + esc(e.id) + '">삭제</button>' : "") + "</div>" +
+        '<div class="ev-meta">' + (e.time ? "🕑 " + fmtTime(e.time) + " · " : "") + (e.place ? "📍 " + esc(e.place) : "") + "</div>" +
+        (e.memo ? '<p class="ev-memo">' + esc(e.memo) + "</p>" : "") +
+        '<div class="ev-who"><b>🙋 참석 ' + yes.length + "명</b>" +
+          (yes.length ? '<div class="op-chips">' + yes.map(function (n) { return '<span class="op-chip">' + avatar(n) + esc(n) + "</span>"; }).join("") + "</div>" : "") +
+          (no.length ? '<div class="muted" style="font-size:13px;margin-top:4px">불참 ' + no.length + "명: " + no.map(esc).join(", ") + "</div>" : "") +
+        "</div>" +
+        (!past && u ? '<div class="ev-btns">' +
+          '<button class="btn sm ' + (mineYes ? "" : "ghost") + '" data-rsvp="' + esc(e.id) + '" data-ans="' + (mineYes ? "none" : "yes") + '">' + (mineYes ? "✅ 참석해요 (취소)" : "🙋 참석") + "</button>" +
+          '<button class="btn sm ' + (mineNo ? "danger" : "ghost") + '" data-rsvp="' + esc(e.id) + '" data-ans="' + (mineNo ? "none" : "no") + '">' + (mineNo ? "❌ 불참 (취소)" : "불참") + "</button></div>"
+          : (!past ? '<div class="muted" style="font-size:13px;margin-top:8px">참석을 알리려면 로그인해 주세요</div>' : "")) +
+      "</div></div>";
+  }
+  function renderCalendar() {
+    var first = new Date(cal.y, cal.m, 1), last = new Date(cal.y, cal.m + 1, 0);
+    $("cal-title").textContent = cal.y + "년 " + (cal.m + 1) + "월";
+    var byDay = {};
+    (state.events || []).forEach(function (e) { (byDay[e.date] = byDay[e.date] || []).push(e); });
+    var today = ymd(new Date()), html = WEEK.map(function (w, i) { return '<div class="cal-w' + (i === 0 ? " sun" : i === 6 ? " sat" : "") + '">' + w + "</div>"; }).join("");
+    for (var i = 0; i < first.getDay(); i++) html += "<div></div>";
+    for (var dd = 1; dd <= last.getDate(); dd++) {
+      var key = ymd(new Date(cal.y, cal.m, dd)), evs = byDay[key] || [];
+      html += '<div class="cal-d' + (key === today ? " today" : "") + (evs.length ? " has" : "") + '"' + (evs.length ? ' data-calev="' + esc(evs[0].id) + '"' : "") + ">" +
+        "<span>" + dd + "</span>" + evs.slice(0, 2).map(function (e) { return '<i title="' + esc(e.title) + '">' + esc(e.title) + "</i>"; }).join("") + "</div>";
+    }
+    $("cal-grid").innerHTML = html;
+  }
+  function renderEvents() {
+    var evs = state.events || [], today = ymd(new Date());
+    var up = evs.filter(function (e) { return e.date >= today; });
+    var past = evs.filter(function (e) { return e.date < today; }).reverse();
+    $("ev-add").hidden = !amAdmin();
+    $("ev-count").textContent = up.length;
+    $("ev-up").innerHTML = up.length ? up.map(function (e) { return evCard(e, false); }).join("")
+      : '<div class="card empty">' + (state.loaded ? "다가오는 모임이 아직 없어요" : "불러오는 중…") + "</div>";
+    $("ev-past").innerHTML = past.length ? past.map(function (e) { return evCard(e, true); }).join("") : '<div class="muted" style="padding:4px 2px">지난 모임이 없어요</div>';
+    renderCalendar();
+    // 홈: 다음 모임
+    var nx = up[0], box = $("home-next");
+    box.hidden = !nx;
+    if (nx) {
+      var d = evDay(nx);
+      box.innerHTML = '<span class="mission-tag">📅 다음 모임</span> <b>' + (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + WEEK[d.getDay()] + ")" +
+        (nx.time ? " " + fmtTime(nx.time) : "") + "</b> · " + esc(nx.title) + (nx.place ? ' <span class="muted">📍 ' + esc(nx.place) + "</span>" : "") +
+        ' <a data-go="events">참석 알리기 ›</a>';
+    }
+  }
+  function setEvents(evs) { if (Array.isArray(evs)) { state.events = evs; renderEvents(); } }
+  $("cal-prev").onclick = function () { cal.m--; if (cal.m < 0) { cal.m = 11; cal.y--; } renderCalendar(); };
+  $("cal-next").onclick = function () { cal.m++; if (cal.m > 11) { cal.m = 0; cal.y++; } renderCalendar(); };
+  $("cal-grid").addEventListener("click", function (e) {
+    var c = e.target.closest("[data-calev]"); if (!c) return;
+    var el = $("ev-" + c.getAttribute("data-calev"));
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("flash"); setTimeout(function () { el.classList.remove("flash"); }, 1600); }
+  });
+  $("page-events").addEventListener("click", function (e) {
+    var r = e.target.closest("[data-rsvp]");
+    if (r) {
+      r.disabled = true;
+      api("/api/events", { method: "POST", body: { action: "rsvp", id: r.getAttribute("data-rsvp"), ans: r.getAttribute("data-ans") } })
+        .then(function (d) { setEvents(d.events); toast({ yes: "🙋 참석으로 알렸어요", no: "불참으로 알렸어요", none: "응답을 취소했어요" }[r.getAttribute("data-ans")]); })
+        .catch(function (er) { toast(errMsg(er.message)); r.disabled = false; });
+      return;
+    }
+    var dl = e.target.closest("[data-evdel]");
+    if (dl && confirm("이 일정을 지울까요? 참석 응답도 함께 지워져요.")) {
+      api("/api/events", { method: "POST", body: { action: "delete", id: dl.getAttribute("data-evdel") } })
+        .then(function (d) {
+          var id = dl.getAttribute("data-evdel");
+          setEvents(Array.isArray(d.events) ? d.events : state.events.filter(function (x) { return x.id !== id; }));
+          toast("일정을 지웠어요");
+        }).catch(function (er) { toast(errMsg(er.message)); });
+    }
+  });
+  $("ev-add").onclick = function () {
+    ["e-title", "e-time", "e-place", "e-memo"].forEach(function (id) { $(id).value = ""; });
+    $("e-date").value = ymd(new Date(Date.now() + 7 * 86400000));
+    $("ev-err").textContent = "";
+    openModal("ev-modal");
+    setTimeout(function () { $("e-title").focus(); }, 30);
+  };
+  $("ev-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var body = { action: "create", title: $("e-title").value.trim(), date: $("e-date").value, time: $("e-time").value, place: $("e-place").value.trim(), memo: $("e-memo").value.trim() };
+    if (!body.title) { $("ev-err").textContent = "모임 이름을 입력해 주세요."; return; }
+    if (!body.date) { $("ev-err").textContent = "날짜를 골라 주세요."; return; }
+    var btn = $("ev-submit"); btn.disabled = true;
+    api("/api/events", { method: "POST", body: body }).then(function (d) {
+      setEvents(Array.isArray(d.events) ? d.events : (state.events || []).concat([d.event]));
+      closeModal("ev-modal"); toast("📅 일정을 올렸어요");
+      var dt = evDay(d.event); cal.y = dt.getFullYear(); cal.m = dt.getMonth(); renderCalendar();
+    }).catch(function (er) { $("ev-err").textContent = errMsg(er.message); })
+      .then(function () { btn.disabled = false; });
+  });
+  // 작전 끝내기 창: 일정의 참석자를 참여자로 체크
+  $("o-ev").addEventListener("change", function () {
+    var ev = (state.events || []).filter(function (x) { return x.id === this.value; }, this)[0];
+    if (!ev) return;
+    var yes = (ev.yes || []).map(function (n) { return n.toLowerCase(); });
+    $("o-members").querySelectorAll("input").forEach(function (b) { if (yes.indexOf(b.value.toLowerCase()) >= 0) b.checked = true; });
+    toast("📅 " + ev.title + " 참석자 " + yes.length + "명을 체크했어요");
+  });
+
+  // ---------- 제보 통계 ----------
+  function renderStats() {
+    var spots = state.posts.filter(function (p) { return p.cat === "spot"; });
+    var names = {};
+    spots.forEach(function (p) { names[p.name] = (names[p.name] || 0) + 1; });
+    var tiles = [
+      ["🔍", spots.length, "발견 제보"],
+      ["📷", spots.filter(function (p) { return p.photos && p.photos.length; }).length, "사진 붙은 제보"],
+      ["📍", spots.filter(function (p) { return p.loc; }).length, "위치 찍은 제보"],
+      ["🙋", Object.keys(names).length, "제보한 멤버"]
+    ];
+    $("st-tiles").innerHTML = tiles.map(function (t) { return '<div class="card stat"><b>' + t[1] + "</b><span>" + t[0] + " " + t[2] + "</span></div>"; }).join("");
+    if (!spots.length) {
+      var none = '<div class="muted" style="padding:10px 0">' + (state.loaded ? "아직 발견 제보가 없어요" : "불러오는 중…") + "</div>";
+      $("st-species").innerHTML = none; $("st-top").innerHTML = none; $("st-months").innerHTML = none;
+      return;
+    }
+    // 교란종별
+    var bySp = {};
+    spots.forEach(function (p) { var s = speciesOf(p), k = s ? s.id : "_etc"; bySp[k] = (bySp[k] || 0) + 1; });
+    var spRows = Object.keys(bySp).map(function (k) {
+      var s = SPECIES.filter(function (x) { return x.id === k; })[0];
+      return { id: k, s: s, n: bySp[k] };
+    }).sort(function (a, b) { return b.n - a.n; });
+    var spMax = spRows[0].n;
+    $("st-species").innerHTML = spRows.map(function (r) {
+      return '<div class="hbar"' + (r.s ? ' data-sp="' + r.id + '" title="도감 보기"' : "") + '><span class="hbar-l">' + (r.s ? r.s.emo + " " + esc(r.s.name) : "❔ 기타") + "</span>" +
+        '<span class="hbar-t"><i style="width:' + Math.max(4, Math.round(r.n / spMax * 100)) + '%"></i></span><b>' + r.n + "</b></div>";
+    }).join("");
+    // 제보왕
+    var top = Object.keys(names).map(function (n) { return [n, names[n]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
+    $("st-top").innerHTML = top.map(function (t, i) {
+      return '<div class="toprow"><span class="toprank">' + (["🥇", "🥈", "🥉"][i] || (i + 1) + "등") + "</span>" + avatar(t[0]) +
+        "<b>" + esc(t[0]) + "</b>" + roleBadge(t[0]) + '<span class="topn">' + t[1] + "건</span></div>";
+    }).join("");
+    // 달마다 (최근 12달)
+    var now = new Date(), months = [];
+    for (var i = 11; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push({ key: d.getFullYear() + "-" + (d.getMonth() + 1), label: (d.getMonth() + 1) + "월", n: 0 }); }
+    spots.forEach(function (p) {
+      var d = new Date(p.time), k = d.getFullYear() + "-" + (d.getMonth() + 1);
+      months.forEach(function (m) { if (m.key === k) m.n++; });
+    });
+    var mMax = Math.max(1, Math.max.apply(null, months.map(function (m) { return m.n; })));
+    $("st-months").innerHTML = months.map(function (m) {
+      return '<div class="vbar"><b>' + (m.n || "") + '</b><i style="height:' + Math.round(m.n / mMax * 100) + '%"></i><span>' + m.label + "</span></div>";
+    }).join("");
+  }
+  $("st-species").addEventListener("click", function (e) { var b = e.target.closest("[data-sp]"); if (b) goGuide(b.getAttribute("data-sp")); });
 
   // ---------- 관리자 패널 ----------
   function banUser(name) {
